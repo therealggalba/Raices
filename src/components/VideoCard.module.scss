@@ -1,0 +1,96 @@
+@use '../styles/variables' as *;
+
+.card {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: 46vw;
+  max-width: 260px;
+  min-width: 160px;
+  text-decoration: none;
+  color: inherit;
+  scroll-snap-align: start;
+}
+
+.frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background: $color-bg-panel;
+  container-type: inline-size;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+
+  .card:hover &,
+  .card:focus-visible & {
+    transform: scale(1.04);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.date {
+  position: absolute;
+  left: $space-2;
+  top: $space-2;
+  z-index: 2;
+  padding: 1px $space-2;
+  border-radius: $radius-sm;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.favorite {
+  position: absolute;
+  right: $space-2;
+  bottom: $space-2;
+  z-index: 2;
+  color: $color-play;
+  font-size: 1rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.ranked {
+  display: flex;
+  align-items: flex-end;
+  width: 58vw;
+  max-width: 320px;
+  min-width: 200px;
+
+  .frame {
+    flex: 1;
+    aspect-ratio: 3 / 4;
+  }
+}
+
+.rank {
+  margin-right: -0.9rem;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 5.5rem;
+  line-height: 0.8;
+  color: $color-bg;
+  -webkit-text-stroke: 2px $color-text-dim;
+}
+
+.captioned {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.caption {
+  display: grid;
+  margin-top: $space-2;
+  font-size: 0.85rem;
+  line-height: 1.3;
+
+  span {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+  }
+}

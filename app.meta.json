@@ -1,0 +1,10 @@
+{
+  "id": "family-memories",
+  "name": "FamilyMemories",
+  "description": "Plataforma de conservación y transmisión de recuerdos familiares: canales privados, catálogo de vídeos tipo VOD, cronología, personas y eventos importantes.",
+  "class": "portafolio",
+  "status": "development",
+  "route": "/family-memories/",
+  "visibility": "public (MVP de pruebas; privacidad pendiente)",
+  "version": "0.1.0"
+}

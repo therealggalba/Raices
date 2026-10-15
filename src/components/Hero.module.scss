@@ -1,0 +1,74 @@
+@use '../styles/variables' as *;
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: min(72vh, 560px);
+  overflow: hidden;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  container-type: inline-size;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, $color-bg 2%, rgba(14, 13, 18, 0.6) 40%, rgba(14, 13, 18, 0.1) 75%),
+      linear-gradient(to right, rgba(14, 13, 18, 0.7), transparent 70%);
+  }
+}
+
+.content {
+  position: relative;
+  display: grid;
+  gap: $space-3;
+  width: 100%;
+  max-width: 640px;
+  padding: $space-6 $space-4;
+
+  @include md-up {
+    padding: $space-8 $space-8 3rem;
+  }
+}
+
+.kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $color-accent;
+}
+
+.title {
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-3;
+  font-size: 0.9rem;
+  color: $color-text-muted;
+
+  span + span::before {
+    content: '·';
+    margin-right: $space-3;
+  }
+}
+
+.description {
+  color: $color-text;
+  @include line-clamp(3);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}

@@ -1,0 +1,34 @@
+@use '../styles/variables' as *;
+
+.grid {
+  display: grid;
+  gap: $space-3;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3;
+  border-radius: $radius-lg;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    border-color: $color-accent;
+  }
+}
+
+.body {
+  display: grid;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.meta {
+  font-size: 0.8rem;
+  color: $color-text-dim;
+}

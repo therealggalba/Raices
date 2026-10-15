@@ -1,0 +1,275 @@
+@use '../styles/variables' as *;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  min-height: $touch;
+  padding: 0 $space-5;
+  border: 1px solid transparent;
+  border-radius: $radius-pill;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    transform 0.1s,
+    border-color 0.15s;
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.primary {
+  background: $color-accent;
+  color: #1b1408;
+
+  &:hover:not(:disabled) {
+    background: $color-accent-strong;
+  }
+}
+
+.play {
+  background: $color-text;
+  color: #111;
+
+  &:hover:not(:disabled) {
+    background: #fff;
+  }
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: $color-text;
+  border-color: rgba(255, 255, 255, 0.12);
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.ghost {
+  background: transparent;
+  color: $color-text-muted;
+
+  &:hover:not(:disabled) {
+    color: $color-text;
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.danger {
+  background: transparent;
+  color: $color-danger;
+  border-color: rgba(255, 107, 107, 0.4);
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 107, 107, 0.12);
+  }
+}
+
+.small {
+  min-height: 36px;
+  padding: 0 $space-3;
+  font-size: 0.85rem;
+}
+
+.block {
+  width: 100%;
+}
+
+.spinner {
+  display: grid;
+  place-items: center;
+  gap: $space-3;
+  padding: 4rem $space-4;
+  color: $color-text-muted;
+}
+
+.spinnerDot {
+  width: 36px;
+  height: 36px;
+  border: 3px solid $color-line;
+  border-top-color: $color-accent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: $space-3;
+  padding: 3rem $space-4;
+  text-align: center;
+  color: $color-text-muted;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+}
+
+.error {
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  color: #ffc9c9;
+  font-size: 0.9rem;
+}
+
+.notice {
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  background: rgba(242, 180, 90, 0.1);
+  border: 1px solid rgba(242, 180, 90, 0.3);
+  color: $color-accent-strong;
+  font-size: 0.9rem;
+}
+
+.field {
+  display: grid;
+  gap: $space-1;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $color-text-muted;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: $color-text-dim;
+}
+
+.input {
+  width: 100%;
+  min-height: $touch;
+  padding: $space-2 $space-3;
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+  color: $color-text;
+  font-size: 1rem;
+
+  &::placeholder {
+    color: $color-text-dim;
+  }
+
+  &:focus {
+    border-color: $color-accent;
+    outline: none;
+  }
+}
+
+textarea.input {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.form {
+  display: grid;
+  gap: $space-4;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  justify-content: flex-end;
+}
+
+.page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: $space-5 $space-4 $space-8;
+  display: grid;
+  gap: $space-5;
+  align-content: start;
+}
+
+.pageWide {
+  max-width: $content-max;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  flex-wrap: wrap;
+
+  h1 {
+    font-size: 1.6rem;
+  }
+}
+
+.section {
+  display: grid;
+  gap: $space-3;
+
+  h2 {
+    font-size: 1.15rem;
+  }
+}
+
+.card {
+  padding: $space-4;
+  border-radius: $radius-lg;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+  min-height: 36px;
+  padding: 0 $space-3;
+  border-radius: $radius-pill;
+  border: 1px solid $color-line;
+  background: $color-bg-raised;
+  color: $color-text-muted;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.chipActive {
+  background: rgba(242, 180, 90, 0.15);
+  border-color: $color-accent;
+  color: $color-accent-strong;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px $space-2;
+  border-radius: $radius-sm;
+  background: rgba(255, 255, 255, 0.08);
+  color: $color-text-muted;
+  font-size: 0.75rem;
+}
+
+.muted {
+  color: $color-text-muted;
+}

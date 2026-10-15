@@ -1,0 +1,89 @@
+@use '../styles/variables' as *;
+
+.page {
+  display: grid;
+  gap: $space-5;
+  padding-bottom: $space-8;
+
+  @include md-up {
+    padding-top: $space-5;
+  }
+}
+
+.player {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+
+  @include md-up {
+    padding: 0 $space-8;
+  }
+}
+
+.info {
+  display: grid;
+  gap: $space-4;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 $space-4;
+
+  @include md-up {
+    padding: 0 $space-8;
+  }
+}
+
+.title {
+  font-size: clamp(1.6rem, 6vw, 2.4rem);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-3;
+  font-size: 0.9rem;
+  color: $color-text-muted;
+
+  > * + *::before {
+    content: '·';
+    margin-right: $space-3;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.description {
+  white-space: pre-line;
+  max-width: 70ch;
+}
+
+.people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-3;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-1 $space-3 $space-1 $space-1;
+  border-radius: $radius-pill;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  color: $color-text;
+  text-decoration: none;
+
+  &:hover {
+    border-color: $color-accent;
+  }
+}
+
+.footnote {
+  font-size: 0.8rem;
+  color: $color-text-dim;
+}

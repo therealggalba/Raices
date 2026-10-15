@@ -1,0 +1,126 @@
+@use '../styles/variables' as *;
+
+.shell {
+  min-height: 100dvh;
+  padding-bottom: calc(#{$bottomnav-height} + env(safe-area-inset-bottom));
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  height: $topbar-height;
+  padding: 0 $space-4;
+  background: linear-gradient(to bottom, rgba(14, 13, 18, 0.96), rgba(14, 13, 18, 0.82));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+  @include md-up {
+    padding: 0 $space-8;
+  }
+}
+
+.brand {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: $radius-md;
+  background: $color-play;
+  text-decoration: none;
+}
+
+.logo {
+  color: #fff;
+  font-size: 0.9rem;
+  margin-left: 2px;
+}
+
+.channelName {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.search {
+  flex: 1 1 8rem;
+  display: flex;
+  justify-content: flex-end;
+
+  input {
+    width: 100%;
+    max-width: 18rem;
+    height: 36px;
+    padding: 0 $space-3;
+    border: 1px solid $color-line;
+    border-radius: $radius-pill;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent;
+    }
+  }
+}
+
+.hideSm {
+  display: none;
+
+  @include md-up {
+    display: inline;
+  }
+}
+
+.main {
+  min-height: calc(100dvh - #{$topbar-height} - #{$bottomnav-height});
+}
+
+.bottomnav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: calc(#{$bottomnav-height} + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(23, 21, 29, 0.97);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid $color-line;
+}
+
+.navItem {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: $touch;
+  color: $color-text-dim;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-text;
+  }
+}
+
+.navIcon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.active {
+  color: $color-accent;
+}

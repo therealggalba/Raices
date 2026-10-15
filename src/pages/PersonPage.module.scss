@@ -1,0 +1,54 @@
+@use '../styles/variables' as *;
+
+.page {
+  display: grid;
+  gap: $space-6;
+  padding: $space-6 0 $space-8;
+}
+
+.header,
+.content {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 $space-4;
+
+  @include md-up {
+    padding: 0 $space-8;
+  }
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-5;
+}
+
+.identity {
+  display: grid;
+  gap: $space-2;
+  justify-items: start;
+
+  h1 {
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+  }
+}
+
+.relationship {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $color-accent;
+}
+
+.content {
+  display: grid;
+  gap: $space-5;
+}
+
+.text {
+  white-space: pre-line;
+  max-width: 70ch;
+}

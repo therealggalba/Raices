@@ -1,0 +1,46 @@
+import type { EventType, Role, VideoCategory } from '../types/domain';
+
+export const CATEGORY_LABELS: Record<VideoCategory, string> = {
+  vacaciones: 'Vacaciones',
+  cumpleanos: 'Cumpleaños',
+  navidad: 'Navidades',
+  boda: 'Bodas',
+  comunion: 'Comuniones',
+  bautizo: 'Bautizos',
+  reunion: 'Reuniones familiares',
+  otros: 'Otros recuerdos',
+};
+
+export const CATEGORY_ICONS: Record<VideoCategory, string> = {
+  vacaciones: '🏖️',
+  cumpleanos: '🎂',
+  navidad: '🎄',
+  boda: '💍',
+  comunion: '🕊️',
+  bautizo: '👶',
+  reunion: '👨‍👩‍👧‍👦',
+  otros: '🎞️',
+};
+
+export const EVENT_LABELS: Record<EventType, string> = {
+  cumpleanos: 'Cumpleaños',
+  aniversario: 'Aniversario',
+  comunion: 'Comunión',
+  bautizo: 'Bautizo',
+  boda: 'Boda',
+  otro: 'Otro evento',
+};
+
+export const EVENT_ICONS: Record<EventType, string> = {
+  cumpleanos: '🎂',
+  aniversario: '💞',
+  comunion: '🕊️',
+  bautizo: '👶',
+  boda: '💍',
+  otro: '📌',
+};
+
+export const ROLE_LABELS: Record<Role, string> = {
+  admin: 'Administrador',
+  member: 'Miembro',
+};

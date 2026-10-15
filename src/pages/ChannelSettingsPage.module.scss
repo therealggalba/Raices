@@ -1,0 +1,91 @@
+@use '../styles/variables' as *;
+
+.text {
+  white-space: pre-line;
+}
+
+.saved {
+  align-self: center;
+  color: $color-success;
+  font-size: 0.9rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: $space-2;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-2;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+}
+
+.itemBody {
+  display: grid;
+  min-width: 0;
+}
+
+.itemMeta {
+  font-size: 0.8rem;
+  color: $color-text-muted;
+}
+
+.itemActions {
+  display: flex;
+  gap: $space-1;
+}
+
+.create {
+  display: grid;
+  gap: $space-3;
+}
+
+.code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  background: rgba(242, 180, 90, 0.1);
+  border: 1px dashed $color-accent;
+
+  code {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: $color-accent-strong;
+  }
+}
+
+.smallCode {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.status {
+  font-weight: 700;
+}
+
+.active {
+  color: $color-success;
+}
+
+.used {
+  color: $color-text;
+}
+
+.expired,
+.revoked {
+  color: $color-text-dim;
+}

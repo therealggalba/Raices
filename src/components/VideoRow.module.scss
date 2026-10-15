@@ -1,0 +1,35 @@
+@use '../styles/variables' as *;
+
+.row {
+  display: grid;
+  gap: $space-2;
+}
+
+.title {
+  padding: 0 $space-4;
+  font-family: $font-ui;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+
+  @include md-up {
+    padding: 0 $space-8;
+    font-size: 1.25rem;
+  }
+}
+
+.scroller {
+  display: flex;
+  gap: $space-2;
+  overflow-x: auto;
+  padding: $space-2 $space-4 $space-3;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 $space-4;
+  @include hide-scrollbar;
+
+  @include md-up {
+    gap: $space-3;
+    padding: $space-2 $space-8 $space-3;
+    scroll-padding: 0 $space-8;
+  }
+}
