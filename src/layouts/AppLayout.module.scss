@@ -1,0 +1,107 @@
+@use '../styles/variables' as *;
+
+.shell {
+  min-height: 100dvh;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  height: $topbar-height;
+  padding: 0 $space-4;
+  background: linear-gradient(to bottom, rgba(14, 13, 18, 0.95), rgba(14, 13, 18, 0.7) 70%, rgba(14, 13, 18, 0));
+  backdrop-filter: blur(6px);
+
+  @include md-up {
+    gap: $space-6;
+    padding: 0 $space-8;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  flex: 0 0 auto;
+  color: $color-text;
+  text-decoration: none;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-md;
+  background: $color-play;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.brandName {
+  display: none;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 1.15rem;
+
+  @include md-up {
+    display: inline;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: $space-1;
+  flex: 1;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 $space-3;
+  border-radius: $radius-pill;
+  color: $color-text-muted;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-text;
+  }
+}
+
+.active {
+  color: $color-text;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: $touch;
+  height: $touch;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: $color-text;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.main {
+  min-height: calc(100dvh - #{$topbar-height});
+}

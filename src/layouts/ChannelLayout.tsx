@@ -10,7 +10,7 @@ import { toIsoDate } from '../utils/dates';
 import styles from './ChannelLayout.module.scss';
 
 const NAV = [
-  { to: '', label: 'Inicio', icon: '⌂', end: true },
+  { to: '', label: 'Vídeos', icon: '▶', end: true },
   { to: 'cronologia', label: 'Cronología', icon: '◷' },
   { to: 'eventos', label: 'Eventos', icon: '✦' },
   { to: 'personas', label: 'Personas', icon: '☺' },
@@ -71,8 +71,8 @@ export function ChannelLayout() {
     return (
       <EmptyState icon="🔒">
         <p>{error}</p>
-        <LinkButton to="/" variant="primary">
-          Volver a mis canales
+        <LinkButton to="/canales" variant="primary">
+          Ver mis canales
         </LinkButton>
       </EmptyState>
     );
@@ -84,7 +84,7 @@ export function ChannelLayout() {
     <ChannelContext.Provider value={value}>
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link to="/" className={styles.brand} aria-label="Mis canales">
+          <Link to="/" className={styles.brand} aria-label="Volver al inicio">
             <span className={styles.logo} aria-hidden>
               ▶
             </span>
@@ -95,15 +95,15 @@ export function ChannelLayout() {
             role="search"
             onSubmit={(e) => {
               e.preventDefault();
-              if (query.trim()) navigate(`${base}/buscar?q=${encodeURIComponent(query.trim())}`);
+              if (query.trim()) navigate(`/catalogo?canal=${channelId}&q=${encodeURIComponent(query.trim())}`);
             }}
           >
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar recuerdos"
-              aria-label="Buscar recuerdos"
+              placeholder="Buscar en el canal"
+              aria-label="Buscar en este canal"
               maxLength={80}
             />
           </form>

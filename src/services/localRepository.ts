@@ -1,4 +1,4 @@
-import { ROLES, SCHEMA_VERSION } from '../types/domain';
+import { CHANNEL_KINDS, ROLES, SCHEMA_VERSION } from '../types/domain';
 import type {
   Channel,
   ChannelSnapshot,
@@ -6,11 +6,13 @@ import type {
   FamilyEvent,
   Favorite,
   Invitation,
+  Library,
   Member,
   Person,
   User,
   ValidationResult,
   Video,
+  ViewRecord,
 } from '../types/domain';
 import { newId } from '../utils/ids';
 import {
@@ -51,6 +53,7 @@ export interface Db {
   events: FamilyEvent[];
   invitations: Invitation[];
   favorites: Favorite[];
+  views: ViewRecord[];
 }
 
 export interface KeyValueStore {
@@ -84,7 +87,36 @@ export function browserStore(): KeyValueStore {
   };
 }
 
-const COLLECTIONS = ['users', 'channels', 'members', 'people', 'videos', 'events', 'invitations', 'favorites'] as const;
+const COLLECTIONS = [
+  'users',
+  'channels',
+  'members',
+  'people',
+  'videos',
+  'events',
+  'invitations',
+  'favorites',
+  'views',
+] as const;
+
+/** Kinds given to channels created before kinds existed (schema v1). */
+const V1_KINDS: Record<string, Db['channels'][number]['kind']> = {
+  'demo-familia-montero': 'familia',
+  'demo-amigos-uni': 'amigos',
+};
+
+/** Upgrades older stored documents in place; returns null when unknown. */
+export function migrateDb(data: Record<string, unknown>): Record<string, unknown> | null {
+  if (data.schemaVersion === 1) {
+    if (!Array.isArray(data.channels)) return null;
+    data.channels = data.channels.map((c: unknown) =>
+      isRecord(c) ? { ...c, kind: (typeof c.id === 'string' && V1_KINDS[c.id]) || 'otros' } : c,
+    );
+    data.views = [];
+    data.schemaVersion = 2;
+  }
+  return data.schemaVersion === SCHEMA_VERSION ? data : null;
+}
 
 /** Structural check of a stored document; anything off means "start over". */
 export function parseDb(raw: string | null): Db | null {
@@ -95,7 +127,9 @@ export function parseDb(raw: string | null): Db | null {
   } catch {
     return null;
   }
-  if (!isRecord(data) || data.schemaVersion !== SCHEMA_VERSION || !isId(data.currentUserId)) return null;
+  if (!isRecord(data)) return null;
+  data = migrateDb(data);
+  if (!data || !isRecord(data) || !isId(data.currentUserId)) return null;
   for (const key of COLLECTIONS) {
     const list = data[key];
     if (!Array.isArray(list) || !list.every(isRecord)) return null;
@@ -103,6 +137,7 @@ export function parseDb(raw: string | null): Db | null {
   const db = data as unknown as Db;
   if (!db.users.some((u) => u.id === db.currentUserId)) return null;
   if (!db.members.every((m) => (ROLES as readonly string[]).includes(m.role))) return null;
+  if (!db.channels.every((c) => (CHANNEL_KINDS as readonly string[]).includes(c.kind))) return null;
   return db;
 }
 
@@ -184,6 +219,7 @@ export function createLocalRepository({
     db.events = inChannel(db.events);
     db.invitations = inChannel(db.invitations);
     db.favorites = inChannel(db.favorites);
+    db.views = inChannel(db.views);
   }
 
   const repo: MemoriesRepository = {
@@ -210,6 +246,38 @@ export function createLocalRepository({
           videoCount: db.videos.filter((v) => v.channelId === m.channelId).length,
         }));
       return clone(summaries.sort((a, b) => a.channel.name.localeCompare(b.channel.name, 'es')));
+    },
+
+    async loadLibrary() {
+      const mine = db.members.filter((m) => m.userId === db.currentUserId);
+      const ids = new Set(mine.map((m) => m.channelId));
+      const inMine = <T extends { channelId: string }>(list: T[]) => list.filter((x) => ids.has(x.channelId));
+      const viewCounts: Record<string, number> = {};
+      for (const view of inMine(db.views)) viewCounts[view.videoId] = (viewCounts[view.videoId] ?? 0) + 1;
+      const library: Library = {
+        channels: mine
+          .map((m) => {
+            const c = findChannel(m.channelId);
+            return { id: c.id, name: c.name, kind: c.kind, role: m.role };
+          })
+          .sort((a, b) => a.name.localeCompare(b.name, 'es')),
+        videos: inMine(db.videos),
+        people: inMine(db.people),
+        events: inMine(db.events),
+        viewCounts,
+        favoriteVideoIds: inMine(db.favorites)
+          .filter((f) => f.userId === db.currentUserId)
+          .map((f) => f.videoId),
+      };
+      return clone(library);
+    },
+
+    async recordView(videoId) {
+      const video = db.videos.find((v) => v.id === videoId);
+      if (!video) throw new RepositoryError('not-found', 'El vídeo no existe');
+      requireMember(video.channelId);
+      db.views.push({ channelId: video.channelId, videoId, userId: db.currentUserId, at: nowIso() });
+      commit();
     },
 
     async createChannel(input) {
@@ -246,6 +314,7 @@ export function createLocalRepository({
       const channel = findChannel(channelId);
       channel.name = value.name;
       channel.description = value.description;
+      channel.kind = value.kind;
       if (value.coverUrl) channel.coverUrl = value.coverUrl;
       else delete channel.coverUrl;
       commit();
@@ -369,6 +438,7 @@ export function createLocalRepository({
       findIn(db.videos, channelId, videoId, 'El vídeo');
       db.videos = db.videos.filter((v) => v.id !== videoId);
       db.favorites = db.favorites.filter((f) => f.videoId !== videoId);
+      db.views = db.views.filter((v) => v.videoId !== videoId);
       commit();
     },
 

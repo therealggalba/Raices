@@ -5,15 +5,38 @@
   gap: $space-2;
 }
 
-.title {
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $space-3;
   padding: 0 $space-4;
+
+  @include md-up {
+    justify-content: flex-start;
+    padding: 0 $space-8;
+  }
+}
+
+.more {
+  flex: 0 0 auto;
+  color: $color-accent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.title {
   font-family: $font-ui;
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: 0;
 
   @include md-up {
-    padding: 0 $space-8;
     font-size: 1.25rem;
   }
 }

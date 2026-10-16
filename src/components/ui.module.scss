@@ -199,6 +199,7 @@ textarea.input {
   margin: 0 auto;
   padding: $space-5 $space-4 $space-8;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: $space-5;
   align-content: start;
 }

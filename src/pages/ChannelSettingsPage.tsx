@@ -6,9 +6,10 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import type { Invitation, Member } from '../types/domain';
+import { CHANNEL_KINDS } from '../types/domain';
+import type { ChannelKind, Invitation, Member } from '../types/domain';
 import { EXPIRY_OPTIONS_DAYS, STATUS_LABELS, invitationStatus } from '../utils/invitations';
-import { ROLE_LABELS } from '../utils/labels';
+import { CHANNEL_KIND_LABELS, ROLE_LABELS } from '../utils/labels';
 import styles from './ChannelSettingsPage.module.scss';
 
 const dateTime = (iso: string) =>
@@ -36,6 +37,7 @@ function ChannelInfoForm() {
   const { run, pending, error } = useAction();
   const [name, setName] = useState(channel.name);
   const [description, setDescription] = useState(channel.description);
+  const [kind, setKind] = useState<ChannelKind>(channel.kind);
   const [coverUrl, setCoverUrl] = useState(channel.coverUrl ?? '');
   const [saved, setSaved] = useState(false);
 
@@ -46,7 +48,7 @@ function ChannelInfoForm() {
         e.preventDefault();
         setSaved(false);
         const done = await run(async () => {
-          await repository.updateChannel(channel.id, { name, description, ...(coverUrl.trim() ? { coverUrl } : {}) });
+          await repository.updateChannel(channel.id, { name, description, kind, ...(coverUrl.trim() ? { coverUrl } : {}) });
           return true;
         });
         if (done) {
@@ -58,6 +60,15 @@ function ChannelInfoForm() {
       <h2>Datos del canal</h2>
       <Field label="Nombre" htmlFor="name">
         <input id="name" className={ui.input} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
+      </Field>
+      <Field label="Tipo de canal" htmlFor="kind" hint="Inicio solo mezcla en una misma fila vídeos de canales del mismo tipo">
+        <select id="kind" className={ui.input} value={kind} onChange={(e) => setKind(e.target.value as ChannelKind)}>
+          {CHANNEL_KINDS.map((k) => (
+            <option key={k} value={k}>
+              {CHANNEL_KIND_LABELS[k]}
+            </option>
+          ))}
+        </select>
       </Field>
       <Field label="Descripción" htmlFor="description">
         <textarea id="description" className={ui.input} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />

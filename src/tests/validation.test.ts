@@ -70,9 +70,11 @@ describe('validateVideoInput', () => {
 
 describe('other inputs', () => {
   it('validates channels', () => {
-    expect(validateChannelInput({ name: 'Familia', description: '' }).ok).toBe(true);
-    expect(validateChannelInput({ name: '', description: '' }).ok).toBe(false);
-    expect(validateChannelInput({ name: 'F', description: '', coverUrl: 'ftp://x' }).ok).toBe(false);
+    expect(validateChannelInput({ name: 'Familia', description: '', kind: 'familia' }).ok).toBe(true);
+    expect(validateChannelInput({ name: '', description: '', kind: 'familia' }).ok).toBe(false);
+    expect(validateChannelInput({ name: 'F', description: '', kind: 'familia', coverUrl: 'ftp://x' }).ok).toBe(false);
+    expect(validateChannelInput({ name: 'F', description: '' }).ok).toBe(false);
+    expect(validateChannelInput({ name: 'F', description: '', kind: 'trabajo' }).ok).toBe(false);
   });
 
   it('validates people', () => {

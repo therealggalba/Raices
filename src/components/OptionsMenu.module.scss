@@ -1,0 +1,177 @@
+@use '../styles/variables' as *;
+
+.root {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: $touch;
+  padding: 0 $space-1;
+  border: 0;
+  background: transparent;
+  color: $color-text;
+}
+
+.avatar,
+.bigAvatar,
+.channelInitial {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: $radius-md;
+  background: linear-gradient(135deg, $color-accent, $color-play);
+  color: #1b1408;
+  font-weight: 800;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 0.8rem;
+}
+
+.bigAvatar {
+  width: 44px;
+  height: 44px;
+  font-size: 1rem;
+}
+
+.channelInitial {
+  width: 36px;
+  height: 36px;
+  background: $color-bg-hover;
+  color: $color-text;
+  font-family: $font-display;
+}
+
+.caret {
+  font-size: 0.7rem;
+  color: $color-text-muted;
+}
+
+.panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + #{$space-2});
+  z-index: 40;
+  display: grid;
+  gap: $space-2;
+  width: min(340px, calc(100vw - 2 * #{$space-4}));
+  max-height: calc(100dvh - #{$topbar-height} - #{$space-6});
+  overflow-y: auto;
+  padding: $space-3;
+  border-radius: $radius-lg;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  animation: drop 0.15s ease-out;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.profile {
+  padding-bottom: $space-2;
+  border-bottom: 1px solid $color-line;
+}
+
+.profileButton {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  width: 100%;
+  padding: $space-2;
+  border: 0;
+  border-radius: $radius-md;
+  background: transparent;
+  text-align: left;
+
+  > span:last-child {
+    display: grid;
+  }
+
+  &:hover {
+    background: $color-bg-hover;
+  }
+}
+
+.nameForm {
+  display: flex;
+  gap: $space-2;
+}
+
+.group {
+  display: grid;
+  gap: 2px;
+  padding-bottom: $space-2;
+  border-bottom: 1px solid $color-line;
+}
+
+.groupTitle {
+  padding: $space-2 $space-2 $space-1;
+  font-family: $font-ui;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: $color-text-dim;
+}
+
+.channelList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  width: 100%;
+  min-height: $touch;
+  padding: $space-1 $space-2;
+  border: 0;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $color-text;
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+
+  &:hover:not(:disabled) {
+    background: $color-bg-hover;
+  }
+}
+
+.itemText {
+  display: grid;
+  min-width: 0;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  color: $color-accent;
+  font-size: 1.1rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: $color-text-muted;
+}
+
+.footnote {
+  padding: $space-1 $space-2;
+  font-size: 0.75rem;
+  color: $color-text-dim;
+}

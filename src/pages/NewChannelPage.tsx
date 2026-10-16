@@ -4,11 +4,15 @@ import { Button, ErrorBanner, Field, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useAction } from '../hooks/useAction';
 import { repository } from '../services';
+import { CHANNEL_KINDS } from '../types/domain';
+import type { ChannelKind } from '../types/domain';
+import { CHANNEL_KIND_LABELS } from '../utils/labels';
 
 export function NewChannelPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [kind, setKind] = useState<ChannelKind>('familia');
   const { run, pending, error } = useAction();
 
   return (
@@ -24,7 +28,7 @@ export function NewChannelPage() {
         className={[ui.form, ui.card].join(' ')}
         onSubmit={async (e) => {
           e.preventDefault();
-          const id = await run(() => repository.createChannel({ name, description }));
+          const id = await run(() => repository.createChannel({ name, description, kind }));
           if (id) navigate(`/c/${id}`);
         }}
       >
@@ -38,6 +42,15 @@ export function NewChannelPage() {
             maxLength={80}
             required
           />
+        </Field>
+        <Field label="Tipo de canal" htmlFor="kind" hint="Inicio solo mezcla en una misma fila vídeos de canales del mismo tipo">
+          <select id="kind" className={ui.input} value={kind} onChange={(e) => setKind(e.target.value as ChannelKind)}>
+            {CHANNEL_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {CHANNEL_KIND_LABELS[k]}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Descripción" htmlFor="description">
           <textarea

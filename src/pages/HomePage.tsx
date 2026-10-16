@@ -1,36 +1,47 @@
-import { Link } from 'react-router-dom';
 import { EventItem } from '../components/EventItem';
 import { Hero } from '../components/Hero';
-import { PersonAvatar } from '../components/PersonAvatar';
 import { EmptyState, LinkButton } from '../components/ui';
 import { VideoRow } from '../components/VideoRow';
-import { useChannel } from '../hooks/channel-context';
-import { buildCatalogRows, featuredVideo } from '../utils/catalog';
+import { useLibrary } from '../hooks/library-context';
+import { featuredVideo } from '../utils/catalog';
 import { eventAlerts, upcomingEvents } from '../utils/events';
-import { sortPeople } from '../utils/people';
+import { buildHomeRows } from '../utils/home';
 import styles from './HomePage.module.scss';
 
-/** VOD-style home: hero, upcoming-event alerts, rows by category, people. */
+/**
+ * Global home: a curated selection of every channel's videos, mixed. The
+ * complete list (with filters) is the catalog.
+ */
 export function HomePage() {
-  const { snapshot, today, isAdmin } = useChannel();
-  const { channel, videos, people, events, favoriteVideoIds } = snapshot;
+  const { library, today, channelById } = useLibrary();
+  const { videos, people, events, favoriteVideoIds } = library;
+
+  if (!library.channels.length) {
+    return (
+      <EmptyState icon="📼">
+        <h1>Bienvenido a FamilyMemories</h1>
+        <p>Únete al canal de tu familia con un código de invitación o crea uno nuevo.</p>
+        <div className={styles.emptyActions}>
+          <LinkButton to="/unirse">Unirme con código</LinkButton>
+          <LinkButton to="/nuevo" variant="primary">
+            Crear canal
+          </LinkButton>
+        </div>
+      </EmptyState>
+    );
+  }
+
   const hero = featuredVideo(videos);
-  const rows = buildCatalogRows(videos, favoriteVideoIds);
+  const rows = buildHomeRows(library, today);
   const alerts = eventAlerts(upcomingEvents(events, people, today));
 
   return (
     <div className={styles.home}>
       {hero ? (
-        <Hero video={hero} channelId={channel.id} />
+        <Hero video={hero} kicker={`${channelById(hero.channelId)?.name ?? ''} · último recuerdo añadido`} />
       ) : (
         <EmptyState icon="📼">
-          <h1>{channel.name}</h1>
-          <p>Este canal todavía no tiene recuerdos.</p>
-          {isAdmin && (
-            <LinkButton to={`/c/${channel.id}/subir`} variant="primary">
-              Añadir el primer vídeo
-            </LinkButton>
-          )}
+          <p>Tus canales todavía no tienen vídeos.</p>
         </EmptyState>
       )}
 
@@ -39,7 +50,7 @@ export function HomePage() {
           <h2 className={styles.rowTitle}>No te olvides</h2>
           <div className={styles.alertList}>
             {alerts.map((event) => (
-              <EventItem key={event.key} event={event} people={people} channelId={channel.id} highlight />
+              <EventItem key={event.key} event={event} people={people} highlight />
             ))}
           </div>
         </section>
@@ -50,23 +61,18 @@ export function HomePage() {
           key={row.id}
           title={row.title}
           videos={row.videos}
-          channelId={channel.id}
           favoriteIds={favoriteVideoIds}
+          ranked={row.ranked}
+          moreTo={row.catalogQuery !== undefined ? `/catalogo?${row.catalogQuery}` : undefined}
         />
       ))}
 
-      {people.length > 0 && (
-        <section className={styles.people} aria-label="Personas">
-          <h2 className={styles.rowTitle}>Las personas del canal</h2>
-          <div className={styles.peopleScroller}>
-            {sortPeople(people).map((person) => (
-              <Link key={person.id} to={`/c/${channel.id}/personas/${person.id}`} className={styles.person}>
-                <PersonAvatar person={person} size={72} />
-                <span>{person.firstName}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
+      {videos.length > 0 && (
+        <div className={styles.catalogCta}>
+          <LinkButton to="/catalogo" variant="secondary">
+            Explorar el catálogo completo · {videos.length} vídeos
+          </LinkButton>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
-import { EVENT_TYPES, VIDEO_CATEGORIES } from '../types/domain';
+import { CHANNEL_KINDS, EVENT_TYPES, VIDEO_CATEGORIES } from '../types/domain';
 import type {
   ChannelInput,
+  ChannelKind,
   EventInput,
   EventType,
   PersonInput,
@@ -41,6 +42,10 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function isVideoCategory(value: unknown): value is VideoCategory {
   return typeof value === 'string' && (VIDEO_CATEGORIES as readonly string[]).includes(value);
+}
+
+export function isChannelKind(value: unknown): value is ChannelKind {
+  return typeof value === 'string' && (CHANNEL_KINDS as readonly string[]).includes(value);
 }
 
 export function isEventType(value: unknown): value is EventType {
@@ -122,9 +127,13 @@ export function validateChannelInput(input: unknown): ValidationResult<ChannelIn
     required: false,
     multiline: true,
   });
+  if (!isChannelKind(input.kind)) errors.push('Tipo de canal: inválido');
   const coverUrl = readOptionalUrl(input, 'coverUrl', 'Portada', errors);
   if (errors.length) return { ok: false, errors };
-  return { ok: true, value: { name, description, ...(coverUrl ? { coverUrl } : {}) } };
+  return {
+    ok: true,
+    value: { name, description, kind: input.kind as ChannelKind, ...(coverUrl ? { coverUrl } : {}) },
+  };
 }
 
 export function validatePersonInput(input: unknown): ValidationResult<PersonInput> {

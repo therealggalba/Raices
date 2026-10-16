@@ -8,11 +8,10 @@ import styles from './EventItem.module.scss';
 interface Props {
   event: UpcomingEvent;
   people: readonly Person[];
-  channelId: string;
   highlight?: boolean;
 }
 
-export function EventItem({ event, people, channelId, highlight }: Props) {
+export function EventItem({ event, people, highlight }: Props) {
   const subtitle = occurrenceSubtitle(event, people);
   const tagged = event.personIds.map((id) => people.find((p) => p.id === id)).filter((p): p is Person => !!p);
   return (
@@ -31,7 +30,7 @@ export function EventItem({ event, people, channelId, highlight }: Props) {
             {tagged.map((p, i) => (
               <span key={p.id}>
                 {i > 0 && ', '}
-                <Link to={`/c/${channelId}/personas/${p.id}`}>{p.firstName}</Link>
+                <Link to={`/c/${p.channelId}/personas/${p.id}`}>{p.firstName}</Link>
               </span>
             ))}
           </p>

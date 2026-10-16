@@ -1,0 +1,76 @@
+@use '../styles/variables' as *;
+
+.home {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-5;
+  padding-bottom: $space-8;
+  margin-top: calc(-1 * #{$topbar-height});
+}
+
+.rowTitle {
+  font-family: $font-ui;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+
+  @include md-up {
+    font-size: 1.25rem;
+  }
+}
+
+.alerts {
+  display: grid;
+  gap: $space-2;
+  padding: 0 $space-4;
+
+  @include md-up {
+    padding: 0 $space-8;
+  }
+}
+
+.alertList {
+  display: grid;
+  gap: $space-2;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+
+.people {
+  display: grid;
+  gap: $space-2;
+
+  .rowTitle {
+    padding: 0 $space-4;
+
+    @include md-up {
+      padding: 0 $space-8;
+    }
+  }
+}
+
+.peopleScroller {
+  display: flex;
+  gap: $space-4;
+  overflow-x: auto;
+  padding: $space-2 $space-4;
+  @include hide-scrollbar;
+
+  @include md-up {
+    padding: $space-2 $space-8;
+  }
+}
+
+.person {
+  display: grid;
+  justify-items: center;
+  gap: $space-1;
+  flex: 0 0 auto;
+  width: 84px;
+  color: $color-text-muted;
+  font-size: 0.85rem;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-text;
+  }
+}

@@ -59,7 +59,7 @@ export function VideoFormPage() {
 
   const media = mediaUrl.trim() ? resolveMedia(mediaUrl) : null;
   const durationSeconds = parseDurationInput(duration);
-  const back = existing ? `/c/${channel.id}/v/${existing.id}` : `/c/${channel.id}`;
+  const back = existing ? `/v/${existing.id}` : `/c/${channel.id}`;
 
   async function submit() {
     if (Number.isNaN(durationSeconds)) {
@@ -86,7 +86,7 @@ export function VideoFormPage() {
     });
     if (id) {
       await reload();
-      navigate(`/c/${channel.id}/v/${id}`, { replace: true });
+      navigate(`/v/${id}`, { replace: true });
     }
   }
 

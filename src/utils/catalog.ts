@@ -71,7 +71,7 @@ export function buildTimeline(videos: readonly Video[]): TimelineYear[] {
 }
 
 function fold(value: string): string {
-  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 /** Accent-insensitive search on title, description, tags and people names. */

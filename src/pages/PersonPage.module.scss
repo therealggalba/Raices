@@ -2,6 +2,7 @@
 
 .page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: $space-6;
   padding: $space-6 0 $space-8;
 }

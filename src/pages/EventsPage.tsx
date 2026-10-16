@@ -67,7 +67,6 @@ export function EventsPage() {
                   <EventItem
                     event={event}
                     people={people}
-                    channelId={channel.id}
                     highlight={event.daysUntil <= ALERT_WINDOW_DAYS}
                   />
                   {isAdmin && stored && (

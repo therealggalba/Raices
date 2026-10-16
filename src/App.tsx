@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { EmptyState, LinkButton } from './components/ui';
+import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
+import { CatalogPage } from './pages/CatalogPage';
+import { ChannelHomePage } from './pages/ChannelHomePage';
 import { ChannelSettingsPage } from './pages/ChannelSettingsPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { EventsPage } from './pages/EventsPage';
@@ -12,7 +15,6 @@ import { NewChannelPage } from './pages/NewChannelPage';
 import { PeoplePage } from './pages/PeoplePage';
 import { PersonFormPage } from './pages/PersonFormPage';
 import { PersonPage } from './pages/PersonPage';
-import { SearchPage } from './pages/SearchPage';
 import { TimelinePage } from './pages/TimelinePage';
 import { VideoFormPage } from './pages/VideoFormPage';
 import { VideoPage } from './pages/VideoPage';
@@ -35,10 +37,16 @@ function NotFound() {
     <EmptyState icon="🧭">
       <p>Esta página no existe.</p>
       <LinkButton to="/" variant="primary">
-        Ir a mis canales
+        Ir al inicio
       </LinkButton>
     </EmptyState>
   );
+}
+
+/** Old per-channel video URLs now live at /v/:videoId. */
+function ChannelVideoRedirect() {
+  const { videoId } = useParams();
+  return <Navigate to={`/v/${videoId}`} replace />;
 }
 
 export default function App() {
@@ -47,14 +55,19 @@ export default function App() {
       <BrowserRouter basename={basename}>
         <ScrollToTop />
         <Routes>
-          <Route index element={<ChannelsPage />} />
-          <Route path="unirse" element={<JoinPage />} />
-          <Route path="nuevo" element={<NewChannelPage />} />
-          <Route path="c/:channelId" element={<ChannelLayout />}>
+          <Route element={<AppLayout />}>
             <Route index element={<HomePage />} />
-            <Route path="buscar" element={<SearchPage />} />
-            <Route path="subir" element={<VideoFormPage />} />
+            <Route path="catalogo" element={<CatalogPage />} />
             <Route path="v/:videoId" element={<VideoPage />} />
+            <Route path="canales" element={<ChannelsPage />} />
+            <Route path="unirse" element={<JoinPage />} />
+            <Route path="nuevo" element={<NewChannelPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+          <Route path="c/:channelId" element={<ChannelLayout />}>
+            <Route index element={<ChannelHomePage />} />
+            <Route path="subir" element={<VideoFormPage />} />
+            <Route path="v/:videoId" element={<ChannelVideoRedirect />} />
             <Route path="v/:videoId/editar" element={<VideoFormPage />} />
             <Route path="cronologia" element={<TimelinePage />} />
             <Route path="eventos" element={<EventsPage />} />
@@ -65,7 +78,6 @@ export default function App() {
             <Route path="canal" element={<ChannelSettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>
-          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </ErrorBoundary>

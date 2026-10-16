@@ -68,7 +68,7 @@ export function PersonPage() {
           <section className={ui.section}>
             <h2>Próximas fechas</h2>
             {theirEvents.map((event) => (
-              <EventItem key={event.key} event={event} people={people} channelId={channel.id} />
+              <EventItem key={event.key} event={event} people={people} />
             ))}
           </section>
         )}
@@ -78,7 +78,6 @@ export function PersonPage() {
         <VideoRow
           title={`Recuerdos con ${person.firstName}`}
           videos={theirVideos}
-          channelId={channel.id}
           favoriteIds={favoriteVideoIds}
         />
       ) : (

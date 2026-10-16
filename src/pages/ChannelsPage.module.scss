@@ -1,57 +1,9 @@
 @use '../styles/variables' as *;
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $space-3;
-  flex-wrap: wrap;
-}
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: $space-2;
-  font-family: $font-display;
-  font-weight: 700;
-  font-size: 1.25rem;
-}
 
-.logo {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: $radius-md;
-  background: $color-play;
-  color: #fff;
-  font-size: 0.8rem;
-}
 
-.nameForm {
-  display: flex;
-  gap: $space-2;
-  align-items: center;
 
-  input {
-    width: 11rem;
-  }
-}
-
-.intro {
-  display: grid;
-  gap: $space-3;
-  padding: $space-4 0;
-
-  h1 {
-    font-size: clamp(1.8rem, 6vw, 2.8rem);
-    max-width: 18ch;
-  }
-
-  p {
-    max-width: 60ch;
-  }
-}
 
 .grid {
   display: grid;
@@ -113,10 +65,4 @@
 .admin {
   background: rgba(242, 180, 90, 0.15);
   color: $color-accent-strong;
-}
-
-.footer {
-  display: flex;
-  justify-content: center;
-  padding-top: $space-6;
 }

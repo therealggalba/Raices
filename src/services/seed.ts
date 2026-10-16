@@ -1,5 +1,5 @@
 import { SCHEMA_VERSION } from '../types/domain';
-import type { FamilyEvent, Invitation, Member, Person, User, Video, VideoCategory } from '../types/domain';
+import type { FamilyEvent, Invitation, Member, Person, User, Video, VideoCategory, ViewRecord } from '../types/domain';
 import { addDays, sameDayInYear, toIsoDate } from '../utils/dates';
 import { newId } from '../utils/ids';
 import type { Db } from './localRepository';
@@ -11,6 +11,7 @@ import type { Db } from './localRepository';
 
 export const DEMO_FAMILY_ID = 'demo-familia-montero';
 export const DEMO_FRIENDS_ID = 'demo-amigos-uni';
+export const DEMO_COUSINS_ID = 'demo-primos-sanz';
 
 const CLIPS = [
   'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
@@ -30,6 +31,7 @@ export function buildDemoDb(now: Date): Db {
     { id: 'u-carlos', name: 'Carlos' },
     { id: 'u-marta', name: 'Marta' },
     { id: 'u-javi', name: 'Javi' },
+    { id: 'u-rosa', name: 'Rosa' },
   ];
 
   const member = (channelId: string, id: string, displayName: string, role: Member['role'], daysAgo: number): Member => ({
@@ -48,6 +50,9 @@ export function buildDemoDb(now: Date): Db {
     member(DEMO_FRIENDS_ID, 'u-marta', 'Marta', 'admin', 300),
     member(DEMO_FRIENDS_ID, userId, 'Invitado', 'member', 200),
     member(DEMO_FRIENDS_ID, 'u-javi', 'Javi', 'member', 190),
+    member(DEMO_COUSINS_ID, 'u-rosa', 'Rosa', 'admin', 400),
+    member(DEMO_COUSINS_ID, userId, 'Invitado', 'member', 150),
+    member(DEMO_COUSINS_ID, 'u-elena', 'Elena', 'member', 150),
   ];
 
   const person = (id: string, p: Omit<Person, 'id' | 'channelId' | 'notes'> & { notes?: string }): Person => ({
@@ -205,35 +210,73 @@ export function buildDemoDb(now: Date): Db {
   ];
   members.find((m) => m.userId === 'u-carlos')!.invitationId = 'i-demo-used';
 
+  const other = (
+    channelId: string,
+    id: string,
+    title: string,
+    eventDate: string,
+    category: VideoCategory,
+    description: string,
+    daysAgo: number,
+    authorId: string,
+    tags: string[] = [],
+  ): Video => ({
+    id,
+    channelId,
+    title,
+    description,
+    mediaUrl: CLIPS[daysAgo % CLIPS.length],
+    eventDate,
+    uploadedAt: iso(daysAgo),
+    durationSeconds: 60 + (daysAgo * 37) % 540,
+    category,
+    tags,
+    personIds: [],
+    authorId,
+  });
+
   const friendsVideos: Video[] = [
-    {
-      id: 'v-demo-uni-1',
-      channelId: DEMO_FRIENDS_ID,
-      title: 'Viaje de fin de carrera',
-      description: 'Praga, Viena y Budapest en tren. Cinco amigos y una sola maleta grande.',
-      mediaUrl: CLIPS[0],
-      eventDate: '2004-07',
-      uploadedAt: iso(150),
-      durationSeconds: 420,
-      category: 'vacaciones',
-      tags: ['interrail'],
-      personIds: [],
-      authorId: 'u-marta',
-    },
-    {
-      id: 'v-demo-uni-2',
-      channelId: DEMO_FRIENDS_ID,
-      title: 'Cena de los 20 años',
-      description: 'Reencuentro en el mismo bar de siempre, que sigue igual.',
-      mediaUrl: CLIPS[1],
-      eventDate: '2024-11',
-      uploadedAt: iso(100),
-      category: 'reunion',
-      tags: [],
-      personIds: [],
-      authorId: 'u-marta',
-    },
+    other(DEMO_FRIENDS_ID, 'v-demo-uni-1', 'Viaje de fin de carrera', '2004-07', 'vacaciones',
+      'Praga, Viena y Budapest en tren. Cinco amigos y una sola maleta grande.', 150, 'u-marta', ['interrail']),
+    other(DEMO_FRIENDS_ID, 'v-demo-uni-2', 'Cena de los 20 años', '2024-11', 'reunion',
+      'Reencuentro en el mismo bar de siempre, que sigue igual.', 100, 'u-marta'),
+    other(DEMO_FRIENDS_ID, 'v-demo-uni-3', 'Fiesta de la primavera', '2002-04', 'otros',
+      'La fiesta de la facultad en la que Javi acabó en la fuente.', 140, 'u-javi'),
+    other(DEMO_FRIENDS_ID, 'v-demo-uni-4', 'Los 30 de Marta', '2012-10-20', 'cumpleanos',
+      'Cena sorpresa en Malasaña. Marta no sospechó nada.', 120, 'u-javi'),
+    other(DEMO_FRIENDS_ID, 'v-demo-uni-5', 'Boda de Javi y Laura', '2015-09', 'boda',
+      'El grupo al completo, el baile de los novios y la tuna sorpresa.', 70, 'u-marta'),
+    other(DEMO_FRIENDS_ID, 'v-demo-uni-6', 'Escapada a Lisboa', '2019-10', 'vacaciones',
+      'Puente de octubre: tranvía 28, pasteles de Belém y fado.', 30, 'u-marta', ['lisboa']),
   ];
+
+  const cousinsVideos: Video[] = [
+    other(DEMO_COUSINS_ID, 'v-demo-sanz-1', 'Nochevieja en el pueblo', '1994-12-31', 'navidad',
+      'Las uvas con campanadas en directo desde la plaza. Los primos con los gorros de papel.', 200, 'u-rosa'),
+    other(DEMO_COUSINS_ID, 'v-demo-sanz-2', 'Verano en la casa de Asturias', '2001-08', 'vacaciones',
+      'Un mes entero de bicis, río y sidra (solo para los mayores).', 180, 'u-rosa', ['asturias']),
+    other(DEMO_COUSINS_ID, 'v-demo-sanz-3', 'Comunión de Lucía', '2010-05', 'comunion',
+      'La prima Lucía y su vestido con lazo azul.', 160, 'u-rosa'),
+    other(DEMO_COUSINS_ID, 'v-demo-sanz-4', 'Boda de Rosa y Andrés', '2008-10-11', 'boda',
+      'Boda en otoño en el monasterio. Llovió, pero dio igual.', 45, 'u-rosa'),
+    other(DEMO_COUSINS_ID, 'v-demo-sanz-5', 'Reyes en casa de la tía Pilar', '2022-01-06', 'navidad',
+      'Roscón, regalos y la tradicional pelea por el haba.', 12, 'u-elena'),
+  ];
+
+  // Demo playbacks so "Lo más visto" has something to rank.
+  const viewsPlan: Record<string, number> = {
+    'v-demo-1': 14, 'v-demo-3': 9, 'v-demo-5': 11, 'v-demo-9': 7, 'v-demo-12': 5, 'v-demo-14': 3,
+    'v-demo-uni-1': 12, 'v-demo-uni-5': 6, 'v-demo-sanz-1': 8, 'v-demo-sanz-4': 4,
+  };
+  const everyVideo = [...videos, ...friendsVideos, ...cousinsVideos];
+  const views: ViewRecord[] = [];
+  for (const [videoId, count] of Object.entries(viewsPlan)) {
+    const channelId = everyVideo.find((v) => v.id === videoId)!.channelId;
+    const viewers = members.filter((m) => m.channelId === channelId && m.userId !== userId);
+    for (let i = 0; i < count; i++) {
+      views.push({ channelId, videoId, userId: viewers[i % viewers.length].userId, at: iso(20 - (i % 20)) });
+    }
+  }
 
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -244,6 +287,7 @@ export function buildDemoDb(now: Date): Db {
         id: DEMO_FAMILY_ID,
         name: 'Familia Montero',
         description: 'Los recuerdos de tres generaciones: de las películas en Super 8 de los abuelos a los vídeos del móvil de Natalia.',
+        kind: 'familia',
         createdAt: iso(120),
         createdBy: userId,
       },
@@ -251,18 +295,29 @@ export function buildDemoDb(now: Date): Db {
         id: DEMO_FRIENDS_ID,
         name: 'Amigos de la Universidad',
         description: 'Promoción 2000-2004. Viajes, cenas y reencuentros.',
+        kind: 'amigos',
         createdAt: iso(300),
         createdBy: 'u-marta',
+      },
+      {
+        id: DEMO_COUSINS_ID,
+        name: 'Primos Sanz',
+        description: 'La rama de la familia de Elena: veranos en Asturias y Nocheviejas en el pueblo.',
+        kind: 'familia',
+        createdAt: iso(400),
+        createdBy: 'u-rosa',
       },
     ],
     members,
     people,
-    videos: [...videos, ...friendsVideos],
+    videos: everyVideo,
     events,
     invitations,
     favorites: [
       { channelId: DEMO_FAMILY_ID, userId, videoId: 'v-demo-1' },
       { channelId: DEMO_FAMILY_ID, userId, videoId: 'v-demo-9' },
+      { channelId: DEMO_FRIENDS_ID, userId, videoId: 'v-demo-uni-6' },
     ],
+    views,
   };
 }

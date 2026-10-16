@@ -6,7 +6,6 @@ import styles from './VideoCard.module.scss';
 
 interface Props {
   video: Video;
-  channelId: string;
   favorite?: boolean;
   /** Big rank number on the left, like a "Top 10" row. */
   rank?: number;
@@ -14,10 +13,10 @@ interface Props {
   caption?: string;
 }
 
-export function VideoCard({ video, channelId, favorite, rank, caption }: Props) {
+export function VideoCard({ video, favorite, rank, caption }: Props) {
   return (
     <Link
-      to={`/c/${channelId}/v/${video.id}`}
+      to={`/v/${video.id}`}
       className={[styles.card, rank ? styles.ranked : '', caption !== undefined ? styles.captioned : ''].join(' ')}
       aria-label={`${video.title}, ${formatPartialDate(video.eventDate)}`}
     >

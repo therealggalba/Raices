@@ -5,6 +5,7 @@ import type {
   EventInput,
   FamilyEvent,
   Invitation,
+  Library,
   Person,
   PersonInput,
   Role,
@@ -28,6 +29,10 @@ export interface MemoriesRepository {
   renameCurrentUser(name: string): Promise<User>;
 
   listChannels(): Promise<ChannelSummary[]>;
+  /** Every video (plus related data) of every channel the user belongs to. */
+  loadLibrary(): Promise<Library>;
+  /** Registers one playback of a video by the current user. */
+  recordView(videoId: string): Promise<void>;
   /** Creates a channel; the creator becomes its first admin. */
   createChannel(input: ChannelInput): Promise<string>;
   loadChannel(channelId: string): Promise<ChannelSnapshot>;

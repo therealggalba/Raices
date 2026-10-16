@@ -110,6 +110,11 @@ export function formatPartialDate(value: PartialDate): string {
   return p.day === undefined ? `${month} ${p.year}` : `${p.day} ${month} ${p.year}`;
 }
 
+/** "octubre" for 10. */
+export function monthName(month: number): string {
+  return MONTHS_LONG[month - 1] ?? '';
+}
+
 /** "14 de julio". */
 export function formatDayMonth(value: IsoDate): string {
   const p = parsePartialDate(value);

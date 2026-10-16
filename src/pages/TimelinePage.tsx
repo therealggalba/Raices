@@ -51,7 +51,6 @@ export function TimelinePage() {
                 <li key={video.id} className={styles.entry}>
                   <VideoCard
                     video={video}
-                    channelId={snapshot.channel.id}
                     favorite={favs.has(video.id)}
                     caption={formatPartialDate(video.eventDate)}
                   />

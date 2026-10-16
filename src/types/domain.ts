@@ -10,7 +10,14 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+/**
+ * What a channel is about. Thematic home rows only mix videos from channels
+ * of the same kind (family Christmases are not mixed with friends' trips).
+ */
+export const CHANNEL_KINDS = ['familia', 'amigos', 'viajes', 'otros'] as const;
+export type ChannelKind = (typeof CHANNEL_KINDS)[number];
 
 export const ROLES = ['admin', 'member'] as const;
 export type Role = (typeof ROLES)[number];
@@ -47,6 +54,7 @@ export interface Channel {
   id: string;
   name: string;
   description: string;
+  kind: ChannelKind;
   /** Optional https image used as the channel cover. */
   coverUrl?: string;
   createdAt: IsoDateTime;
@@ -121,6 +129,14 @@ export interface Invitation {
 
 export type InvitationStatus = 'active' | 'used' | 'expired' | 'revoked';
 
+/** One playback of a video by a member ("Lo más visto"). */
+export interface ViewRecord {
+  channelId: string;
+  userId: string;
+  videoId: string;
+  at: IsoDateTime;
+}
+
 export interface Favorite {
   channelId: string;
   userId: string;
@@ -134,6 +150,7 @@ export interface Favorite {
 export interface ChannelInput {
   name: string;
   description: string;
+  kind: ChannelKind;
   coverUrl?: string;
 }
 
@@ -203,6 +220,42 @@ export interface UpcomingEvent {
   personIds: string[];
   /** Id of the stored FamilyEvent; absent for birthdays derived from people. */
   eventId?: string;
+}
+
+export interface LibraryChannel {
+  id: string;
+  name: string;
+  kind: ChannelKind;
+  role: Role;
+}
+
+/**
+ * Everything the current user can watch, across all their channels: feeds
+ * the global home (mixed rows) and the full catalog.
+ */
+export interface Library {
+  channels: LibraryChannel[];
+  videos: Video[];
+  people: Person[];
+  events: FamilyEvent[];
+  /** Video id -> total playbacks by every member. */
+  viewCounts: Record<string, number>;
+  favoriteVideoIds: string[];
+}
+
+export const CATALOG_SORTS = ['added', 'memory-desc', 'memory-asc', 'views', 'title'] as const;
+export type CatalogSort = (typeof CATALOG_SORTS)[number];
+
+/** Full-catalog filters (all optional; empty lists mean "any"). */
+export interface CatalogFilters {
+  query: string;
+  channelIds: string[];
+  categories: VideoCategory[];
+  personId?: string;
+  /** First year of the decade, e.g. 1990. */
+  decade?: number;
+  favoritesOnly: boolean;
+  sort: CatalogSort;
 }
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; errors: string[] };

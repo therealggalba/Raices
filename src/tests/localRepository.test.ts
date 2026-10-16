@@ -4,7 +4,7 @@ import { STORAGE_KEY, createLocalRepository, memoryStore, parseDb } from '../ser
 import type { Db, KeyValueStore } from '../services/localRepository';
 import type { MemoriesRepository } from '../services/repository';
 import { RepositoryError } from '../services/repository';
-import { DEMO_FAMILY_ID, DEMO_FRIENDS_ID, buildDemoDb } from '../services/seed';
+import { DEMO_COUSINS_ID, DEMO_FAMILY_ID, DEMO_FRIENDS_ID, buildDemoDb } from '../services/seed';
 
 const NOW = new Date('2026-10-15T10:00:00.000Z');
 
@@ -53,6 +53,7 @@ describe('local repository', () => {
     expect(channels.map((c) => [c.channel.id, c.role])).toEqual([
       [DEMO_FRIENDS_ID, 'member'],
       [DEMO_FAMILY_ID, 'admin'],
+      [DEMO_COUSINS_ID, 'member'],
     ]);
     expect(parseDb(store.get(STORAGE_KEY))).not.toBeNull();
   });
@@ -72,6 +73,53 @@ describe('local repository', () => {
     expect((await rejection(repo.addVideo(DEMO_FRIENDS_ID, { ...videoInput, personIds: [] }))).code).toBe('forbidden');
     expect((await rejection(repo.createInvitation(DEMO_FRIENDS_ID, 7))).code).toBe('forbidden');
     expect((await rejection(repo.addEvent(DEMO_FRIENDS_ID, eventInput))).code).toBe('forbidden');
+  });
+
+  it('builds a library across every channel the user belongs to', async () => {
+    const library = await repo.loadLibrary();
+    expect(library.channels.map((c) => [c.id, c.kind])).toEqual([
+      [DEMO_FRIENDS_ID, 'amigos'],
+      [DEMO_FAMILY_ID, 'familia'],
+      [DEMO_COUSINS_ID, 'familia'],
+    ]);
+    const channelIds = new Set(library.videos.map((v) => v.channelId));
+    expect(channelIds).toEqual(new Set([DEMO_FRIENDS_ID, DEMO_FAMILY_ID, DEMO_COUSINS_ID]));
+    expect(library.viewCounts['v-demo-1']).toBe(14);
+    expect(library.favoriteVideoIds).toContain('v-demo-uni-6');
+  });
+
+  it('excludes channels the user left from the library', async () => {
+    await repo.leaveChannel(DEMO_COUSINS_ID);
+    const library = await repo.loadLibrary();
+    expect(library.videos.some((v) => v.channelId === DEMO_COUSINS_ID)).toBe(false);
+    expect(library.channels.some((c) => c.id === DEMO_COUSINS_ID)).toBe(false);
+  });
+
+  it('records views for members only and forgets them with the video', async () => {
+    await repo.recordView('v-demo-2');
+    await repo.recordView('v-demo-2');
+    expect((await repo.loadLibrary()).viewCounts['v-demo-2']).toBe(2);
+    expect((await rejection(repo.recordView('nope'))).code).toBe('not-found');
+    await repo.deleteVideo(DEMO_FAMILY_ID, 'v-demo-2');
+    expect((await repo.loadLibrary()).viewCounts['v-demo-2']).toBeUndefined();
+  });
+
+  it('migrates a schema v1 document instead of discarding it', async () => {
+    const v1 = buildDemoDb(NOW) as unknown as Record<string, unknown>;
+    v1.schemaVersion = 1;
+    delete v1.views;
+    for (const c of v1.channels as Record<string, unknown>[]) delete c.kind;
+    (v1.channels as Record<string, unknown>[]).push({
+      id: 'mi-canal',
+      name: 'Mío',
+      description: '',
+      createdAt: NOW.toISOString(),
+      createdBy: v1.currentUserId,
+    });
+    const migrated = parseDb(JSON.stringify(v1));
+    expect(migrated?.schemaVersion).toBe(2);
+    expect(migrated?.views).toEqual([]);
+    expect(migrated?.channels.map((c) => c.kind)).toEqual(['familia', 'amigos', 'otros', 'otros']);
   });
 
   it('treats unknown channels and channels you do not belong to the same way', async () => {
@@ -130,7 +178,7 @@ describe('local repository', () => {
   });
 
   it('creates a channel with its creator as admin and deletes it when the last member leaves', async () => {
-    const id = await repo.createChannel({ name: '  Viaje a Japón 2025 ', description: '' });
+    const id = await repo.createChannel({ name: '  Viaje a Japón 2025 ', description: '', kind: 'viajes' });
     const snapshot = await repo.loadChannel(id);
     expect(snapshot.channel.name).toBe('Viaje a Japón 2025');
     expect(snapshot.me.role).toBe('admin');

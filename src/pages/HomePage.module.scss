@@ -2,6 +2,7 @@
 
 .home {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: $space-5;
   padding-bottom: $space-8;
   margin-top: calc(-1 * #{$topbar-height});
@@ -34,42 +35,15 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
 }
 
-.people {
-  display: grid;
-  gap: $space-2;
-
-  .rowTitle {
-    padding: 0 $space-4;
-
-    @include md-up {
-      padding: 0 $space-8;
-    }
-  }
-}
-
-.peopleScroller {
+.catalogCta {
   display: flex;
-  gap: $space-4;
-  overflow-x: auto;
-  padding: $space-2 $space-4;
-  @include hide-scrollbar;
-
-  @include md-up {
-    padding: $space-2 $space-8;
-  }
+  justify-content: center;
+  padding: $space-4;
 }
 
-.person {
-  display: grid;
-  justify-items: center;
-  gap: $space-1;
-  flex: 0 0 auto;
-  width: 84px;
-  color: $color-text-muted;
-  font-size: 0.85rem;
-  text-decoration: none;
-
-  &:hover {
-    color: $color-text;
-  }
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $space-2;
 }

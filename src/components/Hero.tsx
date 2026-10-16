@@ -5,15 +5,15 @@ import { Thumbnail } from './Thumbnail';
 import { LinkButton } from './ui';
 import styles from './Hero.module.scss';
 
-export function Hero({ video, channelId }: { video: Video; channelId: string }) {
-  const to = `/c/${channelId}/v/${video.id}`;
+export function Hero({ video, kicker }: { video: Video; kicker: string }) {
+  const to = `/v/${video.id}`;
   return (
     <section className={styles.hero} aria-label="Destacado">
       <div className={styles.backdrop}>
         <Thumbnail video={video} showTitle={false} />
       </div>
       <div className={styles.content}>
-        <span className={styles.kicker}>Último recuerdo añadido</span>
+        <span className={styles.kicker}>{kicker}</span>
         <h1 className={styles.title}>{video.title}</h1>
         <p className={styles.meta}>
           <span>{formatPartialDate(video.eventDate)}</span>
