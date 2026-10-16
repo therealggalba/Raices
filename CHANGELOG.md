@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 — 2026-10-16
+
+- Continuar viendo: se guarda por usuario dónde se dejó cada vídeo (cada 5 s, al pausar, al terminar y al
+  salir) y se ofrece «Continuar desde m:ss» o «Empezar desde el principio». Barra de progreso en las tarjetas.
+  Funciona con archivos directos y YouTube; con Google Drive, si se configura `VITE_GOOGLE_API_KEY`.
+- Google Drive con clave de API: reproducción con el reproductor propio vía Drive API (sin ella, visor de Drive).
+- Top 10: los números ya no quedan tapados por las tarjetas.
+- Demo con clips reales y más largos (tráiler de Sintel y Big Buck Bunny, Blender Foundation, CC-BY).
+- Esquema de datos v3 (progreso) con migración; el almacenamiento local se relee antes de cada operación
+  para no perder cambios hechos desde otra pestaña.
+
 ## 0.3.0 — 2026-10-16
 
 - Inicio simplificado: No te olvides, Añadidos recientemente (últimos 10), Lo más visto, Mis favoritos,

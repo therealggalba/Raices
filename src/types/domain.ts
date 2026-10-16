@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -137,6 +137,16 @@ export interface ViewRecord {
   at: IsoDateTime;
 }
 
+/** Where a member left a video, to continue watching from there. */
+export interface WatchProgress {
+  channelId: string;
+  userId: string;
+  videoId: string;
+  positionSeconds: number;
+  durationSeconds: number;
+  updatedAt: IsoDateTime;
+}
+
 export interface Favorite {
   channelId: string;
   userId: string;
@@ -241,6 +251,8 @@ export interface Library {
   /** Video id -> total playbacks by every member. */
   viewCounts: Record<string, number>;
   favoriteVideoIds: string[];
+  /** Video id -> where the current user left it (unfinished videos only). */
+  progress: Record<string, { positionSeconds: number; durationSeconds: number }>;
 }
 
 export const CATALOG_SORTS = ['added', 'memory-desc', 'memory-asc', 'views', 'title'] as const;

@@ -22,6 +22,7 @@ function library(overrides: Partial<Library> = {}): Library {
     events: [],
     viewCounts: { f1: 3, u1: 5 },
     favoriteVideoIds: ['f2'],
+    progress: {},
     ...overrides,
   };
 }

@@ -102,3 +102,29 @@
   font-size: 0.8rem;
   color: $color-text-dim;
 }
+
+.resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-2 $space-3;
+}
+
+.resumeBar {
+  flex: 1 1 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    background: $color-play;
+  }
+}
+
+.resumeText {
+  font-size: 0.85rem;
+  color: $color-text-muted;
+}

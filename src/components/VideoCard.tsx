@@ -1,6 +1,9 @@
+import { useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { LibraryContext } from '../hooks/library-context';
 import type { Video } from '../types/domain';
 import { formatPartialDate } from '../utils/dates';
+import { progressRatio } from '../utils/progress';
 import { Thumbnail } from './Thumbnail';
 import styles from './VideoCard.module.scss';
 
@@ -14,6 +17,8 @@ interface Props {
 }
 
 export function VideoCard({ video, favorite, rank, caption }: Props) {
+  // Optional: per-channel pages render cards outside the global library.
+  const ratio = progressRatio(useContext(LibraryContext)?.library.progress[video.id]);
   return (
     <Link
       to={`/v/${video.id}`}
@@ -28,6 +33,11 @@ export function VideoCard({ video, favorite, rank, caption }: Props) {
       <span className={styles.frame}>
         <Thumbnail video={video} showTitle={caption === undefined} />
         <span className={styles.date}>{formatPartialDate(video.eventDate)}</span>
+        {ratio > 0 && (
+          <span className={styles.progress} aria-label="Visto en parte">
+            <span style={{ width: `${ratio * 100}%` }} />
+          </span>
+        )}
         {favorite && (
           <span className={styles.favorite} aria-hidden>
             ♥

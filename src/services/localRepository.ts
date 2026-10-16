@@ -13,8 +13,10 @@ import type {
   ValidationResult,
   Video,
   ViewRecord,
+  WatchProgress,
 } from '../types/domain';
 import { newId } from '../utils/ids';
+import { decideProgress } from '../utils/progress';
 import {
   MAX_EXPIRY_DAYS,
   expiryFrom,
@@ -54,6 +56,7 @@ export interface Db {
   invitations: Invitation[];
   favorites: Favorite[];
   views: ViewRecord[];
+  progress: WatchProgress[];
 }
 
 export interface KeyValueStore {
@@ -97,6 +100,7 @@ const COLLECTIONS = [
   'invitations',
   'favorites',
   'views',
+  'progress',
 ] as const;
 
 /** Kinds given to channels created before kinds existed (schema v1). */
@@ -114,6 +118,10 @@ export function migrateDb(data: Record<string, unknown>): Record<string, unknown
     );
     data.views = [];
     data.schemaVersion = 2;
+  }
+  if (data.schemaVersion === 2) {
+    data.progress = [];
+    data.schemaVersion = 3;
   }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
@@ -220,6 +228,7 @@ export function createLocalRepository({
     db.invitations = inChannel(db.invitations);
     db.favorites = inChannel(db.favorites);
     db.views = inChannel(db.views);
+    db.progress = inChannel(db.progress);
   }
 
   const repo: MemoriesRepository = {
@@ -268,6 +277,11 @@ export function createLocalRepository({
         favoriteVideoIds: inMine(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
           .map((f) => f.videoId),
+        progress: Object.fromEntries(
+          inMine(db.progress)
+            .filter((p) => p.userId === db.currentUserId)
+            .map((p) => [p.videoId, { positionSeconds: p.positionSeconds, durationSeconds: p.durationSeconds }]),
+        ),
       };
       return clone(library);
     },
@@ -277,6 +291,27 @@ export function createLocalRepository({
       if (!video) throw new RepositoryError('not-found', 'El vídeo no existe');
       requireMember(video.channelId);
       db.views.push({ channelId: video.channelId, videoId, userId: db.currentUserId, at: nowIso() });
+      commit();
+    },
+
+    async saveProgress(videoId, positionSeconds, durationSeconds) {
+      const video = db.videos.find((v) => v.id === videoId);
+      if (!video) throw new RepositoryError('not-found', 'El vídeo no existe');
+      requireMember(video.channelId);
+      const decision = decideProgress(positionSeconds, durationSeconds);
+      if (!decision) throw new RepositoryError('invalid', 'Posición de reproducción inválida');
+      const isMine = (p: WatchProgress) => p.videoId === videoId && p.userId === db.currentUserId;
+      db.progress = db.progress.filter((p) => !isMine(p));
+      if (decision.action === 'save') {
+        db.progress.push({
+          channelId: video.channelId,
+          userId: db.currentUserId,
+          videoId,
+          positionSeconds: decision.positionSeconds,
+          durationSeconds: decision.durationSeconds,
+          updatedAt: nowIso(),
+        });
+      }
       commit();
     },
 
@@ -331,6 +366,7 @@ export function createLocalRepository({
         }
         db.members = db.members.filter((m) => m !== member);
         db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === member.userId));
+        db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === member.userId));
       }
       commit();
     },
@@ -409,6 +445,7 @@ export function createLocalRepository({
       if (!exists) throw new RepositoryError('not-found', 'Ese miembro no existe');
       db.members = db.members.filter((m) => !(m.channelId === channelId && m.userId === userId));
       db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === userId));
+      db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === userId));
       commit();
     },
 
@@ -439,6 +476,7 @@ export function createLocalRepository({
       db.videos = db.videos.filter((v) => v.id !== videoId);
       db.favorites = db.favorites.filter((f) => f.videoId !== videoId);
       db.views = db.views.filter((v) => v.videoId !== videoId);
+      db.progress = db.progress.filter((p) => p.videoId !== videoId);
       commit();
     },
 
@@ -512,5 +550,18 @@ export function createLocalRepository({
     },
   };
 
-  return repo;
+  // Re-read storage before every call: another tab (or a page that just
+  // flushed its playback position) may have written since this instance
+  // last looked, and writing a stale copy back would lose those changes.
+  const synced = {} as MemoriesRepository;
+  for (const [key, value] of Object.entries(repo) as [keyof MemoriesRepository, unknown][]) {
+    (synced as unknown as Record<string, unknown>)[key] =
+      typeof value === 'function'
+        ? (...args: unknown[]) => {
+            db = load();
+            return (value as (...a: unknown[]) => unknown)(...args);
+          }
+        : value;
+  }
+  return synced;
 }

@@ -30,6 +30,15 @@ describe('resolveMedia', () => {
     });
   });
 
+  it('streams Google Drive through the API only with a well-formed key', () => {
+    const url = 'https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view';
+    expect(resolveMedia(url)).not.toHaveProperty('streamUrl');
+    expect(resolveMedia(url, { googleApiKey: 'AIzaSyA-valid_key_1234567890abcdef' })).toMatchObject({
+      streamUrl: 'https://www.googleapis.com/drive/v3/files/1AbCdEfGhIjKlMn?alt=media&key=AIzaSyA-valid_key_1234567890abcdef',
+    });
+    expect(resolveMedia(url, { googleApiKey: 'bad key&x=1' })).not.toHaveProperty('streamUrl');
+  });
+
   it('falls back to a plain link for unknown hosts and rejects unsafe schemes', () => {
     expect(resolveMedia('https://example.com/album')).toEqual({ kind: 'link', href: 'https://example.com/album' });
     expect(resolveMedia('http://example.com/video.mp4')).toBeNull();

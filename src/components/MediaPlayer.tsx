@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { config } from '../config';
 import type { Video } from '../types/domain';
 import { resolveMedia } from '../utils/media';
+import { SAVE_INTERVAL_SECONDS } from '../utils/progress';
 import { Thumbnail } from './Thumbnail';
 import styles from './MediaPlayer.module.scss';
 
@@ -8,8 +10,63 @@ interface Props {
   video: Video;
   /** Start playing straight away (e.g. "Reproducir" from the hero). */
   autoPlay?: boolean;
+  /** Resume from this second (continue watching). */
+  startAt?: number;
+  /** Label of the play button on the cover. */
+  playLabel?: string;
   /** Called once per mount, when playback actually starts (counts a view). */
   onStart?(): void;
+  /** Where the viewer is: every few seconds while playing, on pause, on end and on leave. */
+  onProgress?(positionSeconds: number, durationSeconds: number): void;
+}
+
+const YOUTUBE_ORIGINS = new Set(['https://www.youtube-nocookie.com', 'https://www.youtube.com']);
+
+/**
+ * Reports playback positions: throttled while playing, immediately when
+ * forced (pause/end), and a last time when the player goes away.
+ */
+function useProgressReporter(onProgress: Props['onProgress']) {
+  const last = useRef<{ position: number; duration: number } | null>(null);
+  // The <video> element, kept outside React's ref handling: React clears
+  // element refs before unmount cleanups run, and the final save needs it.
+  const element = useRef<HTMLVideoElement | null>(null);
+  const lastSentAt = useRef(0);
+  const callback = useRef(onProgress);
+  useEffect(() => {
+    callback.current = onProgress;
+  }, [onProgress]);
+
+  const report = useCallback((position: number, duration: number, force = false) => {
+    if (!Number.isFinite(position) || !Number.isFinite(duration) || duration <= 0) return;
+    last.current = { position, duration };
+    const now = Date.now();
+    if (force || now - lastSentAt.current >= SAVE_INTERVAL_SECONDS * 1000) {
+      lastSentAt.current = now;
+      callback.current?.(position, duration);
+    }
+  }, []);
+
+  // Flush on leave: closing the tab, or navigating away inside the app.
+  useEffect(() => {
+    const flush = () => {
+      const el = element.current;
+      const live = el && el.readyState > 0 ? { position: el.currentTime, duration: el.duration } : null;
+      const final = live ?? last.current;
+      if (final) callback.current?.(final.position, final.duration);
+    };
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
+
+  const attach = useCallback((el: HTMLVideoElement) => {
+    element.current = el;
+  }, []);
+
+  return { report, attach };
 }
 
 /**
@@ -18,13 +75,20 @@ interface Props {
  * the moment a view is counted. Only URLs that resolveMedia() recognised
  * become embeds (fixed provider hosts, ids validated by regex); anything else
  * is offered as an external link.
+ *
+ * Continue watching works with direct files (including Google Drive through
+ * the API key) and YouTube (iframe API); the Drive and Vimeo viewers expose no
+ * position, so they always start from the beginning.
  */
-export function MediaPlayer({ video, autoPlay = false, onStart }: Props) {
-  const media = resolveMedia(video.mediaUrl);
+export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onStart, onProgress }: Props) {
+  const media = resolveMedia(video.mediaUrl, { googleApiKey: config.googleApiKey });
   const playable = !!media && media.kind !== 'link';
   // Hero "Reproducir" starts straight away; otherwise the cover is shown first.
   const [started, setStarted] = useState(autoPlay && playable);
   const counted = useRef(false);
+  const { report, attach } = useProgressReporter(onProgress);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const resumeFrom = startAt && startAt > 0 ? Math.floor(startAt) : 0;
 
   const countView = () => {
     if (counted.current) return;
@@ -37,6 +101,33 @@ export function MediaPlayer({ video, autoPlay = false, onStart }: Props) {
   useEffect(() => {
     if (started) countView();
   });
+
+  // YouTube iframe API: positions arrive as postMessage "infoDelivery" events.
+  const isYoutube = media?.kind === 'youtube';
+  useEffect(() => {
+    if (!started || !isYoutube) return;
+    const state = { time: 0, duration: 0 };
+    const onMessage = (event: MessageEvent) => {
+      if (!YOUTUBE_ORIGINS.has(event.origin) || event.source !== iframeRef.current?.contentWindow) return;
+      let data: unknown;
+      try {
+        data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
+      if (typeof data !== 'object' || data === null) return;
+      const info = (data as { info?: unknown }).info;
+      if (typeof info !== 'object' || info === null) return;
+      const { currentTime, duration, playerState } = info as Record<string, unknown>;
+      if (typeof duration === 'number' && duration > 0) state.duration = duration;
+      if (typeof currentTime === 'number') state.time = currentTime;
+      // 0 = ended, 2 = paused: save right away.
+      const force = playerState === 0 || playerState === 2;
+      if (state.duration > 0 && (typeof currentTime === 'number' || force)) report(state.time, state.duration, force);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [started, isYoutube, report]);
 
   const start = () => setStarted(true);
 
@@ -59,36 +150,73 @@ export function MediaPlayer({ video, autoPlay = false, onStart }: Props) {
             <span>Abrir el vídeo en una pestaña nueva</span>
           </a>
         ) : (
-          <button type="button" className={styles.cover} onClick={start} aria-label={`Reproducir ${video.title}`}>
+          <button type="button" className={styles.cover} onClick={start} aria-label={playLabel ?? `Reproducir ${video.title}`}>
             <span className={styles.playIcon} aria-hidden>
               ▶
             </span>
+            {playLabel && <span className={styles.playLabel}>{playLabel}</span>}
           </button>
         )}
       </div>
     );
   }
 
-  if (media.kind === 'file') {
+  if (media.kind === 'file' || (media.kind === 'drive' && media.streamUrl)) {
+    const fileSrc = media.kind === 'file' ? media.src : media.streamUrl;
     return (
       <div className={styles.frame}>
-        <video className={styles.media} src={media.src} controls playsInline autoPlay preload="auto">
+        <video
+          className={styles.media}
+          src={fileSrc}
+          controls
+          playsInline
+          autoPlay
+          preload="auto"
+          onLoadedMetadata={(e) => {
+            const el = e.currentTarget;
+            attach(el);
+            if (resumeFrom && resumeFrom < el.duration) el.currentTime = resumeFrom;
+          }}
+          onTimeUpdate={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration)}
+          onPause={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration, true)}
+          onEnded={(e) => report(e.currentTarget.duration, e.currentTarget.duration, true)}
+        >
           Tu navegador no puede reproducir este vídeo.
         </video>
       </div>
     );
   }
 
+  let src = media.embedUrl;
+  const youtubeOrigin = media.kind === 'youtube' ? new URL(media.embedUrl).origin : null;
+  if (media.kind === 'youtube') {
+    const params = new URLSearchParams({ autoplay: '1', enablejsapi: '1', origin: window.location.origin });
+    if (resumeFrom) params.set('start', String(resumeFrom));
+    src = `${media.embedUrl}?${params}`;
+  } else if (media.kind === 'vimeo') {
+    src = `${media.embedUrl}?autoplay=1`;
+  }
+
   return (
     <div className={styles.frame}>
       <iframe
+        ref={iframeRef}
         className={styles.media}
-        src={media.kind === 'drive' ? media.embedUrl : `${media.embedUrl}?autoplay=1`}
+        src={src}
         title={video.title}
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"
         sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+        onLoad={() => {
+          // Ask the YouTube player to start sending its state (iframe API).
+          if (youtubeOrigin) {
+            iframeRef.current?.contentWindow?.postMessage(
+              JSON.stringify({ event: 'listening', id: video.id, channel: 'widget' }),
+              youtubeOrigin,
+            );
+          }
+        }}
       />
     </div>
   );

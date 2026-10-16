@@ -17,6 +17,7 @@ Se sirve en producción bajo `/family-memories/`.
 | Vídeos por enlace externo (YouTube, Vimeo, Google Drive, .mp4 directo) | ✅ |
 | Inicio global (vídeos de todos los canales mezclados: recientes, Top 10, favoritos, mes actual, remix) | ✅ |
 | Catálogo completo con filtros (canal, tipo de evento, década, persona, favoritos) y orden | ✅ |
+| Continuar viendo (por usuario; archivos directos, YouTube y Drive con API key) | ✅ |
 | Cronología por años | ✅ |
 | Eventos + cumpleaños derivados de las personas + avisos (≤ 7 días) | ✅ |
 | Personas (ficha, biografía, vídeos y fechas asociados) | ✅ |

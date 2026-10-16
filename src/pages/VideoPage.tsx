@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { MediaPlayer } from '../components/MediaPlayer';
 import { PersonAvatar } from '../components/PersonAvatar';
@@ -12,6 +13,7 @@ import type { Person } from '../types/domain';
 import { byEventDateAsc } from '../utils/catalog';
 import { formatDuration, formatPartialDate } from '../utils/dates';
 import { CATEGORY_LABELS } from '../utils/labels';
+import { formatTimestamp, progressRatio } from '../utils/progress';
 import styles from './VideoPage.module.scss';
 
 const RELATED_LIMIT = 15;
@@ -25,6 +27,15 @@ export function VideoPage() {
   const { videos, favoriteVideoIds, viewCounts } = library;
   const video = videos.find((v) => v.id === videoId);
   const channel = video ? channelById(video.channelId) : undefined;
+  // «Empezar desde el principio» remounts the player without a resume point.
+  const [restartKey, setRestartKey] = useState(0);
+  // Bumped synchronously on restart so the discarded player's last report
+  // (sent while it unmounts) cannot bring the old position back.
+  const playerSession = useRef(0);
+
+  // Progress is saved silently while watching; refresh the library (cards,
+  // progress bars) once the viewer leaves this page.
+  useEffect(() => () => void reload(), [videoId, reload]);
 
   if (!video || !channel) {
     return (
@@ -36,6 +47,8 @@ export function VideoPage() {
   }
 
   const isAdmin = channel.role === 'admin';
+  const progress = restartKey === 0 ? library.progress[video.id] : undefined;
+  const resumeAt = progress?.positionSeconds;
   const autoPlay = (location.state as { autoplay?: boolean } | null)?.autoplay === true;
   const favorite = favoriteVideoIds.includes(video.id);
   const views = viewCounts[video.id] ?? 0;
@@ -50,9 +63,15 @@ export function VideoPage() {
     <div className={styles.page}>
       <div className={styles.player}>
         <MediaPlayer
-          key={video.id}
+          key={`${video.id}:${restartKey}`}
           video={video}
-          autoPlay={autoPlay}
+          autoPlay={autoPlay || restartKey > 0}
+          startAt={resumeAt}
+          playLabel={resumeAt ? `Continuar desde ${formatTimestamp(resumeAt)}` : undefined}
+          onProgress={(position, duration) => {
+            if (restartKey !== playerSession.current) return;
+            repository.saveProgress(video.id, position, duration).catch(() => {});
+          }}
           onStart={() => {
             void run(async () => {
               await repository.recordView(video.id);
@@ -112,6 +131,27 @@ export function VideoPage() {
           )}
         </div>
         <ErrorBanner message={error} />
+        {progress && (
+          <div className={styles.resume}>
+            <span className={styles.resumeBar} aria-hidden>
+              <span style={{ width: `${progressRatio(progress) * 100}%` }} />
+            </span>
+            <span className={styles.resumeText}>
+              Lo dejaste en {formatTimestamp(progress.positionSeconds)} de {formatTimestamp(progress.durationSeconds)}
+            </span>
+            <Button
+              small
+              variant="ghost"
+              onClick={() => {
+                playerSession.current += 1;
+                repository.saveProgress(video.id, 0, progress.durationSeconds).catch(() => {});
+                setRestartKey(playerSession.current);
+              }}
+            >
+              ↺ Empezar desde el principio
+            </Button>
+          </div>
+        )}
         {video.description && <p className={styles.description}>{video.description}</p>}
 
         {tagged.length > 0 && (

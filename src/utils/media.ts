@@ -6,7 +6,17 @@
 export type MediaSource =
   | { kind: 'youtube'; id: string; embedUrl: string; thumbnailUrl: string }
   | { kind: 'vimeo'; id: string; embedUrl: string }
-  | { kind: 'drive'; id: string; embedUrl: string }
+  | {
+      kind: 'drive';
+      id: string;
+      embedUrl: string;
+      /**
+       * Direct stream through the Drive API (needs a Google API key and the
+       * file shared as "anyone with the link"). Lets the app use its own
+       * player: resume, view counting, no Drive UI.
+       */
+      streamUrl?: string;
+    }
   | { kind: 'file'; src: string }
   | { kind: 'link'; href: string };
 
@@ -58,7 +68,14 @@ function driveId(url: URL): string | null {
   return id && DRIVE_ID_RE.test(id) ? id : null;
 }
 
-export function resolveMedia(value: string): MediaSource | null {
+export interface MediaOptions {
+  /** Google API key (Drive API enabled, restricted by HTTP referrer). */
+  googleApiKey?: string;
+}
+
+const API_KEY_RE = /^[\w-]{20,60}$/;
+
+export function resolveMedia(value: string, options: MediaOptions = {}): MediaSource | null {
   const url = parseHttpsUrl(value);
   if (!url) return null;
 
@@ -74,7 +91,17 @@ export function resolveMedia(value: string): MediaSource | null {
   const vimeo = vimeoId(url);
   if (vimeo) return { kind: 'vimeo', id: vimeo, embedUrl: `https://player.vimeo.com/video/${vimeo}` };
   const drive = driveId(url);
-  if (drive) return { kind: 'drive', id: drive, embedUrl: `https://drive.google.com/file/d/${drive}/preview` };
+  if (drive) {
+    const key = options.googleApiKey;
+    return {
+      kind: 'drive',
+      id: drive,
+      embedUrl: `https://drive.google.com/file/d/${drive}/preview`,
+      ...(key && API_KEY_RE.test(key)
+        ? { streamUrl: `https://www.googleapis.com/drive/v3/files/${drive}?alt=media&key=${encodeURIComponent(key)}` }
+        : {}),
+    };
+  }
   if (FILE_RE.test(url.pathname)) return { kind: 'file', src: url.href };
   return { kind: 'link', href: url.href };
 }

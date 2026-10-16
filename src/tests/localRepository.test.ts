@@ -104,6 +104,19 @@ describe('local repository', () => {
     expect((await repo.loadLibrary()).viewCounts['v-demo-2']).toBeUndefined();
   });
 
+  it('saves, resumes and clears watch progress per user', async () => {
+    const bbb = (await repo.loadLibrary()).progress;
+    expect(Object.keys(bbb)).toHaveLength(1);
+    await repo.saveProgress('v-demo-3', 120, 596);
+    expect((await repo.loadLibrary()).progress['v-demo-3']).toEqual({ positionSeconds: 120, durationSeconds: 596 });
+    await repo.saveProgress('v-demo-3', 200, 596);
+    expect((await repo.loadLibrary()).progress['v-demo-3'].positionSeconds).toBe(200);
+    await repo.saveProgress('v-demo-3', 590, 596);
+    expect((await repo.loadLibrary()).progress['v-demo-3']).toBeUndefined();
+    expect((await rejection(repo.saveProgress('v-demo-3', -5, 596))).code).toBe('invalid');
+    expect((await rejection(repo.saveProgress('nope', 10, 596))).code).toBe('not-found');
+  });
+
   it('migrates a schema v1 document instead of discarding it', async () => {
     const v1 = buildDemoDb(NOW) as unknown as Record<string, unknown>;
     v1.schemaVersion = 1;
@@ -116,10 +129,22 @@ describe('local repository', () => {
       createdAt: NOW.toISOString(),
       createdBy: v1.currentUserId,
     });
+    delete v1.progress;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(2);
+    expect(migrated?.schemaVersion).toBe(3);
     expect(migrated?.views).toEqual([]);
+    expect(migrated?.progress).toEqual([]);
     expect(migrated?.channels.map((c) => c.kind)).toEqual(['familia', 'amigos', 'otros', 'otros']);
+  });
+
+  it('does not overwrite changes written by another tab', async () => {
+    const otherTab = createLocalRepository({ store, now: () => clock });
+    await repo.loadLibrary();
+    await otherTab.addPerson(DEMO_FAMILY_ID, { firstName: 'Hugo', lastName: '', relationship: '', biography: '', notes: '' });
+    await repo.toggleFavorite(DEMO_FAMILY_ID, 'v-demo-2');
+    const snapshot = await repo.loadChannel(DEMO_FAMILY_ID);
+    expect(snapshot.people.some((p) => p.firstName === 'Hugo')).toBe(true);
+    expect(snapshot.favoriteVideoIds).toContain('v-demo-2');
   });
 
   it('treats unknown channels and channels you do not belong to the same way', async () => {

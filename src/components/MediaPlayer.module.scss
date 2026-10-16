@@ -57,3 +57,10 @@
     transform: scale(1.08);
   }
 }
+
+.playLabel {
+  padding: $space-1 $space-3;
+  border-radius: $radius-pill;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.95rem;
+}

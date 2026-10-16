@@ -7,16 +7,19 @@ import type { Db } from './localRepository';
 // Demo data for the public MVP. Everyone in it is fictional. Some dates are
 // computed relative to "today" so the event alerts always have something to
 // show (e.g. "Cumpleaños de Carlos en 3 días", like the spec's example).
-// Media are CC0 sample clips (MDN) and a public test clip, played as links.
+// Media are freely licensed sample clips (Blender Foundation, MDN), played as links.
 
 export const DEMO_FAMILY_ID = 'demo-familia-montero';
 export const DEMO_FRIENDS_ID = 'demo-amigos-uni';
 export const DEMO_COUSINS_ID = 'demo-primos-sanz';
 
 const CLIPS = [
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4',
-  'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
+  // Sintel trailer (Blender Foundation, CC-BY), 52 s.
+  { url: 'https://download.blender.org/durian/trailer/sintel_trailer-480p.mp4', seconds: 52 },
+  // Big Buck Bunny (Blender Foundation, CC-BY) via archive.org, 9 min 56 s.
+  { url: 'https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4', seconds: 596 },
+  // MDN CC0 sample, 5 s.
+  { url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', seconds: 5 },
 ];
 
 export function buildDemoDb(now: Date): Db {
@@ -123,10 +126,10 @@ export function buildDemoDb(now: Date): Db {
       channelId: DEMO_FAMILY_ID,
       title,
       description,
-      mediaUrl: CLIPS[n % CLIPS.length],
+      mediaUrl: CLIPS[n % CLIPS.length].url,
       eventDate,
       uploadedAt: iso(90 - n * 5),
-      durationSeconds: [94, 312, 187, 45, 620, 238][n % 6],
+      durationSeconds: CLIPS[n % CLIPS.length].seconds,
       category,
       tags,
       personIds,
@@ -225,10 +228,10 @@ export function buildDemoDb(now: Date): Db {
     channelId,
     title,
     description,
-    mediaUrl: CLIPS[daysAgo % CLIPS.length],
+    mediaUrl: CLIPS[daysAgo % CLIPS.length].url,
     eventDate,
     uploadedAt: iso(daysAgo),
-    durationSeconds: 60 + (daysAgo * 37) % 540,
+    durationSeconds: CLIPS[daysAgo % CLIPS.length].seconds,
     category,
     tags,
     personIds: [],
@@ -269,6 +272,7 @@ export function buildDemoDb(now: Date): Db {
     'v-demo-uni-1': 12, 'v-demo-uni-5': 6, 'v-demo-sanz-1': 8, 'v-demo-sanz-4': 4,
   };
   const everyVideo = [...videos, ...friendsVideos, ...cousinsVideos];
+  const halfWatched = videos.find((v) => v.mediaUrl === CLIPS[1].url)!;
   const views: ViewRecord[] = [];
   for (const [videoId, count] of Object.entries(viewsPlan)) {
     const channelId = everyVideo.find((v) => v.id === videoId)!.channelId;
@@ -319,5 +323,16 @@ export function buildDemoDb(now: Date): Db {
       { channelId: DEMO_FRIENDS_ID, userId, videoId: 'v-demo-uni-6' },
     ],
     views,
+    // Demo: a half-watched video so «continuar» can be seen straight away.
+    progress: [
+      {
+        channelId: DEMO_FAMILY_ID,
+        userId,
+        videoId: halfWatched.id,
+        positionSeconds: 187,
+        durationSeconds: CLIPS[1].seconds,
+        updatedAt: iso(1),
+      },
+    ],
   };
 }

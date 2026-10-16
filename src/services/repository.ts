@@ -33,6 +33,11 @@ export interface MemoriesRepository {
   loadLibrary(): Promise<Library>;
   /** Registers one playback of a video by the current user. */
   recordView(videoId: string): Promise<void>;
+  /**
+   * Saves where the current user is in a video. Positions at the very start
+   * or end clear it instead (nothing to resume).
+   */
+  saveProgress(videoId: string, positionSeconds: number, durationSeconds: number): Promise<void>;
   /** Creates a channel; the creator becomes its first admin. */
   createChannel(input: ChannelInput): Promise<string>;
   loadChannel(channelId: string): Promise<ChannelSnapshot>;
