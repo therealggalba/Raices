@@ -3,6 +3,8 @@ import {
   addDays,
   daysBetween,
   formatDaysUntil,
+  formatDaysUntilShort,
+  formatDayMonthShort,
   formatDuration,
   formatPartialDate,
   isIsoDate,
@@ -62,6 +64,9 @@ describe('calendar arithmetic', () => {
     expect(formatDaysUntil(1)).toBe('mañana');
     expect(formatDaysUntil(3)).toBe('en 3 días');
     expect(formatDaysUntil(7)).toBe('dentro de una semana');
+    expect(formatDayMonthShort('2026-10-17')).toBe('17 oct');
+    expect(formatDaysUntilShort(7)).toBe('en 7 días');
+    expect(formatDaysUntilShort(1)).toBe('mañana');
     expect(formatDuration(45)).toBe('45 s');
     expect(formatDuration(312)).toBe('5 min 12 s');
     expect(formatDuration(3720)).toBe('1 h 2 min');

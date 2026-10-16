@@ -29,12 +29,6 @@
   }
 }
 
-.alertList {
-  display: grid;
-  gap: $space-2;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-}
-
 .catalogCta {
   display: flex;
   justify-content: center;

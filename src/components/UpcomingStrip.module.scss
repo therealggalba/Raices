@@ -1,0 +1,83 @@
+@use '../styles/variables' as *;
+
+.strip {
+  display: grid;
+  gap: $space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include md-up {
+    gap: $space-3;
+  }
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: $space-2;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+
+  @include md-up {
+    padding: $space-3 $space-4;
+  }
+}
+
+.soon {
+  border-color: rgba(242, 180, 90, 0.5);
+  background: linear-gradient(160deg, rgba(242, 180, 90, 0.16), $color-bg-raised 70%);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-1;
+}
+
+.icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.when {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: $color-accent;
+
+  @include md-up {
+    font-size: 0.8rem;
+  }
+}
+
+.title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  @include line-clamp(2);
+
+  @include md-up {
+    font-size: 0.95rem;
+  }
+}
+
+.date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  color: $color-text-muted;
+
+  @include md-up {
+    font-size: 0.8rem;
+  }
+}

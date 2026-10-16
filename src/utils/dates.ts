@@ -130,6 +130,20 @@ export function formatDaysUntil(days: number): string {
   return `en ${days} días`;
 }
 
+/** "17 oct". */
+export function formatDayMonthShort(value: IsoDate): string {
+  const p = parsePartialDate(value);
+  if (!p?.month || !p.day) return value;
+  return `${p.day} ${MONTHS[p.month - 1]}`;
+}
+
+/** Short countdown for tight spaces: "hoy", "mañana", "en 7 días". */
+export function formatDaysUntilShort(days: number): string {
+  if (days === 0) return 'hoy';
+  if (days === 1) return 'mañana';
+  return `en ${days} días`;
+}
+
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);

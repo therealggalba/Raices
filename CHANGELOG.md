@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-10-16
+
+- Inicio simplificado: No te olvides, Añadidos recientemente (últimos 10), Lo más visto, Mis favoritos,
+  Recuerdos del mes actual y «Un poco de todo» (remix aleatorio y variado en cada visita). Se quitan las
+  filas temáticas por tipo de canal.
+- «No te olvides»: las 3 fechas más cercanas en una franja compacta de 3 columnas a todo el ancho.
+- Filas: flechas animadas en los bordes que avanzan de 1 en 1 tarjeta; en móvil cada deslizamiento avanza
+  una sola tarjeta (scroll-snap-stop).
+
 ## 0.2.0 — 2026-10-16
 
 - Inicio global estilo Netflix: vídeos de todos los canales mezclados (destacado, Añadidos recientemente,

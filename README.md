@@ -15,7 +15,7 @@ Se sirve en producción bajo `/family-memories/`.
 | Invitaciones (código único, un solo uso, caducidad, revocación, trazabilidad) | ✅ |
 | Gestión de miembros (roles admin/miembro, expulsar, mínimo un admin) | ✅ |
 | Vídeos por enlace externo (YouTube, Vimeo, Google Drive, .mp4 directo) | ✅ |
-| Inicio global (vídeos de todos los canales mezclados, Top 10, filas temáticas por tipo de canal) | ✅ |
+| Inicio global (vídeos de todos los canales mezclados: recientes, Top 10, favoritos, mes actual, remix) | ✅ |
 | Catálogo completo con filtros (canal, tipo de evento, década, persona, favoritos) y orden | ✅ |
 | Cronología por años | ✅ |
 | Eventos + cumpleaños derivados de las personas + avisos (≤ 7 días) | ✅ |
@@ -43,7 +43,7 @@ src/
     validation.ts        Validación/saneado de entradas (lado "servidor")
     media.ts             Enlace externo -> embed seguro (solo https, ids validados)
     events.ts            Próximas ocurrencias, cumpleaños derivados, avisos
-    home.ts              Filas de Inicio global (mezcla por tipo de canal, Top 10…)
+    home.ts              Filas de Inicio global (recientes, Top 10, mes actual, remix…)
     catalogFilters.ts    Filtros del catálogo completo <-> URL
     catalog.ts           Filas por canal, cronología
     invitations.ts       Códigos CSPRNG, normalización, estados

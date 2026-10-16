@@ -1,12 +1,16 @@
-import { EventItem } from '../components/EventItem';
+import { useState } from 'react';
 import { Hero } from '../components/Hero';
 import { EmptyState, LinkButton } from '../components/ui';
+import { UpcomingStrip } from '../components/UpcomingStrip';
 import { VideoRow } from '../components/VideoRow';
 import { useLibrary } from '../hooks/library-context';
 import { featuredVideo } from '../utils/catalog';
-import { eventAlerts, upcomingEvents } from '../utils/events';
+import { upcomingEvents } from '../utils/events';
 import { buildHomeRows } from '../utils/home';
 import styles from './HomePage.module.scss';
+
+/** How many upcoming dates «No te olvides» shows. */
+const UPCOMING_SHOWN = 3;
 
 /**
  * Global home: a curated selection of every channel's videos, mixed. The
@@ -15,6 +19,8 @@ import styles from './HomePage.module.scss';
 export function HomePage() {
   const { library, today, channelById } = useLibrary();
   const { videos, people, events, favoriteVideoIds } = library;
+  // New remix on every visit to the home screen.
+  const [remixSeed] = useState(() => Math.floor(Math.random() * 2 ** 31));
 
   if (!library.channels.length) {
     return (
@@ -32,8 +38,8 @@ export function HomePage() {
   }
 
   const hero = featuredVideo(videos);
-  const rows = buildHomeRows(library, today);
-  const alerts = eventAlerts(upcomingEvents(events, people, today));
+  const rows = buildHomeRows(library, today, remixSeed);
+  const upcoming = upcomingEvents(events, people, today).slice(0, UPCOMING_SHOWN);
 
   return (
     <div className={styles.home}>
@@ -45,14 +51,10 @@ export function HomePage() {
         </EmptyState>
       )}
 
-      {alerts.length > 0 && (
-        <section className={styles.alerts} aria-label="Próximos eventos">
+      {upcoming.length > 0 && (
+        <section className={styles.alerts} aria-label="No te olvides">
           <h2 className={styles.rowTitle}>No te olvides</h2>
-          <div className={styles.alertList}>
-            {alerts.map((event) => (
-              <EventItem key={event.key} event={event} people={people} highlight />
-            ))}
-          </div>
+          <UpcomingStrip events={upcoming} />
         </section>
       )}
 

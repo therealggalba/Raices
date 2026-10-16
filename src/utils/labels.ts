@@ -47,14 +47,6 @@ export const CHANNEL_KIND_LABELS: Record<ChannelKind, string> = {
   otros: 'Otros',
 };
 
-/** Suffix for thematic rows when several kinds share a category ("Vacaciones en familia"). */
-export const CHANNEL_KIND_ROW_SUFFIX: Record<ChannelKind, string> = {
-  familia: 'en familia',
-  amigos: 'con amigos',
-  viajes: 'de viaje',
-  otros: '· otros canales',
-};
-
 export const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
   member: 'Miembro',
