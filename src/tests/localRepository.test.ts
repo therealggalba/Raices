@@ -22,7 +22,6 @@ const eventInput: EventInput = {
   type: 'otro',
   title: 'Reunión de primos',
   date: '2026-12-27',
-  recurring: false,
   personIds: [],
   notes: '',
 };
@@ -122,6 +121,7 @@ describe('local repository', () => {
     v1.schemaVersion = 1;
     delete v1.views;
     for (const c of v1.channels as Record<string, unknown>[]) delete c.kind;
+    for (const e of v1.events as Record<string, unknown>[]) e.recurring = true;
     (v1.channels as Record<string, unknown>[]).push({
       id: 'mi-canal',
       name: 'Mío',
@@ -131,10 +131,11 @@ describe('local repository', () => {
     });
     delete v1.progress;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(3);
+    expect(migrated?.schemaVersion).toBe(4);
     expect(migrated?.views).toEqual([]);
     expect(migrated?.progress).toEqual([]);
     expect(migrated?.channels.map((c) => c.kind)).toEqual(['familia', 'amigos', 'otros', 'otros']);
+    expect(migrated?.events.every((e) => !('recurring' in e))).toBe(true);
   });
 
   it('does not overwrite changes written by another tab', async () => {

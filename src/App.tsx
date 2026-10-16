@@ -8,6 +8,7 @@ import { CatalogPage } from './pages/CatalogPage';
 import { ChannelHomePage } from './pages/ChannelHomePage';
 import { ChannelSettingsPage } from './pages/ChannelSettingsPage';
 import { ChannelsPage } from './pages/ChannelsPage';
+import { DatesPage } from './pages/DatesPage';
 import { EventsPage } from './pages/EventsPage';
 import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
@@ -58,6 +59,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index element={<HomePage />} />
             <Route path="catalogo" element={<CatalogPage />} />
+            <Route path="fechas" element={<DatesPage />} />
             <Route path="v/:videoId" element={<VideoPage />} />
             <Route path="canales" element={<ChannelsPage />} />
             <Route path="unirse" element={<JoinPage />} />

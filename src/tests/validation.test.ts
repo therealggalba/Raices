@@ -85,11 +85,11 @@ describe('other inputs', () => {
   });
 
   it('validates events', () => {
-    const base = { type: 'boda', title: 'Boda', date: '2026-06-01', recurring: false, personIds: [], notes: '' };
+    const base = { type: 'boda', title: 'Boda', date: '2026-06-01', personIds: [], notes: '' };
     expect(validateEventInput(base).ok).toBe(true);
     expect(validateEventInput({ ...base, date: '2026-06' }).ok).toBe(false);
     expect(validateEventInput({ ...base, type: 'fiesta' }).ok).toBe(false);
-    expect(validateEventInput({ ...base, recurring: 'yes' }).ok).toBe(false);
+    expect(validateEventInput({ ...base, title: '' }).ok).toBe(false);
   });
 
   it('validates display names', () => {

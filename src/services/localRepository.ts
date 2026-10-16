@@ -123,6 +123,16 @@ export function migrateDb(data: Record<string, unknown>): Record<string, unknown
     data.progress = [];
     data.schemaVersion = 3;
   }
+  if (data.schemaVersion === 3) {
+    // Every important date now repeats yearly: the flag is gone.
+    if (!Array.isArray(data.events)) return null;
+    data.events = data.events.map((e: unknown) => {
+      if (!isRecord(e)) return e;
+      const { recurring: _recurring, ...rest } = e;
+      return rest;
+    });
+    data.schemaVersion = 4;
+  }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
 

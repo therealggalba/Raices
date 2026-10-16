@@ -19,7 +19,7 @@ Se sirve en producción bajo `/family-memories/`.
 | Catálogo completo con filtros (canal, tipo de evento, década, persona, favoritos) y orden | ✅ |
 | Continuar viendo (por usuario; archivos directos, YouTube y Drive con API key) | ✅ |
 | Cronología por años | ✅ |
-| Eventos + cumpleaños derivados de las personas + avisos (≤ 7 días) | ✅ |
+| Fechas importantes (aniversario anual numerado), vista anual global con filtros y aviso emergente del día | ✅ |
 | Personas (ficha, biografía, vídeos y fechas asociados) | ✅ |
 | Fase 2: álbumes, cromos, sobres, rarezas | ⏳ |
 | Fase 3: audios, muro de recuerdos | ⏳ |
@@ -43,7 +43,7 @@ src/
   utils/                 Lógica de negocio pura y testeada
     validation.ts        Validación/saneado de entradas (lado "servidor")
     media.ts             Enlace externo -> embed seguro (solo https, ids validados)
-    events.ts            Próximas ocurrencias, cumpleaños derivados, avisos
+    events.ts            Fechas: ocurrencias anuales, número de aniversario, filtros, avisos del día
     home.ts              Filas de Inicio global (recientes, Top 10, mes actual, remix…)
     catalogFilters.ts    Filtros del catálogo completo <-> URL
     catalog.ts           Filas por canal, cronología

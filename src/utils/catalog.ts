@@ -2,6 +2,7 @@ import { VIDEO_CATEGORIES } from '../types/domain';
 import type { Video, VideoCategory } from '../types/domain';
 import { partialDateSortKey, yearOf } from './dates';
 import { CATEGORY_LABELS } from './labels';
+import { foldText } from './text';
 
 // Read-side organisation of a channel's videos: the VOD home rows, the
 // chronology and search. Pure functions so every frontend reuses them.
@@ -70,9 +71,6 @@ export function buildTimeline(videos: readonly Video[]): TimelineYear[] {
   return [...groups.entries()].sort(([a], [b]) => a - b).map(([year, list]) => ({ year, videos: list }));
 }
 
-function fold(value: string): string {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
 
 /** Accent-insensitive search on title, description, tags and people names. */
 export function searchVideos(
@@ -80,11 +78,11 @@ export function searchVideos(
   query: string,
   personNames: Readonly<Record<string, string>> = {},
 ): Video[] {
-  const terms = fold(query).split(/\s+/).filter(Boolean);
+  const terms = foldText(query).split(/\s+/).filter(Boolean);
   if (!terms.length) return [];
   return byUploadDesc(
     videos.filter((v) => {
-      const haystack = fold(
+      const haystack = foldText(
         [v.title, v.description, ...v.tags, ...v.personIds.map((id) => personNames[id] ?? '')].join(' '),
       );
       return terms.every((t) => haystack.includes(t));

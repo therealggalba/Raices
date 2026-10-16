@@ -1,40 +1,55 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { Person, UpcomingEvent } from '../types/domain';
-import { formatDayMonth, formatDaysUntil } from '../utils/dates';
-import { occurrenceSubtitle } from '../utils/events';
-import { EVENT_ICONS } from '../utils/labels';
+import type { DateOccurrence, Person } from '../types/domain';
+import { formatDaysUntil, monthShort } from '../utils/dates';
+import { ALERT_WINDOW_DAYS, anniversaryLabel } from '../utils/events';
+import { EVENT_ICONS, EVENT_LABELS } from '../utils/labels';
 import styles from './EventItem.module.scss';
 
 interface Props {
-  event: UpcomingEvent;
+  event: DateOccurrence;
   people: readonly Person[];
-  highlight?: boolean;
+  /** Shown when dates of several channels are listed together. */
+  channelName?: string;
+  /** Extra controls (edit/delete) for admins. */
+  actions?: ReactNode;
 }
 
-export function EventItem({ event, people, highlight }: Props) {
-  const subtitle = occurrenceSubtitle(event, people);
+/** One important date: day block, description, anniversary number and countdown. */
+export function EventItem({ event, people, channelName, actions }: Props) {
+  const label = anniversaryLabel(event);
   const tagged = event.personIds.map((id) => people.find((p) => p.id === id)).filter((p): p is Person => !!p);
+  const state =
+    event.daysUntil === 0 ? styles.today : event.daysUntil < 0 ? styles.past : event.daysUntil <= ALERT_WINDOW_DAYS ? styles.soon : '';
+  const day = Number(event.date.slice(8, 10));
+  const month = Number(event.date.slice(5, 7));
+
   return (
-    <article className={[styles.item, highlight ? styles.highlight : ''].join(' ')}>
-      <span className={styles.icon} aria-hidden>
-        {EVENT_ICONS[event.type]}
+    <article className={[styles.item, state].join(' ')}>
+      <span className={styles.dateBlock} aria-hidden>
+        <span className={styles.day}>{day}</span>
+        <span className={styles.month}>{monthShort(month)}</span>
       </span>
       <div className={styles.body}>
-        <h3 className={styles.title}>{event.title}</h3>
+        <h3 className={styles.title}>
+          <span aria-hidden>{EVENT_ICONS[event.type]}</span> {event.title}
+        </h3>
         <p className={styles.meta}>
-          {formatDayMonth(event.date)}
-          {subtitle && ` · ${subtitle}`}
+          {label ? <strong className={styles.number}>{label}</strong> : EVENT_LABELS[event.type]}
+          {channelName && <span> · {channelName}</span>}
+          {tagged.length > 0 && (
+            <span>
+              {' · '}
+              {tagged.map((p, i) => (
+                <span key={p.id}>
+                  {i > 0 && ', '}
+                  <Link to={`/c/${p.channelId}/personas/${p.id}`}>{p.firstName}</Link>
+                </span>
+              ))}
+            </span>
+          )}
         </p>
-        {tagged.length > 0 && (
-          <p className={styles.people}>
-            {tagged.map((p, i) => (
-              <span key={p.id}>
-                {i > 0 && ', '}
-                <Link to={`/c/${p.channelId}/personas/${p.id}`}>{p.firstName}</Link>
-              </span>
-            ))}
-          </p>
-        )}
+        {actions && <div className={styles.actions}>{actions}</div>}
       </div>
       <span className={styles.when}>{formatDaysUntil(event.daysUntil)}</span>
     </article>

@@ -20,7 +20,6 @@ export function makeEvent(overrides: Partial<FamilyEvent> = {}): FamilyEvent {
     type: 'aniversario',
     title: 'Aniversario',
     date: '1966-10-16',
-    recurring: true,
     personIds: [],
     notes: '',
     ...overrides,

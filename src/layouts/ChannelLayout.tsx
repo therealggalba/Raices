@@ -12,7 +12,7 @@ import styles from './ChannelLayout.module.scss';
 const NAV = [
   { to: '', label: 'Vídeos', icon: '▶', end: true },
   { to: 'cronologia', label: 'Cronología', icon: '◷' },
-  { to: 'eventos', label: 'Eventos', icon: '✦' },
+  { to: 'eventos', label: 'Fechas', icon: '✦' },
   { to: 'personas', label: 'Personas', icon: '☺' },
   { to: 'canal', label: 'Canal', icon: '⚙' },
 ];

@@ -4,6 +4,7 @@ import { byEventDateAsc, byUploadDesc } from './catalog';
 import { partialDateSortKey, yearOf } from './dates';
 import { fullName } from './people';
 import { isId, isVideoCategory } from './validation';
+import { foldText } from './text';
 
 // The full catalog: every video of every channel, with filters encoded in the
 // URL (?q=&canal=&tipo=&persona=&decada=&fav=1&orden=) so a filtered view can
@@ -62,9 +63,6 @@ export function activeFilterCount(filters: CatalogFilters): number {
   );
 }
 
-function fold(value: string): string {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
 
 export function decadeOf(video: Video): number | null {
   const year = yearOf(video.eventDate);
@@ -104,7 +102,7 @@ export function filterCatalog(library: Library, filters: CatalogFilters): Video[
   const favs = new Set(library.favoriteVideoIds);
   const channels = new Set(filters.channelIds);
   const categories = new Set(filters.categories);
-  const terms = fold(filters.query).split(/\s+/).filter(Boolean);
+  const terms = foldText(filters.query).split(/\s+/).filter(Boolean);
 
   const result = library.videos.filter((v) => {
     if (channels.size && !channels.has(v.channelId)) return false;
@@ -113,7 +111,7 @@ export function filterCatalog(library: Library, filters: CatalogFilters): Video[
     if (filters.decade !== undefined && decadeOf(v) !== filters.decade) return false;
     if (filters.favoritesOnly && !favs.has(v.id)) return false;
     if (terms.length) {
-      const haystack = fold(
+      const haystack = foldText(
         [
           v.title,
           v.description,

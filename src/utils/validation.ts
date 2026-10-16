@@ -237,9 +237,8 @@ export function validateEventInput(input: unknown): ValidationResult<EventInput>
   if (!isRecord(input)) return { ok: false, errors: ['Datos del evento inválidos'] };
   const errors: string[] = [];
   if (!isEventType(input.type)) errors.push('Tipo: inválido');
-  const title = readString(input, 'title', 'Título', LIMITS.title, errors);
-  if (!isIsoDate(input.date)) errors.push('Fecha: fecha inválida');
-  if (typeof input.recurring !== 'boolean') errors.push('Repetición: inválida');
+  const title = readString(input, 'title', 'Descripción', LIMITS.title, errors);
+  if (!isIsoDate(input.date)) errors.push('Fecha de origen: fecha inválida');
   const personIds = readIdList(input, 'personIds', 'Personas', errors);
   const notes = readString(input, 'notes', 'Notas', LIMITS.notes, errors, { required: false, multiline: true });
   if (errors.length) return { ok: false, errors };
@@ -249,7 +248,6 @@ export function validateEventInput(input: unknown): ValidationResult<EventInput>
       type: input.type as EventType,
       title,
       date: input.date as string,
-      recurring: input.recurring as boolean,
       personIds,
       notes,
     },

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { EmptyState, LinkButton } from '../components/ui';
 import { UpcomingStrip } from '../components/UpcomingStrip';
@@ -53,7 +54,12 @@ export function HomePage() {
 
       {upcoming.length > 0 && (
         <section className={styles.alerts} aria-label="No te olvides">
-          <h2 className={styles.rowTitle}>No te olvides</h2>
+          <div className={styles.rowHead}>
+            <h2 className={styles.rowTitle}>No te olvides</h2>
+            <Link to="/fechas" className={styles.more}>
+              Todas las fechas ›
+            </Link>
+          </div>
           <UpcomingStrip events={upcoming} />
         </section>
       )}

@@ -122,12 +122,19 @@ export function formatDayMonth(value: IsoDate): string {
   return `${p.day} de ${MONTHS_LONG[p.month - 1]}`;
 }
 
-/** Human countdown used by event alerts. */
+/** Human countdown used by event alerts (negative = already passed). */
 export function formatDaysUntil(days: number): string {
+  if (days === -1) return 'ayer';
+  if (days < 0) return `hace ${-days} días`;
   if (days === 0) return 'hoy';
   if (days === 1) return 'mañana';
   if (days === 7) return 'dentro de una semana';
   return `en ${days} días`;
+}
+
+/** "oct" for 10. */
+export function monthShort(month: number): string {
+  return MONTHS[month - 1] ?? '';
 }
 
 /** "17 oct". */

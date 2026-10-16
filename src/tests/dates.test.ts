@@ -60,6 +60,8 @@ describe('calendar arithmetic', () => {
   });
 
   it('formats countdowns and durations', () => {
+    expect(formatDaysUntil(-1)).toBe('ayer');
+    expect(formatDaysUntil(-20)).toBe('hace 20 días');
     expect(formatDaysUntil(0)).toBe('hoy');
     expect(formatDaysUntil(1)).toBe('mañana');
     expect(formatDaysUntil(3)).toBe('en 3 días');

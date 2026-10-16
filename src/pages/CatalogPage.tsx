@@ -50,8 +50,10 @@ export function CatalogPage() {
   useEffect(() => {
     latest.current = params;
   }, [params]);
-  const update = (patch: Partial<CatalogFilters>) => {
-    const next = catalogParams({ ...parseCatalogParams(latest.current), ...patch });
+  type Patch = Partial<CatalogFilters> | ((current: CatalogFilters) => Partial<CatalogFilters>);
+  const update = (patch: Patch) => {
+    const current = parseCatalogParams(latest.current);
+    const next = catalogParams({ ...current, ...(typeof patch === 'function' ? patch(current) : patch) });
     latest.current = next;
     setParams(next, { replace: true });
   };
@@ -95,7 +97,7 @@ export function CatalogPage() {
                         type="button"
                         aria-pressed={on}
                         className={[ui.chip, on ? ui.chipActive : ''].join(' ')}
-                        onClick={() => update({ channelIds: toggle(filters.channelIds, c.id) })}
+                        onClick={() => update((f) => ({ channelIds: toggle(f.channelIds, c.id) }))}
                       >
                         {c.name}
                       </button>
@@ -115,7 +117,7 @@ export function CatalogPage() {
                       type="button"
                       aria-pressed={on}
                       className={[ui.chip, on ? ui.chipActive : ''].join(' ')}
-                      onClick={() => update({ categories: toggle(filters.categories, cat) })}
+                      onClick={() => update((f) => ({ categories: toggle(f.categories, cat) }))}
                     >
                       <span aria-hidden>{CATEGORY_ICONS[cat]}</span> {CATEGORY_LABELS[cat]}
                     </button>

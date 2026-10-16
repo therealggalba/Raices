@@ -4,26 +4,64 @@
   display: flex;
   align-items: center;
   gap: $space-3;
-  padding: $space-3 $space-4;
+  padding: $space-2 $space-3;
   border-radius: $radius-lg;
   background: $color-bg-raised;
   border: 1px solid $color-line;
 }
 
-.highlight {
+.soon {
   border-color: rgba(242, 180, 90, 0.5);
   background: linear-gradient(90deg, rgba(242, 180, 90, 0.14), $color-bg-raised 70%);
 }
 
-.icon {
+.today {
+  border-color: $color-play;
+  background: linear-gradient(90deg, rgba(232, 80, 91, 0.25), $color-bg-raised 75%);
+
+  .when {
+    color: #ff9aa1;
+  }
+
+  .dateBlock {
+    background: $color-play;
+    color: #fff;
+  }
+}
+
+.past {
+  opacity: 0.55;
+
+  .when {
+    color: $color-text-dim;
+  }
+}
+
+.dateBlock {
   display: grid;
   place-items: center;
+  align-content: center;
   flex: 0 0 auto;
-  width: $touch;
-  height: $touch;
-  border-radius: 50%;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: $radius-md;
   background: rgba(255, 255, 255, 0.06);
-  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.day {
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 1.35rem;
+}
+
+.month {
+  margin-top: 2px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $color-text-muted;
 }
 
 .body {
@@ -33,22 +71,31 @@
 
 .title {
   font-family: $font-ui;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0;
 }
 
-.meta,
-.people {
-  font-size: 0.85rem;
+.meta {
+  font-size: 0.82rem;
   color: $color-text-muted;
+}
+
+.number {
+  color: $color-accent-strong;
+}
+
+.actions {
+  display: flex;
+  gap: $space-1;
+  margin-top: $space-1;
 }
 
 .when {
   flex: 0 0 auto;
   max-width: 6.5rem;
   text-align: right;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: $color-accent;
 }

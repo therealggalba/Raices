@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 — 2026-10-16
+
+- Fechas importantes: tipo de evento, descripción, fecha de origen y personas; todas se repiten cada año y
+  muestran su número de aniversario («Cumple 31», «18.º aniversario»). Se añaden desde cada canal.
+- Nueva sección global «Fechas» (`/fechas`): todo el año en orden cronológico, agrupado por meses, con el día de
+  hoy marcado, cambio de año y filtros por canal, mes, tipo de evento y nombre de persona (en la URL).
+- Aviso del día: ventana emergente al abrir la app con las fechas de hoy (una vez al día) y, con permiso,
+  notificación del navegador mientras la app está abierta.
+- «No te olvides» enlaza a Fechas. Cabecera compacta en móvil.
+- Esquema de datos v4 (sin la opción «se repite») con migración.
+
 ## 0.4.0 — 2026-10-16
 
 - Continuar viendo: se guarda por usuario dónde se dejó cada vídeo (cada 5 s, al pausar, al terminar y al

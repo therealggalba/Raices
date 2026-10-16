@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LinkProps } from 'react-router-dom';
 import { ui as styles } from './ui-styles';
@@ -22,7 +22,7 @@ export function Button({
   className,
   type = 'button',
   ...rest
-}: StyleProps & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: StyleProps & ComponentProps<'button'>) {
   return <button type={type} className={buttonClass({ variant, small, block }, className)} {...rest} />;
 }
 

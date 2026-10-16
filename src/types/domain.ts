@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -103,14 +103,19 @@ export interface Video {
   authorId: string;
 }
 
+/**
+ * An important date contributed by a channel. Every date repeats yearly on
+ * the same day; the anniversary number is derived from the origin date
+ * (Cumpleaños de Gonzalo, 1995-03-30 -> on 2026-03-30 he turns 31).
+ */
 export interface FamilyEvent {
   id: string;
   channelId: string;
   type: EventType;
+  /** Description shown everywhere ("Cumpleaños de Gonzalo"). */
   title: string;
+  /** Origin date (the day it first happened). */
   date: IsoDate;
-  /** Repeats every year on the same day (birthdays, anniversaries…). */
-  recurring: boolean;
   personIds: string[];
   notes: string;
 }
@@ -190,7 +195,6 @@ export interface EventInput {
   type: EventType;
   title: string;
   date: IsoDate;
-  recurring: boolean;
   personIds: string[];
   notes: string;
 }
@@ -218,18 +222,36 @@ export interface ChannelSnapshot {
   favoriteVideoIds: string[];
 }
 
-/** One future occurrence of an event (explicit or derived from a birthday). */
-export interface UpcomingEvent {
+/**
+ * One yearly occurrence of an important date: a stored FamilyEvent or a
+ * birthday derived from a person's birth date.
+ */
+export interface DateOccurrence {
   key: string;
+  channelId: string;
   type: EventType;
   title: string;
+  /** Day of this occurrence. */
   date: IsoDate;
+  /** Day it first happened. */
+  originDate: IsoDate;
+  /** Anniversary number (age, years married…). 0 = the year it happens. */
+  years: number;
+  /** Days from today (negative = already passed). */
   daysUntil: number;
-  /** Years since the original date (age, years married…), when meaningful. */
-  years?: number;
   personIds: string[];
   /** Id of the stored FamilyEvent; absent for birthdays derived from people. */
   eventId?: string;
+}
+
+/** Filters of the yearly «Fechas» list (empty lists mean "any"). */
+export interface DateFilters {
+  channelIds: string[];
+  /** 1-12. */
+  months: number[];
+  types: EventType[];
+  /** Free text: description or the name of a person involved. */
+  query: string;
 }
 
 export interface LibraryChannel {

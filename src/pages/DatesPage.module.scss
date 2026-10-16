@@ -1,0 +1,193 @@
+@use '../styles/variables' as *;
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-4;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: $space-3 $space-4 $space-8;
+
+  @include md-up {
+    padding: $space-4 $space-8 $space-8;
+  }
+}
+
+.top {
+  display: grid;
+  gap: $space-3;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-3;
+
+  h1 {
+    font-size: 1.6rem;
+  }
+}
+
+.year {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: $color-accent-strong;
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 1.4rem;
+    line-height: 1;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+  }
+}
+
+.add {
+  position: relative;
+  margin-left: auto;
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 $space-3;
+  border-radius: $radius-pill;
+  background: $color-accent;
+  color: #1b1408;
+  font-weight: 600;
+  font-size: 0.85rem;
+  list-style: none;
+  cursor: pointer;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+}
+
+.addMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + #{$space-1});
+  z-index: 10;
+  display: grid;
+  min-width: 220px;
+  padding: $space-2;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+
+  a {
+    padding: $space-2 $space-3;
+    border-radius: $radius-sm;
+    color: $color-text;
+    text-decoration: none;
+
+    &:hover {
+      background: $color-bg-hover;
+    }
+  }
+}
+
+.addHint {
+  padding: $space-1 $space-3;
+  font-size: 0.75rem;
+  color: $color-text-dim;
+}
+
+.search {
+  border-radius: $radius-pill;
+  padding-left: $space-4;
+}
+
+.filters {
+  display: grid;
+  gap: $space-2;
+}
+
+.months {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: $space-1;
+
+  @include md-up {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+.month {
+  min-height: 34px;
+  border: 1px solid $color-line;
+  border-radius: $radius-sm;
+  background: $color-bg-raised;
+  color: $color-text-muted;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.monthOn {
+  background: rgba(242, 180, 90, 0.15);
+  border-color: $color-accent;
+  color: $color-accent-strong;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-2;
+  min-height: 36px;
+}
+
+.calendar {
+  display: grid;
+  gap: $space-5;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monthGroup {
+  display: grid;
+  gap: $space-2;
+  scroll-margin-top: calc(#{$topbar-height} + #{$space-3});
+}
+
+.monthTitle {
+  font-size: 1.25rem;
+  text-transform: capitalize;
+
+  span {
+    margin-left: $space-1;
+    font-family: $font-ui;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $color-text-dim;
+  }
+}
+
+.entries {
+  display: grid;
+  gap: $space-2;
+}
+
+.edit {
+  font-size: 0.8rem;
+  color: $color-accent;
+}

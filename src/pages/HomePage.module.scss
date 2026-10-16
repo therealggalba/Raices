@@ -41,3 +41,25 @@
   justify-content: center;
   gap: $space-2;
 }
+
+.rowHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $space-3;
+
+  @include md-up {
+    justify-content: flex-start;
+  }
+}
+
+.more {
+  color: $color-accent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

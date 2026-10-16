@@ -1,23 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { eventAlerts, nextOccurrence, occurrenceSubtitle, pastEvents, upcomingEvents } from '../utils/events';
+import {
+  anniversaryLabel,
+  dateParams,
+  filterDates,
+  occurrenceIn,
+  occurrencesInYear,
+  parseDateParams,
+  parseYearParam,
+  todaysEvents,
+  upcomingEvents,
+} from '../utils/events';
 import { makeEvent, makePerson } from './fixtures';
 
-const TODAY = '2026-10-15';
+const TODAY = '2026-10-16';
 
-describe('nextOccurrence', () => {
-  it('rolls recurring dates to this year or the next and counts the years', () => {
-    expect(nextOccurrence('1966-10-16', true, TODAY)).toEqual({ date: '2026-10-16', years: 60 });
-    expect(nextOccurrence('1966-10-15', true, TODAY)).toEqual({ date: '2026-10-15', years: 60 });
-    expect(nextOccurrence('1966-10-14', true, TODAY)).toEqual({ date: '2027-10-14', years: 61 });
+describe('occurrenceIn', () => {
+  it('gives the same day each year with its anniversary number', () => {
+    expect(occurrenceIn('1995-03-30', 2026)).toEqual({ date: '2026-03-30', years: 31 });
+    expect(occurrenceIn('1995-03-30', 1995)).toEqual({ date: '1995-03-30', years: 0 });
   });
 
-  it('keeps one-off dates only while they are in the future', () => {
-    expect(nextOccurrence('2026-10-22', false, TODAY)).toEqual({ date: '2026-10-22' });
-    expect(nextOccurrence('2026-10-01', false, TODAY)).toBeNull();
+  it('does not exist before the year it first happened', () => {
+    expect(occurrenceIn('2030-05-01', 2026)).toBeNull();
   });
 
-  it('does not report "0 years" for something created this year', () => {
-    expect(nextOccurrence('2026-12-01', true, TODAY)?.years).toBeUndefined();
+  it('moves February 29th to the 28th in non-leap years', () => {
+    expect(occurrenceIn('2000-02-29', 2027)).toEqual({ date: '2027-02-28', years: 27 });
   });
 });
 
@@ -28,21 +36,27 @@ describe('upcomingEvents', () => {
     makePerson({ id: 'p-sin', firstName: 'Sin fecha' }),
   ];
 
-  it('merges explicit events with birthdays derived from people, soonest first', () => {
-    const list = upcomingEvents(
-      [makeEvent({ id: 'e-ani', title: 'Aniversario de los abuelos', date: '1966-10-16' })],
-      people,
-      TODAY,
-    );
-    expect(list.map((e) => [e.title, e.daysUntil])).toEqual([
-      ['Aniversario de los abuelos', 1],
-      ['Cumpleaños de Carlos', 3],
-      ['Cumpleaños de Ana', 82],
+  it('merges stored dates with birthdays derived from people, soonest first', () => {
+    const list = upcomingEvents([makeEvent({ id: 'e-ani', title: 'Aniversario de los abuelos', date: '1966-10-17' })], people, TODAY);
+    expect(list.map((e) => [e.title, e.daysUntil, e.years])).toEqual([
+      ['Aniversario de los abuelos', 1, 60],
+      ['Cumpleaños de Carlos', 2, 28],
+      ['Cumpleaños de Ana', 81, 27],
     ]);
-    expect(list[1].years).toBe(28);
   });
 
-  it('does not duplicate a birthday that already has an explicit event', () => {
+  it('rolls a date already passed this year over to next year', () => {
+    const [next] = upcomingEvents([makeEvent({ date: '1990-10-15' })], [], TODAY);
+    expect(next).toMatchObject({ date: '2027-10-15', years: 37, daysUntil: 364 });
+  });
+
+  it('shows a date first happening in the future on that day, with number 0', () => {
+    const [next] = upcomingEvents([makeEvent({ type: 'comunion', date: '2026-10-23' })], [], TODAY);
+    expect(next).toMatchObject({ date: '2026-10-23', years: 0, daysUntil: 7 });
+    expect(anniversaryLabel(next)).toBeNull();
+  });
+
+  it('does not duplicate a birthday that already has a stored date', () => {
     const list = upcomingEvents(
       [makeEvent({ id: 'e-cumple', type: 'cumpleanos', title: 'Cumple de Carlos', date: '1998-10-18', personIds: ['p-carlos'] })],
       people,
@@ -51,18 +65,58 @@ describe('upcomingEvents', () => {
     expect(list.filter((e) => e.personIds.includes('p-carlos'))).toHaveLength(1);
   });
 
-  it('only alerts within a week, and lists past one-off events', () => {
-    const events = [
-      makeEvent({ id: 'a', date: '2026-10-22', recurring: false, title: 'Comunión' }),
-      makeEvent({ id: 'b', date: '2026-10-23', recurring: false, title: 'Lejos' }),
-      makeEvent({ id: 'c', date: '2026-09-01', recurring: false, title: 'Pasado' }),
-    ];
-    expect(eventAlerts(upcomingEvents(events, [], TODAY)).map((e) => e.title)).toEqual(['Comunión']);
-    expect(pastEvents(events, TODAY).map((e) => e.title)).toEqual(['Pasado']);
+  it('finds today\'s dates for the pop-up', () => {
+    const list = todaysEvents([makeEvent({ title: 'Hoy', date: '1982-10-16' }), makeEvent({ id: 'e2', date: '1982-10-17' })], [], TODAY);
+    expect(list.map((e) => [e.title, e.years])).toEqual([['Hoy', 44]]);
+  });
+});
+
+describe('anniversaryLabel', () => {
+  it('reads as an age for birthdays and as an anniversary otherwise', () => {
+    expect(anniversaryLabel({ type: 'cumpleanos', years: 31 })).toBe('Cumple 31');
+    expect(anniversaryLabel({ type: 'boda', years: 18 })).toBe('18.º aniversario');
+  });
+});
+
+describe('yearly list and filters', () => {
+  const people = [makePerson({ id: 'p1', channelId: 'fam', firstName: 'Gonzalo', lastName: 'Galba', birthDate: '1995-03-30' })];
+  const events = [
+    makeEvent({ id: 'a', channelId: 'fam', type: 'aniversario', title: 'Aniversario de los abuelos', date: '1966-10-17' }),
+    makeEvent({ id: 'b', channelId: 'uni', type: 'boda', title: 'Boda de Javi', date: '2015-09-19' }),
+    makeEvent({ id: 'c', channelId: 'uni', type: 'otro', title: 'Fundación', date: '2027-01-01' }),
+  ];
+  const year = occurrencesInYear(events, people, 2026, TODAY);
+
+  it('lists every date of the year in calendar order, past ones included', () => {
+    expect(year.map((o) => [o.date, o.title, o.daysUntil < 0])).toEqual([
+      ['2026-03-30', 'Cumpleaños de Gonzalo', true],
+      ['2026-09-19', 'Boda de Javi', true],
+      ['2026-10-17', 'Aniversario de los abuelos', false],
+    ]);
   });
 
-  it('builds human subtitles', () => {
-    const [birthday] = upcomingEvents([], [people[0]], TODAY);
-    expect(occurrenceSubtitle(birthday, people)).toBe('Carlos cumple 28');
+  it('filters by channel, month, type and person name', () => {
+    const titles = (f: Partial<Parameters<typeof filterDates>[1]>) =>
+      filterDates(year, { channelIds: [], months: [], types: [], query: '', ...f }, people).map((o) => o.title);
+    expect(titles({ channelIds: ['uni'] })).toEqual(['Boda de Javi']);
+    expect(titles({ months: [3, 10] })).toEqual(['Cumpleaños de Gonzalo', 'Aniversario de los abuelos']);
+    expect(titles({ types: ['boda'] })).toEqual(['Boda de Javi']);
+    expect(titles({ query: 'galba' })).toEqual(['Cumpleaños de Gonzalo']);
+    expect(titles({ query: 'ABUELOS' })).toEqual(['Aniversario de los abuelos']);
+  });
+
+  it('round-trips filters through the URL and ignores garbage', () => {
+    const filters = { channelIds: ['uni'], months: [3, 10], types: ['boda' as const], query: 'javi' };
+    const params = dateParams(filters, 2025);
+    expect(params.toString()).toBe('anio=2025&canal=uni&mes=3&mes=10&tipo=boda&q=javi');
+    expect(parseDateParams(params)).toEqual(filters);
+    expect(parseYearParam(params, 2026)).toBe(2025);
+    expect(parseDateParams(new URLSearchParams('mes=13&mes=x&tipo=fiesta&canal=../a'))).toEqual({
+      channelIds: [],
+      months: [],
+      types: [],
+      query: '',
+    });
+    expect(parseYearParam(new URLSearchParams('anio=abc'), 2026)).toBe(2026);
   });
 });

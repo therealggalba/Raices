@@ -6,7 +6,7 @@ import { EmptyState, LinkButton } from '../components/ui';
 import { VideoRow } from '../components/VideoRow';
 import { useChannel } from '../hooks/channel-context';
 import { buildCatalogRows, featuredVideo } from '../utils/catalog';
-import { eventAlerts, upcomingEvents } from '../utils/events';
+import { ALERT_WINDOW_DAYS, upcomingEvents } from '../utils/events';
 import { sortPeople } from '../utils/people';
 import styles from './ChannelHomePage.module.scss';
 
@@ -16,7 +16,7 @@ export function ChannelHomePage() {
   const { channel, videos, people, events, favoriteVideoIds } = snapshot;
   const hero = featuredVideo(videos);
   const rows = buildCatalogRows(videos, favoriteVideoIds);
-  const alerts = eventAlerts(upcomingEvents(events, people, today));
+  const alerts = upcomingEvents(events, people, today, ALERT_WINDOW_DAYS);
 
   return (
     <div className={styles.home}>
@@ -39,7 +39,7 @@ export function ChannelHomePage() {
           <h2 className={styles.rowTitle}>No te olvides</h2>
           <div className={styles.alertList}>
             {alerts.map((event) => (
-              <EventItem key={event.key} event={event} people={people} highlight />
+              <EventItem key={event.key} event={event} people={people} />
             ))}
           </div>
         </section>

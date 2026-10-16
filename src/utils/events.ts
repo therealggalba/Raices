@@ -1,102 +1,162 @@
-import type { FamilyEvent, IsoDate, Person, UpcomingEvent } from '../types/domain';
+import type { DateFilters, DateOccurrence, EventType, FamilyEvent, IsoDate, Person } from '../types/domain';
 import { daysBetween, parsePartialDate, sameDayInYear } from './dates';
 import { fullName } from './people';
+import { isEventType, isId } from './validation';
+import { foldText } from './text';
 
-/** Alerts are shown for anything happening within this many days. */
+// Important dates. Every date repeats yearly on the same day; its anniversary
+// number comes from the origin date. Birthdays are also derived from people's
+// birth dates (unless an explicit birthday already covers that person).
+
+/** Home strip highlight / "pronto" window. */
 export const ALERT_WINDOW_DAYS = 7;
 
-interface Occurrence {
-  date: IsoDate;
-  years?: number;
+interface DateSource {
+  key: string;
+  channelId: string;
+  type: EventType;
+  title: string;
+  originDate: IsoDate;
+  personIds: string[];
+  eventId?: string;
 }
 
-/**
- * Next occurrence of `date` on or after `today`. Recurring dates roll over to
- * the next year; one-off dates in the past have no next occurrence.
- */
-export function nextOccurrence(date: IsoDate, recurring: boolean, today: IsoDate): Occurrence | null {
-  const origin = parsePartialDate(date);
-  const now = parsePartialDate(today);
-  if (!origin?.day || !now?.day) return null;
-  if (!recurring) return daysBetween(today, date) >= 0 ? { date } : null;
-  let next = sameDayInYear(date, now.year);
-  if (daysBetween(today, next) < 0) next = sameDayInYear(date, now.year + 1);
-  const years = Number(next.slice(0, 4)) - origin.year;
-  return { date: next, years: years > 0 ? years : undefined };
+function sources(events: readonly FamilyEvent[], people: readonly Person[]): DateSource[] {
+  const covered = new Set(events.filter((e) => e.type === 'cumpleanos').flatMap((e) => e.personIds));
+  const list: DateSource[] = events.map((e) => ({
+    key: `event:${e.id}`,
+    channelId: e.channelId,
+    type: e.type,
+    title: e.title,
+    originDate: e.date,
+    personIds: e.personIds,
+    eventId: e.id,
+  }));
+  for (const person of people) {
+    if (!person.birthDate || covered.has(person.id)) continue;
+    list.push({
+      key: `birthday:${person.id}`,
+      channelId: person.channelId,
+      type: 'cumpleanos',
+      title: `Cumpleaños de ${person.firstName}`,
+      originDate: person.birthDate,
+      personIds: [person.id],
+    });
+  }
+  return list;
 }
 
-/**
- * Upcoming events: explicit events plus birthdays derived from people's birth
- * dates (unless an explicit birthday event already covers that person).
- */
+/** The occurrence of a date in `year`; null before the year it first happened. */
+export function occurrenceIn(originDate: IsoDate, year: number): { date: IsoDate; years: number } | null {
+  const origin = parsePartialDate(originDate);
+  if (!origin?.day || year < origin.year) return null;
+  return { date: sameDayInYear(originDate, year), years: year - origin.year };
+}
+
+function toOccurrence(source: DateSource, year: number, today: IsoDate): DateOccurrence | null {
+  const occ = occurrenceIn(source.originDate, year);
+  if (!occ) return null;
+  return { ...source, date: occ.date, years: occ.years, daysUntil: daysBetween(today, occ.date) };
+}
+
+function byDate(a: DateOccurrence, b: DateOccurrence): number {
+  return a.date.localeCompare(b.date) || a.title.localeCompare(b.title, 'es');
+}
+
+/** Every date of `year` (past and future), in calendar order. */
+export function occurrencesInYear(
+  events: readonly FamilyEvent[],
+  people: readonly Person[],
+  year: number,
+  today: IsoDate,
+): DateOccurrence[] {
+  return sources(events, people)
+    .map((s) => toOccurrence(s, year, today))
+    .filter((o): o is DateOccurrence => o !== null)
+    .sort(byDate);
+}
+
+/** Next occurrence of each date (today included), soonest first. */
 export function upcomingEvents(
   events: readonly FamilyEvent[],
   people: readonly Person[],
   today: IsoDate,
   horizonDays = 366,
-): UpcomingEvent[] {
-  const result: UpcomingEvent[] = [];
-  const coveredBirthdays = new Set(
-    events.filter((e) => e.type === 'cumpleanos').flatMap((e) => e.personIds),
-  );
-
-  for (const event of events) {
-    const next = nextOccurrence(event.date, event.recurring, today);
-    if (!next) continue;
-    result.push({
-      key: `event:${event.id}`,
-      eventId: event.id,
-      type: event.type,
-      title: event.title,
-      date: next.date,
-      daysUntil: daysBetween(today, next.date),
-      years: next.years,
-      personIds: event.personIds,
-    });
+): DateOccurrence[] {
+  const year = parsePartialDate(today)?.year;
+  if (!year) return [];
+  const result: DateOccurrence[] = [];
+  for (const source of sources(events, people)) {
+    const origin = parsePartialDate(source.originDate);
+    if (!origin?.day) continue;
+    // A date first happening in a future year shows up on that day.
+    let occ = toOccurrence(source, Math.max(year, origin.year), today);
+    if (occ && occ.daysUntil < 0) occ = toOccurrence(source, year + 1, today);
+    if (occ && occ.daysUntil <= horizonDays) result.push(occ);
   }
-
-  for (const person of people) {
-    if (!person.birthDate || coveredBirthdays.has(person.id)) continue;
-    const next = nextOccurrence(person.birthDate, true, today);
-    if (!next) continue;
-    result.push({
-      key: `birthday:${person.id}`,
-      type: 'cumpleanos',
-      title: `Cumpleaños de ${person.firstName}`,
-      date: next.date,
-      daysUntil: daysBetween(today, next.date),
-      years: next.years,
-      personIds: [person.id],
-    });
-  }
-
-  return result
-    .filter((e) => e.daysUntil <= horizonDays)
-    .sort((a, b) => a.daysUntil - b.daysUntil || a.title.localeCompare(b.title, 'es'));
+  return result.sort((a, b) => a.daysUntil - b.daysUntil || a.title.localeCompare(b.title, 'es'));
 }
 
-export function eventAlerts(upcoming: readonly UpcomingEvent[]): UpcomingEvent[] {
-  return upcoming.filter((e) => e.daysUntil <= ALERT_WINDOW_DAYS);
+export function todaysEvents(events: readonly FamilyEvent[], people: readonly Person[], today: IsoDate): DateOccurrence[] {
+  return upcomingEvents(events, people, today, 0);
 }
 
-/** Past one-off events (most recent first), e.g. last year's communion. */
-export function pastEvents(events: readonly FamilyEvent[], today: IsoDate): FamilyEvent[] {
-  return events
-    .filter((e) => !e.recurring && daysBetween(today, e.date) < 0)
-    .sort((a, b) => b.date.localeCompare(a.date));
+/** "Cumple 31", "31.º aniversario", or null the year it first happens. */
+export function anniversaryLabel(occurrence: Pick<DateOccurrence, 'type' | 'years'>): string | null {
+  if (occurrence.years <= 0) return null;
+  return occurrence.type === 'cumpleanos' ? `Cumple ${occurrence.years}` : `${occurrence.years}.º aniversario`;
 }
 
-/** "Carlos cumple 28" style subtitle for an occurrence, when it applies. */
-export function occurrenceSubtitle(event: UpcomingEvent, people: readonly Person[]): string | null {
-  if (!event.years) return null;
-  if (event.type === 'cumpleanos') {
-    const person = people.find((p) => p.id === event.personIds[0]);
-    return person ? `${person.firstName} cumple ${event.years}` : `Cumple ${event.years}`;
-  }
-  if (event.type === 'aniversario') return `${event.years} años`;
-  const names = event.personIds
-    .map((id) => people.find((p) => p.id === id))
-    .filter((p): p is Person => !!p)
-    .map(fullName);
-  return names.length ? `${event.years} años · ${names.join(', ')}` : `${event.years} años`;
+
+export const DEFAULT_DATE_FILTERS: DateFilters = { channelIds: [], months: [], types: [], query: '' };
+
+export function filterDates(
+  occurrences: readonly DateOccurrence[],
+  filters: DateFilters,
+  people: readonly Person[],
+): DateOccurrence[] {
+  const names = new Map(people.map((p) => [p.id, fullName(p)]));
+  const channels = new Set(filters.channelIds);
+  const months = new Set(filters.months);
+  const types = new Set(filters.types);
+  const terms = foldText(filters.query).split(/\s+/).filter(Boolean);
+  return occurrences.filter((o) => {
+    if (channels.size && !channels.has(o.channelId)) return false;
+    if (months.size && !months.has(Number(o.date.slice(5, 7)))) return false;
+    if (types.size && !types.has(o.type)) return false;
+    if (terms.length) {
+      const haystack = foldText([o.title, ...o.personIds.map((id) => names.get(id) ?? '')].join(' '));
+      if (!terms.every((t) => haystack.includes(t))) return false;
+    }
+    return true;
+  });
+}
+
+/** URL -> filters (?canal=&mes=&tipo=&q=); anything malformed is ignored. */
+export function parseDateParams(params: URLSearchParams): DateFilters {
+  const months = params
+    .getAll('mes')
+    .map(Number)
+    .filter((m) => Number.isInteger(m) && m >= 1 && m <= 12);
+  return {
+    channelIds: [...new Set(params.getAll('canal').filter(isId))],
+    months: [...new Set(months)].sort((a, b) => a - b),
+    types: [...new Set(params.getAll('tipo').filter(isEventType))],
+    query: (params.get('q') ?? '').slice(0, 80),
+  };
+}
+
+export function dateParams(filters: DateFilters, year?: number): URLSearchParams {
+  const params = new URLSearchParams();
+  if (year !== undefined) params.set('anio', String(year));
+  for (const id of filters.channelIds) params.append('canal', id);
+  for (const m of filters.months) params.append('mes', String(m));
+  for (const t of filters.types) params.append('tipo', t);
+  if (filters.query.trim()) params.set('q', filters.query.trim().slice(0, 80));
+  return params;
+}
+
+export function parseYearParam(params: URLSearchParams, fallback: number): number {
+  const year = Number(params.get('anio'));
+  return Number.isInteger(year) && year >= 1900 && year <= 2200 ? year : fallback;
 }

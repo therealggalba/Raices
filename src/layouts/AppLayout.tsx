@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { OptionsMenu } from '../components/OptionsMenu';
+import { TodayPopup } from '../components/TodayPopup';
 import { ErrorBanner, Spinner } from '../components/ui';
 import { LibraryContext } from '../hooks/library-context';
 import type { LibraryContextValue } from '../hooks/library-context';
@@ -74,6 +75,9 @@ export function AppLayout() {
           <NavLink to="/catalogo" className={navClass}>
             Catálogo
           </NavLink>
+          <NavLink to="/fechas" className={navClass}>
+            Fechas
+          </NavLink>
         </nav>
         <div className={styles.actions}>
           <Link to="/catalogo?buscar=1" className={styles.iconButton} aria-label="Buscar en el catálogo">
@@ -90,6 +94,7 @@ export function AppLayout() {
         {value ? (
           <LibraryContext.Provider value={value}>
             <Outlet />
+            <TodayPopup />
           </LibraryContext.Provider>
         ) : (
           !error && <Spinner />
