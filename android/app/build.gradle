@@ -7,8 +7,9 @@ android {
         applicationId "com.ggalba.familymemories"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // CI passes the run number so every APK is an upgrade of the previous one.
+        versionCode Integer.parseInt(System.getenv("FM_VERSION_CODE") ?: "1")
+        versionName System.getenv("FM_VERSION_NAME") ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,7 +17,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Fixed signing key (CI only, from GitHub secrets): Android only installs an
+    // update signed with the same key as the installed app. Without these
+    // variables (local builds) Gradle uses the usual per-machine debug key.
+    signingConfigs {
+        fixed {
+            def keystore = System.getenv("FM_KEYSTORE_PATH")
+            if (keystore) {
+                storeFile file(keystore)
+                storeType "pkcs12"
+                storePassword System.getenv("FM_KEYSTORE_PASSWORD")
+                keyAlias "familymemories"
+                keyPassword System.getenv("FM_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (System.getenv("FM_KEYSTORE_PATH")) signingConfig signingConfigs.fixed
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

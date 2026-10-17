@@ -56,9 +56,21 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
+        # Same signing key on every build (stored only as GitHub secrets), so
+        # each new APK installs over the previous one.
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          FM_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          FM_VERSION_CODE: ${{ github.run_number }}
         run: |
           chmod +x gradlew
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/familymemories.p12"
+            export FM_KEYSTORE_PATH="$RUNNER_TEMP/familymemories.p12"
+          fi
+          export FM_VERSION_NAME="$(node -p "require('../package.json').version")"
           ./gradlew assembleDebug --no-daemon
+          rm -f "$RUNNER_TEMP/familymemories.p12"
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
