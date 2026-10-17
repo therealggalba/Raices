@@ -1,4 +1,4 @@
-import { CHANNEL_KINDS, EVENT_TYPES, RARITIES, VIDEO_CATEGORIES } from '../types/domain';
+import { CHANNEL_KINDS, EVENT_TYPES, VIDEO_CATEGORIES } from '../types/domain';
 import type {
   CardInput,
   ChannelInput,
@@ -6,7 +6,6 @@ import type {
   EventInput,
   EventType,
   PersonInput,
-  Rarity,
   ValidationResult,
   VideoCategory,
   VideoInput,
@@ -48,10 +47,6 @@ export function isVideoCategory(value: unknown): value is VideoCategory {
 
 export function isChannelKind(value: unknown): value is ChannelKind {
   return typeof value === 'string' && (CHANNEL_KINDS as readonly string[]).includes(value);
-}
-
-export function isRarity(value: unknown): value is Rarity {
-  return typeof value === 'string' && (RARITIES as readonly string[]).includes(value);
 }
 
 export function isEventType(value: unknown): value is EventType {
@@ -273,7 +268,6 @@ export function validateCardInput(input: unknown): ValidationResult<CardInput> {
   else if (!isHttpsUrl(input.imageUrl)) errors.push('Imagen: debe ser un enlace https válido');
   else imageUrl = input.imageUrl.trim();
   if (!isPartialDate(input.takenAt)) errors.push('Fecha de la foto: usa AAAA, AAAA-MM o AAAA-MM-DD');
-  if (!isRarity(input.rarity)) errors.push('Rareza: inválida');
   let personId: string | undefined;
   if (input.personId !== undefined && input.personId !== null && input.personId !== '') {
     if (isId(input.personId)) personId = input.personId;
@@ -287,7 +281,6 @@ export function validateCardInput(input: unknown): ValidationResult<CardInput> {
       description,
       imageUrl,
       takenAt: input.takenAt as string,
-      rarity: input.rarity as Rarity,
       ...(personId ? { personId } : {}),
     },
   };

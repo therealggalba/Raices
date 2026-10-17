@@ -1,0 +1,53 @@
+@use '../styles/variables' as *;
+
+.meter {
+  display: grid;
+  gap: $space-1;
+}
+
+.numbers {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $space-2;
+  font-size: 0.9rem;
+  color: $color-text-muted;
+
+  b {
+    color: $color-text;
+  }
+}
+
+.percent {
+  font-size: 1.1rem;
+  color: $color-accent-strong !important;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, $color-accent, $color-accent-strong);
+    transition: width 0.6s ease;
+  }
+}
+
+.compact {
+  .numbers {
+    font-size: 0.8rem;
+  }
+
+  .percent {
+    font-size: 0.9rem;
+  }
+
+  .bar {
+    height: 5px;
+  }
+}

@@ -25,6 +25,8 @@ const lib: Library = {
   viewCounts: { c: 4, a: 1 },
   favoriteVideoIds: ['b'],
   progress: {},
+  cards: [],
+  unlockedCardIds: [],
 };
 
 const ids = (filters: Partial<typeof DEFAULT_FILTERS>) => filterCatalog(lib, { ...DEFAULT_FILTERS, ...filters }).map((v) => v.id);

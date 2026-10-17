@@ -1,93 +1,128 @@
-import { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CardThumb } from '../components/CardThumb';
 import { PersonAvatar } from '../components/PersonAvatar';
-import { RarityMark } from '../components/Rarity';
+import { ProgressMeter } from '../components/ProgressMeter';
 import { EmptyState, LinkButton } from '../components/ui';
-import { useChannel } from '../hooks/channel-context';
-import { RARITIES } from '../types/domain';
-import { NO_PERSON, albumSections, rarityCounts } from '../utils/album';
-import { fullName } from '../utils/people';
+import { useLibrary } from '../hooks/library-context';
+import { useScrollArrows } from '../hooks/useScrollArrows';
+import { albumProgress, albumSections } from '../utils/album';
 import styles from './AlbumPage.module.scss';
 
-/** The channel's cromo album: one section per person (category). */
+/**
+ * One channel's album. The full-width row of people (a carousel when they
+ * don't fit) picks the category; only that person's cromos are shown below.
+ * The selected person lives in the URL (?persona=) so «back» keeps it.
+ */
 export function AlbumPage() {
-  const { snapshot, isAdmin } = useChannel();
-  const { hash } = useLocation();
-  const { channel, cards, people } = snapshot;
-  const sections = albumSections(cards, people);
-  const counts = rarityCounts(cards);
-  const base = `/c/${channel.id}/album`;
+  const { channelId = '' } = useParams();
+  const [params, setParams] = useSearchParams();
+  const { library, channelById } = useLibrary();
+  const channel = channelById(channelId);
+  const cards = library.cards.filter((c) => c.channelId === channelId);
+  const people = library.people.filter((p) => p.channelId === channelId);
+  const unlocked = new Set(library.unlockedCardIds);
+  // People without cromos have nothing to show yet.
+  const sections = albumSections(cards, people).filter((s) => s.cards.length > 0);
+  const selectedId = params.get('persona');
+  const selected = sections.find((s) => s.id === selectedId) ?? sections[0];
+  const { ref: tabsRef, canPrev, canNext, step, reveal } = useScrollArrows<HTMLDivElement>([sections.length]);
+  const selectedTab = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
-  }, [hash]);
+    reveal(selectedTab.current);
+  }, [selected?.id, reveal]);
+
+  if (!channel) {
+    return (
+      <EmptyState icon="🃏">
+        <p>Este álbum no existe o ya no tienes acceso a él.</p>
+        <LinkButton to="/albumes">Ver mis álbumes</LinkButton>
+      </EmptyState>
+    );
+  }
+
+  const isAdmin = channel.role === 'admin';
+  const progress = albumProgress(cards, unlocked);
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
-          <h1>Álbum de cromos</h1>
-          <p className={styles.total}>
-            {cards.length} {cards.length === 1 ? 'cromo' : 'cromos'} · {people.length}{' '}
-            {people.length === 1 ? 'persona' : 'personas'}
-          </p>
+        <div className={styles.titleRow}>
+          <Link to="/albumes" className={styles.back}>
+            ‹ Álbumes
+          </Link>
+          {isAdmin && (
+            <LinkButton
+              to={`/c/${channel.id}/album/nuevo${selected?.person ? `?persona=${selected.person.id}` : ''}`}
+              variant="primary"
+              small
+            >
+              + Añadir cromo
+            </LinkButton>
+          )}
         </div>
-        {isAdmin && (
-          <LinkButton to={`${base}/nuevo`} variant="primary" small>
-            + Añadir cromo
-          </LinkButton>
-        )}
+        <h1>{channel.name}</h1>
+        <ProgressMeter progress={progress} />
       </header>
-
-      {cards.length > 0 && (
-        <ul className={styles.rarities} aria-label="Cromos por rareza">
-          {RARITIES.map((r) => (
-            <li key={r}>
-              <RarityMark rarity={r} size="sm" /> <b>{counts[r]}</b>
-            </li>
-          ))}
-        </ul>
-      )}
 
       {sections.length === 0 ? (
         <EmptyState icon="🃏">
-          <p>El álbum se organiza por personas: añade primero las personas del canal.</p>
-          {isAdmin && <LinkButton to={`/c/${channel.id}/personas/nueva`}>Añadir persona</LinkButton>}
+          <p>Este álbum todavía no tiene cromos.</p>
         </EmptyState>
       ) : (
         <>
-          <nav className={styles.people} aria-label="Ir a la persona">
-            {sections.map((s) => (
-              <a key={s.id} href={`#album-${s.id}`} className={styles.personChip}>
-                {s.person ? <PersonAvatar person={s.person} size={40} /> : <span className={styles.various}>👥</span>}
-                <span>{s.person ? s.person.firstName : 'Varios'}</span>
-                <span className={styles.count}>{s.cards.length}</span>
-              </a>
-            ))}
-          </nav>
+          <div className={styles.tabsViewport}>
+            <div className={styles.tabs} ref={tabsRef} role="tablist" aria-label="Personas del álbum">
+              {sections.map((s) => {
+                const p = albumProgress(s.cards, unlocked);
+                const active = s.id === selected?.id;
+                return (
+                  <button
+                    key={s.id}
+                    ref={active ? selectedTab : undefined}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={[styles.tab, active ? styles.tabActive : ''].join(' ')}
+                    onClick={() => setParams({ persona: s.id }, { replace: true })}
+                  >
+                    {s.person ? <PersonAvatar person={s.person} size={44} /> : <span className={styles.various}>👥</span>}
+                    <span className={styles.tabName}>{s.person ? s.person.firstName : 'Varios'}</span>
+                    <span className={styles.tabCount}>
+                      {p.unlocked}/{p.total}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {canPrev && (
+              <button type="button" className={[styles.arrow, styles.prev].join(' ')} onClick={() => step(-1)} aria-label="Personas anteriores">
+                ‹
+              </button>
+            )}
+            {canNext && (
+              <button type="button" className={[styles.arrow, styles.next].join(' ')} onClick={() => step(1)} aria-label="Más personas">
+                ›
+              </button>
+            )}
+          </div>
 
-          {sections.map((s) => (
-            <section key={s.id} id={`album-${s.id}`} className={styles.section} aria-label={s.person ? fullName(s.person) : 'Varios'}>
-              <h2 className={styles.sectionTitle}>
-                {s.person ? fullName(s.person) : 'Varios'}
-                <span>{s.cards.length}</span>
-              </h2>
-              {s.cards.length === 0 ? (
-                <p className={styles.empty}>
-                  Todavía no hay cromos.{' '}
-                  {isAdmin && s.person && <Link to={`${base}/nuevo?persona=${s.person.id}`}>Añadir el primero</Link>}
-                </p>
-              ) : (
-                <div className={styles.grid}>
-                  {s.cards.map((card) => (
-                    <CardThumb key={card.id} card={card} to={`${base}/${card.id}`} />
-                  ))}
-                </div>
-              )}
-              {s.id === NO_PERSON && <p className={styles.empty}>Cromos de personas que ya no están en el canal o de grupo.</p>}
+          {selected && (
+            <section role="tabpanel" aria-label={selected.person ? selected.person.firstName : 'Varios'} className={styles.panel}>
+              <ProgressMeter progress={albumProgress(selected.cards, unlocked)} compact />
+              <div className={styles.grid}>
+                {selected.cards.map((card) => (
+                  <CardThumb
+                    key={card.id}
+                    card={card}
+                    locked={!unlocked.has(card.id)}
+                    to={`/albumes/${channel.id}/${card.id}`}
+                  />
+                ))}
+              </div>
             </section>
-          ))}
+          )}
         </>
       )}
     </div>

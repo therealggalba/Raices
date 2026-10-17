@@ -82,12 +82,10 @@
   text-align: center;
 }
 
-.rarity {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: $color-accent;
+.lockedNote {
+  max-width: 40ch;
+  color: $color-text-muted;
+  font-style: italic;
 }
 
 .description {

@@ -3,127 +3,153 @@
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: $space-5;
+  gap: $space-4;
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
-  padding: $space-5 $space-4 $space-8;
+  padding: $space-3 $space-4 $space-8;
 
   @include md-up {
-    padding: $space-6 $space-8 $space-8;
+    padding: $space-5 $space-8 $space-8;
   }
 }
 
 .header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: $space-3;
+  display: grid;
+  gap: $space-2;
 
   h1 {
     font-size: 1.6rem;
   }
 }
 
-.total {
-  color: $color-text-muted;
-  font-size: 0.9rem;
-}
-
-.rarities {
+.titleRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: $space-2 $space-4;
-  margin: 0;
-  padding: $space-2 $space-3;
-  border-radius: $radius-md;
-  background: $color-bg-raised;
-  list-style: none;
-  font-size: 0.85rem;
-
-  b {
-    margin-left: 2px;
-  }
-}
-
-.people {
-  position: sticky;
-  top: $topbar-height;
-  z-index: 5;
-  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: $space-3;
-  overflow-x: auto;
+}
+
+.back {
+  color: $color-accent;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+// Full-width people row; scrolls (with arrows) when it doesn't fit.
+.tabsViewport {
+  position: relative;
   margin: 0 (-$space-4);
-  padding: $space-2 $space-4;
-  background: rgba(14, 13, 18, 0.92);
-  backdrop-filter: blur(8px);
-  @include hide-scrollbar;
 
   @include md-up {
     margin: 0;
-    padding: $space-2 0;
   }
 }
 
-.personChip {
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  padding: $space-1 $space-4;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 $space-4;
+  scroll-behavior: smooth;
+  border-bottom: 1px solid $color-line;
+  @include hide-scrollbar;
+
+  @include md-up {
+    padding: $space-1 0;
+    scroll-padding: 0;
+  }
+}
+
+.tab {
   position: relative;
   display: grid;
   justify-items: center;
   gap: 2px;
-  flex: 0 0 auto;
-  width: 64px;
+  flex: 1 0 76px; // shares the full width; never narrower than 76px
+  padding: $space-2 $space-1 $space-3;
+  border: 0;
+  background: transparent;
   color: $color-text-muted;
-  font-size: 0.75rem;
-  text-decoration: none;
+  scroll-snap-align: start;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 20%;
+    right: 20%;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 3px;
+    background: transparent;
+  }
 
   &:hover {
     color: $color-text;
   }
 }
 
+.tabActive {
+  color: $color-text;
+
+  &::after {
+    background: $color-accent;
+  }
+}
+
+.tabName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.tabCount {
+  font-size: 0.7rem;
+  color: $color-text-dim;
+
+  .tabActive & {
+    color: $color-accent-strong;
+  }
+}
+
 .various {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: $color-bg-hover;
 }
 
-.count {
+.arrow {
   position: absolute;
-  top: -2px;
-  right: 8px;
-  min-width: 18px;
-  padding: 0 4px;
-  border-radius: $radius-pill;
-  background: $color-accent;
-  color: #1b1408;
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-align: center;
+  top: 0;
+  bottom: 1px;
+  z-index: 2;
+  width: 2rem;
+  border: 0;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
 }
 
-.section {
+.prev {
+  left: 0;
+  background: linear-gradient(to right, rgba(14, 13, 18, 0.95), rgba(14, 13, 18, 0));
+}
+
+.next {
+  right: 0;
+  background: linear-gradient(to left, rgba(14, 13, 18, 0.95), rgba(14, 13, 18, 0));
+}
+
+.panel {
   display: grid;
-  gap: $space-3;
-  scroll-margin-top: calc(#{$topbar-height} + 5rem);
-}
-
-.sectionTitle {
-  display: flex;
-  align-items: baseline;
-  gap: $space-2;
-  padding-bottom: $space-1;
-  border-bottom: 1px solid $color-line;
-  font-size: 1.2rem;
-
-  span {
-    font-family: $font-ui;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: $color-text-dim;
-  }
+  gap: $space-4;
 }
 
 .grid {
@@ -134,9 +160,4 @@
   @include md-up {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-}
-
-.empty {
-  color: $color-text-dim;
-  font-size: 0.9rem;
 }

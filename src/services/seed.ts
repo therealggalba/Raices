@@ -1,11 +1,11 @@
 import { SCHEMA_VERSION } from '../types/domain';
 import type {
   AlbumCard,
+  CardUnlock,
   FamilyEvent,
   Invitation,
   Member,
   Person,
-  Rarity,
   User,
   Video,
   VideoCategory,
@@ -368,39 +368,39 @@ export function buildDemoDb(now: Date): Db {
   // Album: free stock photos (picsum.photos), greyscale for the old ones.
   const photo = (seed: string, year: number) =>
     `https://picsum.photos/seed/fm-${seed}/600/800${year < 1990 ? '?grayscale' : ''}`;
-  const cardsPlan: [string, string | undefined, string, string, Rarity, string][] = [
-    // channel, person, title, takenAt, rarity, description
-    [DEMO_FAMILY_ID, 'p-antonio', 'La mili en Melilla', '1961', 'epico', 'Con el uniforme recién estrenado y cara de no haber dormido.'],
-    [DEMO_FAMILY_ID, 'p-antonio', 'Con su primera silla', '1968-05', 'comun', 'La primera silla del taller. Sigue en el salón.'],
-    [DEMO_FAMILY_ID, 'p-antonio', 'El taller de carpintería', '1975', 'raro', 'Serrín hasta las cejas.'],
-    [DEMO_FAMILY_ID, 'p-carmen', 'Primer día de maestra', '1965-09', 'raro', 'Escuela unitaria de Santo Tomé.'],
-    [DEMO_FAMILY_ID, 'p-carmen', 'La boda', '1966-10', 'legendario', 'Antonio y Carmen a la salida de Santa María.'],
-    [DEMO_FAMILY_ID, 'p-carmen', 'La tortilla del siglo', '1990', 'comun', 'Doce huevos y ni una sobra.'],
-    [DEMO_FAMILY_ID, 'p-luis', 'Con la videocámara nueva', '1990-12', 'poco-comun', 'El origen de todos los vídeos de este canal.'],
-    [DEMO_FAMILY_ID, 'p-luis', 'Graduación', '1993-06', 'raro', ''],
-    [DEMO_FAMILY_ID, 'p-elena', 'Uniforme de enfermera', '1995', 'comun', 'Primer día en el hospital.'],
-    [DEMO_FAMILY_ID, 'p-elena', 'Los 40', '2011-11-04', 'poco-comun', 'Fiesta sorpresa (que no fue tan sorpresa).'],
-    [DEMO_FAMILY_ID, 'p-carlos', 'Bañándome', '1999-07', 'poco-comun', 'La palangana del patio de los abuelos.'],
-    [DEMO_FAMILY_ID, 'p-carlos', 'Disfrazado de pirata', '2001-02', 'comun', 'Carnaval del colegio.'],
-    [DEMO_FAMILY_ID, 'p-carlos', 'Tocando la batería', '2013-12', 'comun', 'Primer ensayo con el grupo.'],
-    [DEMO_FAMILY_ID, 'p-carlos', 'Selfie perruno', '2016-06', 'raro', 'Con Toby, el perro de los vecinos.'],
-    [DEMO_FAMILY_ID, 'p-carlos', 'Graduación', '2020-06', 'epico', 'Ingeniero, por fin.'],
-    [DEMO_FAMILY_ID, 'p-natalia', 'Primeros pasos', '2018-03', 'epico', 'Del sofá a la mesa, sin manos.'],
-    [DEMO_FAMILY_ID, 'p-natalia', 'Disfraz de astronauta', '2023-02', 'comun', ''],
-    [DEMO_FAMILY_ID, 'p-natalia', 'Sin el primer diente', '2023-09', 'poco-comun', 'El Ratoncito Pérez pagó dos euros.'],
-    [DEMO_FRIENDS_ID, 'p-marta', 'Orla de la facultad', '2004-06', 'raro', ''],
-    [DEMO_FRIENDS_ID, 'p-marta', 'En el tranvía 28', '2019-10', 'comun', 'Escapada a Lisboa.'],
-    [DEMO_FRIENDS_ID, 'p-javi', 'La fuente', '2002-04', 'legendario', 'La foto que Javi intentó destruir.'],
-    [DEMO_FRIENDS_ID, 'p-javi', 'El novio', '2015-09', 'epico', 'Boda con Laura.'],
-    [DEMO_FRIENDS_ID, undefined, 'La pandilla al completo', '2004-07', 'raro', 'Estación de Praga, viaje de fin de carrera.'],
-    [DEMO_COUSINS_ID, 'p-rosa', 'Verano en Asturias', '2001-08', 'comun', ''],
-    [DEMO_COUSINS_ID, 'p-rosa', 'Novia en el monasterio', '2008-10-11', 'legendario', 'Llovió, pero dio igual.'],
-    [DEMO_COUSINS_ID, 'p-andres', 'Pescando en el río', '2001-08', 'poco-comun', 'Tres truchas. Según él, cinco.'],
-    [DEMO_COUSINS_ID, 'p-lucia', 'Primer día de cole', '2005-09', 'comun', ''],
-    [DEMO_COUSINS_ID, 'p-lucia', 'Comunión', '2010-05', 'raro', 'El vestido con lazo azul.'],
+  const cardsPlan: [string, string | undefined, string, string, string][] = [
+    // channel, person, title, takenAt, description
+    [DEMO_FAMILY_ID, 'p-antonio', 'La mili en Melilla', '1961', 'Con el uniforme recién estrenado y cara de no haber dormido.'],
+    [DEMO_FAMILY_ID, 'p-antonio', 'Con su primera silla', '1968-05', 'La primera silla del taller. Sigue en el salón.'],
+    [DEMO_FAMILY_ID, 'p-antonio', 'El taller de carpintería', '1975', 'Serrín hasta las cejas.'],
+    [DEMO_FAMILY_ID, 'p-carmen', 'Primer día de maestra', '1965-09', 'Escuela unitaria de Santo Tomé.'],
+    [DEMO_FAMILY_ID, 'p-carmen', 'La boda', '1966-10', 'Antonio y Carmen a la salida de Santa María.'],
+    [DEMO_FAMILY_ID, 'p-carmen', 'La tortilla del siglo', '1990', 'Doce huevos y ni una sobra.'],
+    [DEMO_FAMILY_ID, 'p-luis', 'Con la videocámara nueva', '1990-12', 'El origen de todos los vídeos de este canal.'],
+    [DEMO_FAMILY_ID, 'p-luis', 'Graduación', '1993-06', ''],
+    [DEMO_FAMILY_ID, 'p-elena', 'Uniforme de enfermera', '1995', 'Primer día en el hospital.'],
+    [DEMO_FAMILY_ID, 'p-elena', 'Los 40', '2011-11-04', 'Fiesta sorpresa (que no fue tan sorpresa).'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Bañándome', '1999-07', 'La palangana del patio de los abuelos.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Disfrazado de pirata', '2001-02', 'Carnaval del colegio.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Tocando la batería', '2013-12', 'Primer ensayo con el grupo.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Selfie perruno', '2016-06', 'Con Toby, el perro de los vecinos.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Graduación', '2020-06', 'Ingeniero, por fin.'],
+    [DEMO_FAMILY_ID, 'p-natalia', 'Primeros pasos', '2018-03', 'Del sofá a la mesa, sin manos.'],
+    [DEMO_FAMILY_ID, 'p-natalia', 'Disfraz de astronauta', '2023-02', ''],
+    [DEMO_FAMILY_ID, 'p-natalia', 'Sin el primer diente', '2023-09', 'El Ratoncito Pérez pagó dos euros.'],
+    [DEMO_FRIENDS_ID, 'p-marta', 'Orla de la facultad', '2004-06', ''],
+    [DEMO_FRIENDS_ID, 'p-marta', 'En el tranvía 28', '2019-10', 'Escapada a Lisboa.'],
+    [DEMO_FRIENDS_ID, 'p-javi', 'La fuente', '2002-04', 'La foto que Javi intentó destruir.'],
+    [DEMO_FRIENDS_ID, 'p-javi', 'El novio', '2015-09', 'Boda con Laura.'],
+    [DEMO_FRIENDS_ID, undefined, 'La pandilla al completo', '2004-07', 'Estación de Praga, viaje de fin de carrera.'],
+    [DEMO_COUSINS_ID, 'p-rosa', 'Verano en Asturias', '2001-08', ''],
+    [DEMO_COUSINS_ID, 'p-rosa', 'Novia en el monasterio', '2008-10-11', 'Llovió, pero dio igual.'],
+    [DEMO_COUSINS_ID, 'p-andres', 'Pescando en el río', '2001-08', 'Tres truchas. Según él, cinco.'],
+    [DEMO_COUSINS_ID, 'p-lucia', 'Primer día de cole', '2005-09', ''],
+    [DEMO_COUSINS_ID, 'p-lucia', 'Comunión', '2010-05', 'El vestido con lazo azul.'],
   ];
   const numbers = new Map<string, number>();
-  const cards: AlbumCard[] = cardsPlan.map(([channelId, personId, title, takenAt, rarity, description], i) => {
+  const cards: AlbumCard[] = cardsPlan.map(([channelId, personId, title, takenAt, description], i) => {
     const number = (numbers.get(channelId) ?? 0) + 1;
     numbers.set(channelId, number);
     const year = Number(takenAt.slice(0, 4));
@@ -413,7 +413,6 @@ export function buildDemoDb(now: Date): Db {
       description,
       imageUrl: title === 'Selfie perruno' ? 'https://picsum.photos/id/1025/600/800' : photo(String(i + 1), year),
       takenAt,
-      rarity,
       createdAt: iso(60 - i),
       authorId: userId,
     };
@@ -462,6 +461,7 @@ export function buildDemoDb(now: Date): Db {
     views,
     cards,
     cardSequence: Object.fromEntries(numbers),
+    unlocks: demoUnlocks(cards, userId, now),
     // Demo: a half-watched video so «continuar» can be seen straight away.
     progress: [
       {
@@ -511,4 +511,19 @@ export function addDemoAlbum(db: Db, now: Date): void {
     db.cards.push({ ...card, authorId: db.currentUserId });
     db.cardSequence[card.channelId] = Math.max(db.cardSequence[card.channelId] ?? 0, card.number);
   }
+}
+
+/**
+ * Demo collection: about two thirds of the example cromos already unlocked,
+ * so the album shows both blurred and visible photos and a real percentage.
+ */
+export function demoUnlocks(cards: readonly AlbumCard[], userId: string, now: Date): CardUnlock[] {
+  return cards
+    .filter((c) => c.id.startsWith('c-demo-') && Number(c.id.slice(7)) % 3 !== 0)
+    .map((c, i) => ({
+      channelId: c.channelId,
+      userId,
+      cardId: c.id,
+      unlockedAt: new Date(now.getTime() - (i + 1) * 86_400_000).toISOString(),
+    }));
 }

@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -34,10 +34,6 @@ export const VIDEO_CATEGORIES = [
   'otros',
 ] as const;
 export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
-
-/** Cromo rarity, from most to least frequent (Phase 2 spec). */
-export const RARITIES = ['comun', 'poco-comun', 'raro', 'epico', 'legendario'] as const;
-export type Rarity = (typeof RARITIES)[number];
 
 export const EVENT_TYPES = ['cumpleanos', 'aniversario', 'comunion', 'bautizo', 'boda', 'otro'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -127,7 +123,8 @@ export interface FamilyEvent {
 /**
  * A collectible card (cromo) of the channel's album. The album is organised
  * by person: each person of the channel is a category. Cards are open-ended:
- * admins keep adding photos over time.
+ * admins keep adding photos over time. All cromos are equal: no rarities
+ * (a family photo is not "worth" more than another), same odds in packs.
  */
 export interface AlbumCard {
   id: string;
@@ -142,9 +139,16 @@ export interface AlbumCard {
   imageUrl: string;
   /** When the photo was taken. */
   takenAt: PartialDate;
-  rarity: Rarity;
   createdAt: IsoDateTime;
   authorId: string;
+}
+
+/** A cromo a member has unlocked: its photo and story become visible to them. */
+export interface CardUnlock {
+  channelId: string;
+  userId: string;
+  cardId: string;
+  unlockedAt: IsoDateTime;
 }
 
 export interface Invitation {
@@ -224,7 +228,6 @@ export interface CardInput {
   description: string;
   imageUrl: string;
   takenAt: PartialDate;
-  rarity: Rarity;
 }
 
 export interface EventInput {
@@ -310,6 +313,10 @@ export interface Library {
   /** Video id -> total playbacks by every member. */
   viewCounts: Record<string, number>;
   favoriteVideoIds: string[];
+  /** Every cromo of every album. */
+  cards: AlbumCard[];
+  /** Cromos the current user has unlocked. */
+  unlockedCardIds: string[];
   /** Video id -> where the current user left it (unfinished videos only). */
   progress: Record<string, { positionSeconds: number; durationSeconds: number }>;
 }

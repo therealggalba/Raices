@@ -14,7 +14,6 @@ const NAV = [
   { to: 'cronologia', label: 'Cronología', icon: '◷' },
   { to: 'eventos', label: 'Fechas', icon: '✦' },
   { to: 'personas', label: 'Personas', icon: '☺' },
-  { to: 'album', label: 'Álbum', icon: '🃏' },
   { to: 'canal', label: 'Canal', icon: '⚙' },
 ];
 

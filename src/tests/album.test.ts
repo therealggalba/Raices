@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AlbumCard } from '../types/domain';
-import { NO_PERSON, albumSections, cardNeighbours, nextCardNumber, rarityCounts, sortCards } from '../utils/album';
+import { NO_PERSON, albumProgress, albumSections, cardNeighbours, formatProgress, nextCardNumber, sortCards } from '../utils/album';
 import { validateCardInput } from '../utils/validation';
 import { makePerson } from './fixtures';
 
@@ -12,7 +12,6 @@ const card = (overrides: Partial<AlbumCard>): AlbumCard => ({
   description: '',
   imageUrl: 'https://img.test/c.jpg',
   takenAt: '2000',
-  rarity: 'comun',
   createdAt: '2026-01-01T00:00:00Z',
   authorId: 'u1',
   ...overrides,
@@ -26,9 +25,9 @@ const people = [
 const cards = [
   card({ id: 'a', number: 3, personId: 'p-old', takenAt: '1975' }),
   card({ id: 'b', number: 1, personId: 'p-old', takenAt: '1961' }),
-  card({ id: 'c', number: 2, personId: 'p-young', takenAt: '2018-03', rarity: 'epico' }),
-  card({ id: 'd', number: 7, takenAt: '2004-07', rarity: 'raro' }),
-  card({ id: 'e', number: 5, personId: 'p-gone', takenAt: '1990', rarity: 'raro' }),
+  card({ id: 'c', number: 2, personId: 'p-young', takenAt: '2018-03' }),
+  card({ id: 'd', number: 7, takenAt: '2004-07' }),
+  card({ id: 'e', number: 5, personId: 'p-gone', takenAt: '1990' }),
 ];
 
 describe('albumSections', () => {
@@ -68,24 +67,28 @@ describe('album helpers', () => {
     expect(cardNeighbours(old, 'zzz')).toEqual({});
   });
 
-  it('counts cromos by rarity', () => {
-    expect(rarityCounts(cards)).toEqual({ comun: 2, 'poco-comun': 0, raro: 2, epico: 1, legendario: 0 });
+  it('computes the real unlocked percentage, never rounding up to 100 %', () => {
+    expect(albumProgress(cards, ['a', 'b'])).toEqual({ unlocked: 2, total: 5, percent: 40 });
+    const many = Array.from({ length: 13 }, (_, i) => card({ id: `x${i}` }));
+    expect(albumProgress(many, many.slice(0, 12).map((c) => c.id)).percent).toBe(92);
+    expect(albumProgress(many, new Set(many.map((c) => c.id))).percent).toBe(100);
+    expect(albumProgress([], [])).toEqual({ unlocked: 0, total: 0, percent: 0 });
+    expect(formatProgress({ unlocked: 12, total: 29, percent: 41 })).toBe('12 / 29 · 41 %');
   });
 });
 
 describe('validateCardInput', () => {
-  const base = { title: 'Tocando la batería', description: '', imageUrl: 'https://img.test/a.jpg', takenAt: '2011-12', rarity: 'comun' };
+  const base = { title: 'Tocando la batería', description: '', imageUrl: 'https://img.test/a.jpg', takenAt: '2011-12' };
 
   it('accepts a valid cromo, with or without a person', () => {
     expect(validateCardInput(base).ok).toBe(true);
     expect(validateCardInput({ ...base, personId: 'p-carlos' })).toMatchObject({ ok: true, value: { personId: 'p-carlos' } });
   });
 
-  it('rejects bad images, dates, rarities and person ids', () => {
+  it('rejects bad images, dates and person ids', () => {
     expect(validateCardInput({ ...base, imageUrl: 'http://img.test/a.jpg' }).ok).toBe(false);
     expect(validateCardInput({ ...base, imageUrl: '' }).ok).toBe(false);
     expect(validateCardInput({ ...base, takenAt: '2011-13' }).ok).toBe(false);
-    expect(validateCardInput({ ...base, rarity: 'mitico' }).ok).toBe(false);
     expect(validateCardInput({ ...base, personId: '../x' }).ok).toBe(false);
     expect(validateCardInput({ ...base, title: '  ' }).ok).toBe(false);
   });

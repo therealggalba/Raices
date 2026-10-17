@@ -23,12 +23,17 @@
 }
 
 .brand {
-  display: flex;
+  // Narrow phones: the «Inicio» tab already goes home; give the tabs the room.
+  display: none;
   align-items: center;
   gap: $space-2;
   flex: 0 0 auto;
   color: $color-text;
   text-decoration: none;
+
+  @media (min-width: 420px) {
+    display: flex;
+  }
 }
 
 .logo {
@@ -58,6 +63,8 @@
   gap: 2px;
   flex: 1;
   min-width: 0;
+  overflow-x: auto; // last resort on very small screens
+  @include hide-scrollbar;
 
   @include md-up {
     gap: $space-1;

@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { RarityMark } from '../components/Rarity';
 import { Button, EmptyState, ErrorBanner, Field, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { repository } from '../services';
-import { RARITIES } from '../types/domain';
-import type { CardInput, Rarity } from '../types/domain';
-import { RARITY_LABELS } from '../utils/labels';
+import type { CardInput } from '../types/domain';
 import { isHttpsUrl } from '../utils/media';
 import { fullName, sortPeople } from '../utils/people';
 import styles from './CardFormPage.module.scss';
@@ -30,7 +27,6 @@ export function CardFormPage() {
     existing ? (existing.personId ?? '') : people.some((p) => p.id === presetPerson) ? presetPerson : (sortPeople(people)[0]?.id ?? ''),
   );
   const [takenAt, setTakenAt] = useState(existing?.takenAt ?? '');
-  const [rarity, setRarity] = useState<Rarity>(existing?.rarity ?? 'comun');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [previewFailed, setPreviewFailed] = useState(false);
 
@@ -49,8 +45,8 @@ export function CardFormPage() {
     );
   }
 
-  const base = `/c/${channel.id}/album`;
-  const back = existing ? `${base}/${existing.id}` : base;
+  const albumUrl = `/albumes/${channel.id}`;
+  const back = existing ? `${albumUrl}/${existing.id}` : albumUrl;
   const showPreview = isHttpsUrl(imageUrl.trim());
 
   return (
@@ -70,7 +66,6 @@ export function CardFormPage() {
             description,
             imageUrl: imageUrl.trim(),
             takenAt: takenAt.trim(),
-            rarity,
             ...(personId ? { personId } : {}),
           };
           const id = await run(async () => {
@@ -82,7 +77,7 @@ export function CardFormPage() {
           });
           if (id) {
             await reload();
-            navigate(`${base}/${id}`, { replace: true });
+            navigate(`${albumUrl}/${id}`, { replace: true });
           }
         }}
       >
@@ -147,18 +142,6 @@ export function CardFormPage() {
             required
           />
         </Field>
-        <fieldset className={styles.rarityGroup}>
-          <legend>Rareza</legend>
-          <div className={styles.rarities}>
-            {RARITIES.map((r) => (
-              <label key={r} className={[styles.rarity, rarity === r ? styles.rarityOn : ''].join(' ')}>
-                <input type="radio" name="rarity" value={r} checked={rarity === r} onChange={() => setRarity(r)} />
-                <RarityMark rarity={r} size="sm" />
-                <span>{RARITY_LABELS[r]}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
         <Field label="Descripción (opcional)" htmlFor="description" hint="El recuerdo detrás de la foto">
           <textarea
             id="description"

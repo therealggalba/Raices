@@ -132,8 +132,9 @@ describe('local repository', () => {
     delete v1.progress;
     delete v1.cards;
     delete v1.cardSequence;
+    delete v1.unlocks;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(5);
+    expect(migrated?.schemaVersion).toBe(6);
     // Demo channels receive the example album on the way up to v5.
     expect(migrated?.cards.length).toBeGreaterThan(0);
     expect(migrated?.cards.every((c) => c.channelId.startsWith('demo-'))).toBe(true);
@@ -154,14 +155,14 @@ describe('local repository', () => {
   });
 
   it('numbers cromos per channel, keeps numbers stable and enforces admin + validation', async () => {
-    const base = { title: 'En la playa', description: '', imageUrl: 'https://img.test/a.jpg', takenAt: '1999-08', rarity: 'raro' as const };
+    const base = { title: 'En la playa', description: '', imageUrl: 'https://img.test/a.jpg', takenAt: '1999-08' };
     const before = (await repo.loadChannel(DEMO_FAMILY_ID)).cards;
     const maxBefore = Math.max(...before.map((c) => c.number));
     const card = await repo.addCard(DEMO_FAMILY_ID, { ...base, personId: 'p-carlos' });
     expect(card.number).toBe(maxBefore + 1);
-    await repo.updateCard(DEMO_FAMILY_ID, card.id, { ...base, title: 'Playa 99', rarity: 'legendario' });
+    await repo.updateCard(DEMO_FAMILY_ID, card.id, { ...base, title: 'Playa 99' });
     const edited = (await repo.loadChannel(DEMO_FAMILY_ID)).cards.find((c) => c.id === card.id)!;
-    expect(edited).toMatchObject({ number: card.number, title: 'Playa 99', rarity: 'legendario' });
+    expect(edited).toMatchObject({ number: card.number, title: 'Playa 99' });
     expect(edited.personId).toBeUndefined();
     await repo.deleteCard(DEMO_FAMILY_ID, card.id);
     // The number is not reused.
@@ -184,13 +185,14 @@ describe('local repository', () => {
     v4.schemaVersion = 4;
     delete (v4 as Partial<Db>).cards;
     delete (v4 as Partial<Db>).cardSequence;
+    delete (v4 as Partial<Db>).unlocks;
     v4.people = v4.people.filter((p) => !['p-marta', 'p-javi', 'p-rosa', 'p-andres', 'p-lucia', 'p-carlos'].includes(p.id));
     v4.events = v4.events.map((e) => (e.id === 'e-cumple-marta' ? { ...e, personIds: [] } : e));
     // The user left (and so deleted) the cousins channel, and has a real channel.
     v4.channels = v4.channels.filter((c) => c.id !== DEMO_COUSINS_ID);
     v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
     const db = parseDb(JSON.stringify(v4))!;
-    expect(db.schemaVersion).toBe(5);
+    expect(db.schemaVersion).toBe(6);
     expect(db.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
     expect(db.cards.some((c) => c.channelId === 'mi-familia')).toBe(false);
     // Cromos of a person the user deleted (Carlos) are skipped.
@@ -199,6 +201,32 @@ describe('local repository', () => {
     expect(db.people.some((p) => p.id === 'p-rosa')).toBe(false);
     expect(db.events.find((e) => e.id === 'e-cumple-marta')?.personIds).toEqual(['p-marta']);
     expect(db.cardSequence[DEMO_FAMILY_ID]).toBe(18);
+  });
+
+  it('exposes the user\'s unlocked cromos and forgets them with the cromo or the membership', async () => {
+    let library = await repo.loadLibrary();
+    const unlocked = new Set(library.unlockedCardIds);
+    expect(unlocked.size).toBeGreaterThan(0);
+    expect(unlocked.size).toBeLessThan(library.cards.length);
+    const familyCard = library.cards.find((c) => c.channelId === DEMO_FAMILY_ID && unlocked.has(c.id))!;
+    await repo.deleteCard(DEMO_FAMILY_ID, familyCard.id);
+    library = await repo.loadLibrary();
+    expect(library.unlockedCardIds).not.toContain(familyCard.id);
+    await repo.leaveChannel(DEMO_COUSINS_ID);
+    library = await repo.loadLibrary();
+    expect(library.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
+  });
+
+  it('migrates v5 cromos: drops rarities and adds the demo collection', () => {
+    const v5 = buildDemoDb(NOW) as unknown as Record<string, unknown> & Db;
+    v5.schemaVersion = 5;
+    delete (v5 as Partial<Db>).unlocks;
+    for (const c of v5.cards as unknown as Record<string, unknown>[]) c.rarity = 'raro';
+    const db = parseDb(JSON.stringify(v5))!;
+    expect(db.schemaVersion).toBe(6);
+    expect(db.cards.every((c) => !('rarity' in c))).toBe(true);
+    expect(db.unlocks.length).toBeGreaterThan(0);
+    expect(db.unlocks.every((u) => u.userId === db.currentUserId)).toBe(true);
   });
 
   it('treats unknown channels and channels you do not belong to the same way', async () => {

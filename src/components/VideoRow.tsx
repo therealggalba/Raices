@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useScrollArrows } from '../hooks/useScrollArrows';
 import type { Video } from '../types/domain';
 import { VideoCard } from './VideoCard';
 import styles from './VideoRow.module.scss';
@@ -13,52 +13,13 @@ interface Props {
   moreTo?: string;
 }
 
-type Direction = -1 | 1;
-
 /**
  * Netflix-style row. Edge arrows move it one card per click; on touch
  * screens each swipe also advances exactly one card (scroll-snap-stop).
  */
 export function VideoRow({ title, videos, favoriteIds, ranked, moreTo }: Props) {
-  const scroller = useRef<HTMLDivElement>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
+  const { ref: scroller, canPrev, canNext, step } = useScrollArrows<HTMLDivElement>([videos.length]);
   const favs = new Set(favoriteIds);
-
-  const updateArrows = useCallback(() => {
-    const el = scroller.current;
-    if (!el) return;
-    setCanPrev(el.scrollLeft > 2);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
-  }, []);
-
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    updateArrows();
-    el.addEventListener('scroll', updateArrows, { passive: true });
-    const observer = new ResizeObserver(updateArrows);
-    observer.observe(el);
-    return () => {
-      el.removeEventListener('scroll', updateArrows);
-      observer.disconnect();
-    };
-  }, [updateArrows, videos.length]);
-
-  /** Scrolls so the previous/next card lines up with the row's start edge. */
-  const step = (direction: Direction) => {
-    const el = scroller.current;
-    if (!el) return;
-    const edge = el.scrollLeft + (parseFloat(getComputedStyle(el).scrollPaddingLeft) || 0);
-    const cards = [...el.children] as HTMLElement[];
-    const target =
-      direction === 1
-        ? cards.find((card) => card.offsetLeft > edge + 2)
-        : cards.findLast((card) => card.offsetLeft < edge - 2);
-    if (!target) return;
-    const left = target.offsetLeft - (edge - el.scrollLeft);
-    el.scrollTo({ left, behavior: 'smooth' });
-  };
 
   return (
     <section className={styles.row} aria-label={title}>

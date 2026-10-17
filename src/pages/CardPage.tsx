@@ -1,43 +1,46 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Cromo } from '../components/Cromo';
 import { Button, EmptyState, ErrorBanner, LinkButton } from '../components/ui';
-import { useChannel } from '../hooks/channel-context';
+import { useLibrary } from '../hooks/library-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
 import { NO_PERSON, albumSections, cardNeighbours } from '../utils/album';
-import { RARITY_LABELS } from '../utils/labels';
 import styles from './CardPage.module.scss';
 
 /** One cromo, full size, with previous/next of the same person. */
 export function CardPage() {
-  const { cardId = '' } = useParams();
+  const { channelId = '', cardId = '' } = useParams();
   const navigate = useNavigate();
-  const { snapshot, isAdmin, reload, personById } = useChannel();
+  const { library, reload, channelById, personById } = useLibrary();
   const { run, pending, error } = useAction();
-  const { channel, cards, people } = snapshot;
+  const channel = channelById(channelId);
+  const cards = library.cards.filter((c) => c.channelId === channelId);
   const card = cards.find((c) => c.id === cardId);
-  const base = `/c/${channel.id}/album`;
+  const albumUrl = `/albumes/${channelId}`;
 
-  if (!card) {
+  if (!channel || !card) {
     return (
       <EmptyState icon="🃏">
         <p>Este cromo no existe o ha sido eliminado.</p>
-        <LinkButton to={base}>Volver al álbum</LinkButton>
+        <LinkButton to={channel ? albumUrl : '/albumes'}>Volver al álbum</LinkButton>
       </EmptyState>
     );
   }
 
+  const locked = !library.unlockedCardIds.includes(card.id);
   const person = card.personId ? personById(card.personId) : undefined;
   const sectionId = person ? person.id : NO_PERSON;
+  const people = library.people.filter((p) => p.channelId === channelId);
   const section = albumSections(cards, people).find((s) => s.id === sectionId);
   const { prev, next } = section ? cardNeighbours(section, card.id) : {};
   const position = section ? section.cards.findIndex((c) => c.id === card.id) + 1 : 0;
+  const back = `${albumUrl}?persona=${sectionId}`;
 
   return (
     <div className={styles.page}>
       <div className={styles.nav}>
-        <Link to={`${base}#album-${sectionId}`} className={styles.back}>
+        <Link to={back} className={styles.back}>
           ‹ {person ? person.firstName : 'Varios'}
         </Link>
         {section && (
@@ -49,28 +52,33 @@ export function CardPage() {
 
       <div className={styles.stage}>
         {prev ? (
-          <Link to={`${base}/${prev.id}`} className={[styles.arrow, styles.prev].join(' ')} aria-label={`Anterior: ${prev.title}`}>
+          <Link to={`${albumUrl}/${prev.id}`} className={[styles.arrow, styles.prev].join(' ')} aria-label={`Anterior: ${prev.title}`}>
             ‹
           </Link>
         ) : (
-          <span className={styles.arrowSpace} />
+          <span />
         )}
-        <Cromo key={card.id} card={card} person={person} />
+        <Cromo key={card.id} card={card} person={person} locked={locked} />
         {next ? (
-          <Link to={`${base}/${next.id}`} className={[styles.arrow, styles.next].join(' ')} aria-label={`Siguiente: ${next.title}`}>
+          <Link to={`${albumUrl}/${next.id}`} className={[styles.arrow, styles.next].join(' ')} aria-label={`Siguiente: ${next.title}`}>
             ›
           </Link>
         ) : (
-          <span className={styles.arrowSpace} />
+          <span />
         )}
       </div>
 
       <div className={styles.info}>
-        <p className={styles.rarity}>{RARITY_LABELS[card.rarity]}</p>
-        {card.description && <p className={styles.description}>{card.description}</p>}
-        {isAdmin && (
+        {locked ? (
+          <p className={styles.lockedNote}>
+            Desbloquea este cromo abriendo sobres para ver la foto y el recuerdo que hay detrás.
+          </p>
+        ) : (
+          card.description && <p className={styles.description}>{card.description}</p>
+        )}
+        {channel.role === 'admin' && (
           <div className={styles.actions}>
-            <LinkButton to={`${base}/${card.id}/editar`} small>
+            <LinkButton to={`/c/${channel.id}/album/${card.id}/editar`} small>
               Editar
             </LinkButton>
             <Button
@@ -85,7 +93,7 @@ export function CardPage() {
                 });
                 if (done) {
                   await reload();
-                  navigate(`${base}#album-${sectionId}`, { replace: true });
+                  navigate(back, { replace: true });
                 }
               }}
             >

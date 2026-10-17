@@ -1,0 +1,12 @@
+@use '../styles/variables' as *;
+
+// Shared cromo look: one silver frame for every card (no rarities: every
+// family photo is worth the same).
+$cromo-frame: linear-gradient(135deg, #8e8e93, #e5e5ea 30%, #9b9ba1 55%, #f2f2f7 80%, #8e8e93);
+$cromo-paper: #d8d8dc;
+
+// Locked photo: blurred enough that nothing can really be made out.
+@mixin locked-photo($blur) {
+  filter: blur($blur) saturate(0.6) brightness(0.85);
+  transform: scale(1.25); // hides the soft, transparent edges of the blur
+}

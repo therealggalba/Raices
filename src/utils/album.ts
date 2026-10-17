@@ -1,5 +1,4 @@
-import { RARITIES } from '../types/domain';
-import type { AlbumCard, Person, Rarity } from '../types/domain';
+import type { AlbumCard, Person } from '../types/domain';
 import { partialDateSortKey } from './dates';
 import { sortPeople } from './people';
 
@@ -53,8 +52,24 @@ export function cardNeighbours(section: AlbumSection, cardId: string): { prev?: 
   return { prev: section.cards[i - 1], next: section.cards[i + 1] };
 }
 
-export function rarityCounts(cards: readonly AlbumCard[]): Record<Rarity, number> {
-  const counts = Object.fromEntries(RARITIES.map((r) => [r, 0])) as Record<Rarity, number>;
-  for (const card of cards) counts[card.rarity] += 1;
-  return counts;
+export interface AlbumProgress {
+  unlocked: number;
+  total: number;
+  /**
+   * Real percentage, rounded down: it never shows 100 % until every cromo is
+   * unlocked (12 of 13 is 92 %, not 100 %).
+   */
+  percent: number;
+}
+
+export function albumProgress(cards: readonly AlbumCard[], unlockedIds: ReadonlySet<string> | readonly string[]): AlbumProgress {
+  const unlockedSet = unlockedIds instanceof Set ? unlockedIds : new Set(unlockedIds);
+  const total = cards.length;
+  const unlocked = cards.filter((c) => unlockedSet.has(c.id)).length;
+  return { unlocked, total, percent: total ? Math.floor((unlocked / total) * 100) : 0 };
+}
+
+/** "12 / 29 · 41 %". */
+export function formatProgress({ unlocked, total, percent }: AlbumProgress): string {
+  return `${unlocked} / ${total} · ${percent} %`;
 }

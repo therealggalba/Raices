@@ -23,6 +23,8 @@ function library(overrides: Partial<Library> = {}): Library {
     viewCounts: { f1: 3, u1: 5 },
     favoriteVideoIds: ['f2'],
     progress: {},
+    cards: [],
+    unlockedCardIds: [],
     ...overrides,
   };
 }

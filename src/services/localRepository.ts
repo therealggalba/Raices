@@ -1,6 +1,7 @@
 import { CHANNEL_KINDS, ROLES, SCHEMA_VERSION } from '../types/domain';
 import type {
   AlbumCard,
+  CardUnlock,
   Channel,
   ChannelSnapshot,
   ChannelSummary,
@@ -38,7 +39,7 @@ import {
 } from '../utils/validation';
 import type { MemoriesRepository } from './repository';
 import { RepositoryError } from './repository';
-import { addDemoAlbum, buildDemoDb } from './seed';
+import { addDemoAlbum, buildDemoDb, demoUnlocks } from './seed';
 
 // Local backend for the public phase-1 MVP: the whole dataset lives in one
 // JSON document in the browser. It still behaves like a server: it checks
@@ -63,6 +64,7 @@ export interface Db {
   cards: AlbumCard[];
   /** Channel id -> last album number issued (never goes back). */
   cardSequence: Record<string, number>;
+  unlocks: CardUnlock[];
 }
 
 export interface KeyValueStore {
@@ -108,6 +110,7 @@ const COLLECTIONS = [
   'views',
   'progress',
   'cards',
+  'unlocks',
 ] as const;
 
 /** Kinds given to channels created before kinds existed (schema v1). */
@@ -148,6 +151,19 @@ export function migrateDb(data: Record<string, unknown>, now: Date = new Date())
     if (Array.isArray(data.channels) && Array.isArray(data.people) && Array.isArray(data.events)) {
       addDemoAlbum(data as unknown as Db, now);
     }
+  }
+  if (data.schemaVersion === 5) {
+    // Rarities are gone (every cromo is equal); per-user unlocks appear.
+    if (!Array.isArray(data.cards)) return null;
+    data.cards = data.cards.map((c: unknown) => {
+      if (!isRecord(c)) return c;
+      const { rarity: _rarity, ...rest } = c;
+      return rest;
+    });
+    data.unlocks = isId(data.currentUserId)
+      ? demoUnlocks(data.cards as AlbumCard[], data.currentUserId, now)
+      : [];
+    data.schemaVersion = 6;
   }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
@@ -258,6 +274,7 @@ export function createLocalRepository({
     db.progress = inChannel(db.progress);
     db.cards = inChannel(db.cards);
     delete db.cardSequence[channelId];
+    db.unlocks = inChannel(db.unlocks);
   }
 
   const repo: MemoriesRepository = {
@@ -306,6 +323,10 @@ export function createLocalRepository({
         favoriteVideoIds: inMine(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
           .map((f) => f.videoId),
+        cards: inMine(db.cards),
+        unlockedCardIds: inMine(db.unlocks)
+          .filter((u) => u.userId === db.currentUserId)
+          .map((u) => u.cardId),
         progress: Object.fromEntries(
           inMine(db.progress)
             .filter((p) => p.userId === db.currentUserId)
@@ -397,6 +418,7 @@ export function createLocalRepository({
         db.members = db.members.filter((m) => m !== member);
         db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === member.userId));
         db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === member.userId));
+        db.unlocks = db.unlocks.filter((u) => !(u.channelId === channelId && u.userId === member.userId));
       }
       commit();
     },
@@ -476,6 +498,7 @@ export function createLocalRepository({
       db.members = db.members.filter((m) => !(m.channelId === channelId && m.userId === userId));
       db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === userId));
       db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === userId));
+      db.unlocks = db.unlocks.filter((u) => !(u.channelId === channelId && u.userId === userId));
       commit();
     },
 
@@ -611,6 +634,7 @@ export function createLocalRepository({
       requireAdmin(channelId);
       findIn(db.cards, channelId, cardId, 'El cromo');
       db.cards = db.cards.filter((c) => c.id !== cardId);
+      db.unlocks = db.unlocks.filter((u) => u.cardId !== cardId);
       commit();
     },
 

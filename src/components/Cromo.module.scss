@@ -1,20 +1,17 @@
 @use '../styles/variables' as *;
-@use './rarity' as *;
+@use './cromo' as *;
 
 .cromo {
-  @include rarity-frames;
-
   position: relative;
   width: min(100%, 420px);
   margin: 0 auto;
   padding: 10px;
   border-radius: 22px;
-  background: var(--frame);
+  background: $cromo-frame;
   box-shadow:
     0 25px 60px rgba(0, 0, 0, 0.6),
     inset 0 0 0 1px rgba(255, 255, 255, 0.4);
   color: #111;
-  overflow: hidden;
 }
 
 .inner {
@@ -22,7 +19,7 @@
   gap: $space-2;
   padding: $space-3;
   border-radius: 14px;
-  background: var(--paper);
+  background: $cromo-paper;
 }
 
 .header {
@@ -49,6 +46,8 @@
 }
 
 .photo {
+  position: relative;
+  overflow: hidden;
   padding: 6px;
   border-radius: 4px;
   background: linear-gradient(135deg, #555, #222);
@@ -58,6 +57,27 @@
     width: 100%;
     aspect-ratio: 3 / 4;
     object-fit: cover;
+    transition: filter 0.8s ease, transform 0.8s ease;
+  }
+}
+
+.locked .photo img {
+  @include locked-photo(32px);
+}
+
+.lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: $space-2;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+
+  span {
+    font-size: 3rem;
   }
 }
 
@@ -80,31 +100,11 @@
 
 .footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .date {
   font-size: 1rem;
   font-weight: 800;
   color: #222;
-}
-
-.legendario::after {
-  content: '';
-  position: absolute;
-  inset: -50%;
-  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.5) 50%, transparent 58%);
-  animation: shine 5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes shine {
-  0% {
-    transform: translateX(-60%);
-  }
-  60%,
-  100% {
-    transform: translateX(60%);
-  }
 }

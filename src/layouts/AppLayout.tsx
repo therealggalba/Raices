@@ -78,6 +78,9 @@ export function AppLayout() {
           <NavLink to="/fechas" className={navClass}>
             Fechas
           </NavLink>
+          <NavLink to="/albumes" className={navClass}>
+            Álbumes
+          </NavLink>
         </nav>
         <div className={styles.actions}>
           <Link to="/catalogo?buscar=1" className={styles.iconButton} aria-label="Buscar en el catálogo">

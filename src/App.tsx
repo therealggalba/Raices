@@ -5,6 +5,7 @@ import { EmptyState, LinkButton } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
 import { AlbumPage } from './pages/AlbumPage';
+import { AlbumsPage } from './pages/AlbumsPage';
 import { CardFormPage } from './pages/CardFormPage';
 import { CardPage } from './pages/CardPage';
 import { CatalogPage } from './pages/CatalogPage';
@@ -53,6 +54,12 @@ function ChannelVideoRedirect() {
   return <Navigate to={`/v/${videoId}`} replace />;
 }
 
+/** Albums are browsed from the global «Álbumes» section. */
+function ChannelAlbumRedirect() {
+  const { channelId, cardId } = useParams();
+  return <Navigate to={`/albumes/${channelId}${cardId ? `/${cardId}` : ''}`} replace />;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -63,6 +70,9 @@ export default function App() {
             <Route index element={<HomePage />} />
             <Route path="catalogo" element={<CatalogPage />} />
             <Route path="fechas" element={<DatesPage />} />
+            <Route path="albumes" element={<AlbumsPage />} />
+            <Route path="albumes/:channelId" element={<AlbumPage />} />
+            <Route path="albumes/:channelId/:cardId" element={<CardPage />} />
             <Route path="v/:videoId" element={<VideoPage />} />
             <Route path="canales" element={<ChannelsPage />} />
             <Route path="unirse" element={<JoinPage />} />
@@ -80,9 +90,9 @@ export default function App() {
             <Route path="personas/nueva" element={<PersonFormPage />} />
             <Route path="personas/:personId" element={<PersonPage />} />
             <Route path="personas/:personId/editar" element={<PersonFormPage />} />
-            <Route path="album" element={<AlbumPage />} />
+            <Route path="album" element={<ChannelAlbumRedirect />} />
             <Route path="album/nuevo" element={<CardFormPage />} />
-            <Route path="album/:cardId" element={<CardPage />} />
+            <Route path="album/:cardId" element={<ChannelAlbumRedirect />} />
             <Route path="album/:cardId/editar" element={<CardFormPage />} />
             <Route path="canal" element={<ChannelSettingsPage />} />
             <Route path="*" element={<NotFound />} />

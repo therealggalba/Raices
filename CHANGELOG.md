@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 — 2026-10-17
+
+- «Álbumes» pasa a la cabecera (junto a Fechas): listado de los canales con cromos, con contador y % real
+  de desbloqueados; dentro, la fila de personas ocupa todo el ancho (carrusel con flechas si no caben) y al
+  elegir una se muestran solo sus cromos. La pestaña «Álbum» del canal desaparece (sus URLs redirigen).
+- Sin rarezas: todos los cromos valen lo mismo y tendrán la misma probabilidad en los sobres. Un único marco.
+- Colección por usuario: los cromos bloqueados muestran la foto con un desenfoque gaussiano fuerte y un 🔒,
+  y ocultan su descripción; al desbloquearlos se ven tal cual. La demo trae ~2/3 desbloqueados.
+- Contador «desbloqueados / total» y % real (redondeado hacia abajo) en el listado, el álbum y cada persona.
+- Cabecera móvil: el logo se oculta en pantallas estrechas para que quepan las cuatro pestañas.
+- Esquema de datos v6 (sin rareza, con desbloqueos) con migración.
+
 ## 0.6.0 — 2026-10-17
 
 - Álbum de cromos (Fase 2, base): un álbum por canal organizado por personas (cada persona es una categoría,
@@ -11,7 +23,7 @@
 - Demo: cromos de ejemplo en los tres canales de prueba (y personas nuevas en Amigos y Primos). Al actualizar
   datos guardados, el álbum de ejemplo se añade solo a los canales demo que sigan existiendo.
 - Esquema de datos v5 (cromos + contador por canal) con migración.
-- Pendiente de definir: sobres, colección por usuario, repetidos y probabilidades; subida directa a Supabase.
+- Pendiente de definir: sobres y repetidos; subida directa a Supabase.
 
 ## 0.5.0 — 2026-10-16
 
