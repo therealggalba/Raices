@@ -10,6 +10,8 @@ export type MediaSource =
       kind: 'drive';
       id: string;
       embedUrl: string;
+      /** Public thumbnail (works for files shared "anyone with the link", no key). */
+      thumbnailUrl: string;
       /**
        * Direct stream through the Drive API (needs a Google API key and the
        * file shared as "anyone with the link"). Lets the app use its own
@@ -98,6 +100,7 @@ export function resolveMedia(value: string, options: MediaOptions = {}): MediaSo
       kind: 'drive',
       id: drive,
       embedUrl: `https://drive.google.com/file/d/${drive}/preview`,
+      thumbnailUrl: `https://drive.google.com/thumbnail?id=${drive}&sz=w640`,
       ...(key && API_KEY_RE.test(key)
         ? { streamUrl: `https://www.googleapis.com/drive/v3/files/${drive}?alt=media&key=${encodeURIComponent(key)}` }
         : {}),
@@ -107,9 +110,9 @@ export function resolveMedia(value: string, options: MediaOptions = {}): MediaSo
   return { kind: 'link', href: url.href };
 }
 
-/** Explicit thumbnail first, then the one the provider exposes (YouTube). */
+/** Explicit thumbnail first, then the one the provider exposes (YouTube, Google Drive). */
 export function thumbnailFor(video: { thumbnailUrl?: string; mediaUrl: string }): string | null {
   if (video.thumbnailUrl && isHttpsUrl(video.thumbnailUrl)) return video.thumbnailUrl;
   const media = resolveMedia(video.mediaUrl);
-  return media?.kind === 'youtube' ? media.thumbnailUrl : null;
+  return media?.kind === 'youtube' || media?.kind === 'drive' ? media.thumbnailUrl : null;
 }

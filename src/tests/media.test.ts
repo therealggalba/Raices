@@ -33,8 +33,8 @@ describe('resolveMedia', () => {
   it('streams Google Drive through the API only with a well-formed key', () => {
     const url = 'https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view';
     expect(resolveMedia(url)).not.toHaveProperty('streamUrl');
-    expect(resolveMedia(url, { googleApiKey: 'AIzaSyA-valid_key_1234567890abcdef' })).toMatchObject({
-      streamUrl: 'https://www.googleapis.com/drive/v3/files/1AbCdEfGhIjKlMn?alt=media&key=AIzaSyA-valid_key_1234567890abcdef',
+    expect(resolveMedia(url, { googleApiKey: 'TEST-ONLY_not-a-real-key_000000' })).toMatchObject({
+      streamUrl: 'https://www.googleapis.com/drive/v3/files/1AbCdEfGhIjKlMn?alt=media&key=TEST-ONLY_not-a-real-key_000000',
     });
     expect(resolveMedia(url, { googleApiKey: 'bad key&x=1' })).not.toHaveProperty('streamUrl');
   });
@@ -59,6 +59,9 @@ describe('thumbnailFor', () => {
     );
     expect(thumbnailFor({ mediaUrl: 'https://youtu.be/dQw4w9WgXcQ' })).toBe(
       'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+    );
+    expect(thumbnailFor({ mediaUrl: 'https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view' })).toBe(
+      'https://drive.google.com/thumbnail?id=1AbCdEfGhIjKlMn&sz=w640',
     );
     expect(thumbnailFor({ mediaUrl: 'https://example.com/a.mp4' })).toBeNull();
     expect(isHttpsUrl('https://ok.test')).toBe(true);

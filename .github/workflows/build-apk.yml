@@ -27,6 +27,15 @@ jobs:
           distribution: zulu
           java-version: '21'
 
+      # Guard: dangerous secrets must NEVER be committed (only publishable keys
+      # are allowed, and those come from GitHub secrets at build time).
+      - name: No secrets committed
+        run: |
+          if git grep -nIE 'sb_secret_|service_role|-----BEGIN [A-Z ]*PRIVATE KEY-----|"private_key"[[:space:]]*:|"type"[[:space:]]*:[[:space:]]*"service_account"' -- . ':!.github/workflows/build-apk.yml'; then
+            echo "::error::Se ha encontrado un posible secreto en el repositorio. Elimínalo y rota la clave."
+            exit 1
+          fi
+
       - name: Install dependencies
         run: npm ci
 
@@ -35,6 +44,12 @@ jobs:
 
       - name: Build web app for Android (base "/") and sync Capacitor
         run: npm run android:sync
+        # Public-by-design values (publishable key, referrer-restricted API key),
+        # kept out of the repo and injected at build time.
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
 
       - name: Build debug APK
         working-directory: android
