@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Icon } from '../components/Icon';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CardThumb } from '../components/CardThumb';
 import { PersonAvatar } from '../components/PersonAvatar';
@@ -35,7 +36,7 @@ export function AlbumPage() {
 
   if (!channel) {
     return (
-      <EmptyState icon="🃏">
+      <EmptyState>
         <p>Este álbum no existe o ya no tienes acceso a él.</p>
         <LinkButton to="/albumes">Ver mis álbumes</LinkButton>
       </EmptyState>
@@ -66,13 +67,13 @@ export function AlbumPage() {
         <ProgressMeter progress={progress} />
         {library.packs.remaining > 0 && cards.length > 0 && (
           <LinkButton to={`/sobres/${channel.id}`} variant="secondary" small className={styles.packButton}>
-            🎁 Abrir un sobre de este álbum ({library.packs.remaining} hoy)
+            Abrir un sobre ({library.packs.remaining} hoy)
           </LinkButton>
         )}
       </header>
 
       {sections.length === 0 ? (
-        <EmptyState icon="🃏">
+        <EmptyState>
           <p>Este álbum todavía no tiene cromos.</p>
         </EmptyState>
       ) : (
@@ -92,7 +93,9 @@ export function AlbumPage() {
                     className={[styles.tab, active ? styles.tabActive : ''].join(' ')}
                     onClick={() => setParams({ persona: s.id }, { replace: true })}
                   >
-                    {s.person ? <PersonAvatar person={s.person} size={44} /> : <span className={styles.various}>👥</span>}
+                    {s.person ? <PersonAvatar person={s.person} size={44} /> : <span className={styles.various}>
+                        <Icon name="people" size={22} />
+                      </span>}
                     <span className={styles.tabName}>{s.person ? s.person.firstName : 'Varios'}</span>
                     <span className={styles.tabCount}>
                       {p.unlocked}/{p.total}

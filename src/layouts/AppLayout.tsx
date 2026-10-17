@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BrandMark } from '../components/BrandMark';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { OptionsMenu } from '../components/OptionsMenu';
 import { TodayPopup } from '../components/TodayPopup';
@@ -69,9 +70,7 @@ export function AppLayout() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link to="/" className={styles.brand} aria-label="FamilyMemories, inicio">
-          <span className={styles.logo} aria-hidden>
-            ▶
-          </span>
+          <BrandMark className={styles.logo} />
           <span className={styles.brandName}>FamilyMemories</span>
         </Link>
         <nav className={styles.tabs} aria-label="Principal">

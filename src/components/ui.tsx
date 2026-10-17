@@ -39,15 +39,8 @@ export function Spinner({ label = 'Cargando…' }: { label?: string }) {
   );
 }
 
-export function EmptyState({ icon = '🎞️', children }: { icon?: string; children: ReactNode }) {
-  return (
-    <div className={styles.empty}>
-      <span className={styles.emptyIcon} aria-hidden>
-        {icon}
-      </span>
-      {children}
-    </div>
-  );
+export function EmptyState({ children }: { children: ReactNode }) {
+  return <div className={styles.empty}>{children}</div>;
 }
 
 export function ErrorBanner({ message }: { message: string | null }) {

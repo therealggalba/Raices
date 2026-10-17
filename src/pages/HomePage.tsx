@@ -26,7 +26,7 @@ export function HomePage() {
 
   if (!library.channels.length) {
     return (
-      <EmptyState icon="📼">
+      <EmptyState>
         <h1>Bienvenido a FamilyMemories</h1>
         <p>Únete al canal de tu familia con un código de invitación o crea uno nuevo.</p>
         <div className={styles.emptyActions}>
@@ -49,7 +49,7 @@ export function HomePage() {
       {hero ? (
         <Hero video={hero} kicker={`${channelById(hero.channelId)?.name ?? ''} · último recuerdo añadido`} />
       ) : (
-        <EmptyState icon="📼">
+        <EmptyState>
           <p>Tus canales todavía no tienen vídeos.</p>
         </EmptyState>
       )}
@@ -67,9 +67,6 @@ export function HomePage() {
               to="/sobres"
               className={[styles.packs, library.packs.remaining === 0 ? styles.packsDone : ''].join(' ')}
             >
-              <span className={styles.packsIcon} aria-hidden>
-                🎁
-              </span>
               <span className={styles.packsText}>
                 <strong>{packStatusText(library.packs)}</strong>
                 {library.packs.remaining > 0 && <span>Elige álbum y descubre nuevos cromos</span>}

@@ -5,9 +5,7 @@
   overflow: auto;
   max-height: calc(100dvh - #{$header-offset} - #{$bottomnav-height} - 9rem);
   border-radius: $radius-lg;
-  background:
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0) 0 0 / 22px 22px,
-    $color-bg-raised;
+  background: $color-bg-raised;
   border: 1px solid $color-line;
   overscroll-behavior: contain;
 }
@@ -22,19 +20,19 @@
   inset: 0;
   overflow: visible;
   fill: none;
-  stroke: rgba(242, 180, 90, 0.75);
+  stroke: rgb(var(--muted-rgb) / 0.55);
   stroke-width: 2;
   stroke-linecap: round;
 }
 
 .arrowHead {
-  fill: rgba(242, 180, 90, 0.9);
+  fill: rgb(var(--muted-rgb) / 0.7);
   stroke: none;
 }
 
 .couple {
-  stroke: #f4d58a;
-  stroke-width: 3;
+  stroke: rgb(var(--muted-rgb) / 0.8);
+  stroke-width: 2.5;
 }
 
 .separated {
@@ -42,26 +40,6 @@
   opacity: 0.6;
 }
 
-.ring {
-  position: absolute;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: $color-bg-raised;
-  border: 2px solid #f4d58a;
-  font-size: 0.8rem;
-  transform: translate(-50%, -50%);
-  cursor: help;
-}
-
-.ringSeparated {
-  border-style: dashed;
-  filter: grayscale(1);
-  opacity: 0.7;
-}
 
 .card {
   position: absolute;
@@ -71,9 +49,9 @@
   gap: 2px;
   padding: $space-2;
   border-radius: $radius-md;
-  background: $color-bg-panel;
-  border: 1px solid rgba(242, 180, 90, 0.35);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   color: $color-text;
   text-align: center;
   text-decoration: none;
@@ -117,14 +95,12 @@
 
 .me {
   border: 2px solid $color-accent;
-  background: linear-gradient(rgba($color-accent, 0.16), rgba($color-accent, 0.16)), $color-bg-panel;
-  box-shadow:
-    0 0 0 4px rgba(242, 180, 90, 0.18),
-    0 6px 16px rgba(0, 0, 0, 0.35);
+  background: $color-bg-raised;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .deceased {
-  border-color: rgba(164, 157, 171, 0.45);
+  border-color: rgb(var(--muted-rgb) / 0.45);
 
   .name {
     color: $color-text-muted;

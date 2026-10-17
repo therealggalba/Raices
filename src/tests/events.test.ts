@@ -120,3 +120,13 @@ describe('yearly list and filters', () => {
     expect(parseYearParam(new URLSearchParams('anio=abc'), 2026)).toBe(2026);
   });
 });
+
+describe('people who passed away', () => {
+  it('are remembered on the day they died, never with a birthday', () => {
+    const grandpa = makePerson({ id: 'g', firstName: 'Manuel', birthDate: '1912-06-03', deathDate: '1989-01-27' });
+    const list = upcomingEvents([], [grandpa], '2026-01-20', 366);
+    expect(list.map((o) => o.type)).toEqual(['fallecimiento']);
+    expect(list[0]).toMatchObject({ title: 'En memoria de Manuel', date: '2026-01-27', years: 37 });
+    expect(anniversaryLabel(list[0])).toBe('Hace 37 años');
+  });
+});

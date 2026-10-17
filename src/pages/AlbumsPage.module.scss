@@ -48,7 +48,7 @@
 .cover {
   position: relative;
   height: 170px;
-  background: radial-gradient(ellipse at 50% 120%, rgba(242, 180, 90, 0.25), transparent 70%), $color-bg-panel;
+  background: radial-gradient(ellipse at 50% 120%, rgb(var(--accent-rgb) / 0.25), transparent 70%), $color-bg-panel;
 
   .coverCard {
     position: absolute;

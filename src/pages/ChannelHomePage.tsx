@@ -23,7 +23,7 @@ export function ChannelHomePage() {
       {hero ? (
         <Hero video={hero} kicker={`${channel.name} · último recuerdo añadido`} />
       ) : (
-        <EmptyState icon="📼">
+        <EmptyState>
           <h1>{channel.name}</h1>
           <p>Este canal todavía no tiene recuerdos.</p>
           {isAdmin && (

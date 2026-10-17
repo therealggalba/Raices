@@ -44,14 +44,14 @@ export function VideoFormPage() {
 
   if (!isAdmin) {
     return (
-      <EmptyState icon="🔒">
+      <EmptyState>
         <p>Solo los administradores del canal pueden añadir o editar vídeos.</p>
       </EmptyState>
     );
   }
   if (videoId && !existing) {
     return (
-      <EmptyState icon="🔍">
+      <EmptyState>
         <p>Este vídeo no existe.</p>
       </EmptyState>
     );
@@ -154,7 +154,7 @@ export function VideoFormPage() {
             ))}
           </select>
         </Field>
-        <Field label="Descripción" htmlFor="description" hint="¿Qué pasó ese día? ¿Quién grabó?">
+        <Field label="Descripción" htmlFor="description">
           <textarea
             id="description"
             className={ui.input}

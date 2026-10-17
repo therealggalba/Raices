@@ -26,14 +26,14 @@
 .bar {
   height: 8px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--tint-rgb) / 0.1);
   overflow: hidden;
 
   span {
     display: block;
     height: 100%;
     border-radius: 4px;
-    background: linear-gradient(90deg, $color-accent, $color-accent-strong);
+    background: $color-accent;
     transition: width 0.6s ease;
   }
 }

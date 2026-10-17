@@ -17,19 +17,12 @@ export function TreePage() {
         <PeopleViewSwitch channelId={channel.id} active="arbol" />
       </div>
       {people.length === 0 ? (
-        <EmptyState icon="🌳">
+        <EmptyState>
           <p>Añade personas al canal para empezar el árbol.</p>
           {isAdmin && <LinkButton to={`/c/${channel.id}/personas/nueva`}>Añadir persona</LinkButton>}
         </EmptyState>
       ) : (
         <>
-          <p className={ui.muted}>
-            💍 une a las parejas y las flechas bajan de padres a hijos.
-            {viewer
-              ? ' Cada tarjeta dice qué es de ti.'
-              : ' ¿Estás en el árbol? Abre tu ficha y pulsa «Esta persona soy yo» para ver tu parentesco con cada uno.'}
-            {isAdmin && ' Los vínculos se editan en la ficha de cada persona.'}
-          </p>
           <FamilyTree
             people={people}
             partnerships={partnerships}

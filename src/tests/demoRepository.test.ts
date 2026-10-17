@@ -26,7 +26,7 @@ describe('read-only demo', () => {
       demo.renameCurrentUser('Hacker'),
       demo.addPerson(DEMO_FAMILY_ID, { firstName: 'X', lastName: '', relationship: '', biography: '', notes: '' }),
       demo.deleteVideo(DEMO_FAMILY_ID, 'v-1'),
-      demo.createInvitation(DEMO_FAMILY_ID, 7),
+      demo.createInvitation(DEMO_FAMILY_ID, 7, 'p-natalia'),
       demo.resetDemo(),
     ];
     for (const attempt of attempts) {
@@ -36,12 +36,10 @@ describe('read-only demo', () => {
     }
   });
 
-  it('still lets the visitor watch, open packs and say who they are', async () => {
+  it('still lets the visitor watch and open packs, already knowing who they are', async () => {
     const library = await demo.loadLibrary();
     await demo.recordView(library.videos[0].id);
     expect((await demo.openPack(DEMO_FAMILY_ID)).length).toBeGreaterThan(0);
-    const me = (await demo.loadChannel(DEMO_FAMILY_ID)).me;
-    await demo.linkMemberPerson(DEMO_FAMILY_ID, me.userId, 'p-sofia');
-    expect((await demo.loadChannel(DEMO_FAMILY_ID)).me.personId).toBe('p-sofia');
+    expect((await demo.loadChannel(DEMO_FAMILY_ID)).me.personId).toBe('p-carlos');
   });
 });

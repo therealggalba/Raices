@@ -14,7 +14,7 @@
   height: $header-offset;
   padding-top: $safe-top;
   padding: 0 $space-3;
-  background: linear-gradient(to bottom, rgba(14, 13, 18, 0.95), rgba(14, 13, 18, 0.7) 70%, rgba(14, 13, 18, 0));
+  background: linear-gradient(to bottom, rgb(var(--bg-rgb) / 0.95), rgb(var(--bg-rgb) / 0.7) 70%, rgb(var(--bg-rgb) / 0));
   backdrop-filter: blur(6px);
 
   @include md-up {
@@ -43,8 +43,8 @@
   width: 32px;
   height: 32px;
   border-radius: $radius-md;
-  background: $color-play;
-  color: #fff;
+  background: $color-accent;
+  color: $color-on-accent;
   font-size: 0.8rem;
 }
 
@@ -97,7 +97,7 @@
 
 .active {
   color: $color-text;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(var(--tint-rgb) / 0.1);
 }
 
 .actions {
@@ -124,7 +124,7 @@
 
   @include can-hover {
     &:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgb(var(--tint-rgb) / 0.08);
     }
   }
 }

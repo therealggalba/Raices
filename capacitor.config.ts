@@ -7,12 +7,12 @@ const config: CapacitorConfig = {
   appName: 'FamilyMemories',
   webDir: 'dist',
   android: {
-    // Dark app: no white flash while the WebView starts.
-    backgroundColor: '#0e0d12',
+    // Light app background while the WebView starts.
+    backgroundColor: '#fbfaf8',
   },
   plugins: {
     LocalNotifications: {
-      iconColor: '#f2b45a',
+      iconColor: '#e46c16',
     },
   },
 };

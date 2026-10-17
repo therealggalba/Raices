@@ -33,14 +33,14 @@ export function CardFormPage() {
 
   if (!isAdmin) {
     return (
-      <EmptyState icon="🔒">
+      <EmptyState>
         <p>Solo los administradores del canal pueden añadir o editar cromos.</p>
       </EmptyState>
     );
   }
   if (cardId && !existing) {
     return (
-      <EmptyState icon="🃏">
+      <EmptyState>
         <p>Este cromo no existe.</p>
       </EmptyState>
     );
@@ -93,7 +93,7 @@ export function CardFormPage() {
           <Field
             label="Enlace de la imagen"
             htmlFor="imageUrl"
-            hint="Enlace https a la foto (por ejemplo, la URL pública de Supabase Storage o de tu alojamiento)."
+            hint="Enlace a la foto"
           >
             <input
               id="imageUrl"
@@ -143,7 +143,7 @@ export function CardFormPage() {
             required
           />
         </Field>
-        <Field label="Descripción (opcional)" htmlFor="description" hint="El recuerdo detrás de la foto">
+        <Field label="Descripción (opcional)" htmlFor="description">
           <textarea
             id="description"
             className={ui.input}

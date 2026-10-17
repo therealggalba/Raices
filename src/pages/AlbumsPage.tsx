@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Icon } from '../components/Icon';
 import { FitImage } from '../components/FitImage';
 import { ProgressMeter } from '../components/ProgressMeter';
 import { EmptyState, LinkButton } from '../components/ui';
@@ -28,12 +29,12 @@ export function AlbumsPage() {
         <h1>Álbumes</h1>
         {albums.length > 0 && (
           <LinkButton to="/sobres" variant={library.packs.remaining ? 'primary' : 'secondary'} small>
-            🎁 Sobres ({library.packs.remaining}/{library.packs.perDay})
+            Sobres ({library.packs.remaining}/{library.packs.perDay})
           </LinkButton>
         )}
       </div>
       {albums.length === 0 ? (
-        <EmptyState icon="🃏">
+        <EmptyState>
           <p>Ninguno de tus canales tiene cromos todavía.</p>
         </EmptyState>
       ) : (
@@ -48,7 +49,9 @@ export function AlbumsPage() {
                     </span>
                   ))
                 ) : (
-                  <span className={styles.coverEmpty}>🔒</span>
+                  <span className={styles.coverEmpty}>
+                    <Icon name="lock" size={28} />
+                  </span>
                 )}
               </span>
               <span className={styles.body}>

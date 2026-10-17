@@ -11,15 +11,23 @@ import type { PlannedNotification } from './notificationPlan';
 
 export const isNativeApp = (): boolean => Capacitor.isNativePlatform();
 
-/** Status bar in the app colours. */
+const SCHEME = '(prefers-color-scheme: dark)';
+
+/** Status bar in the app colours, following the phone's light / dark mode. */
 export async function setupStatusBar(): Promise<void> {
   if (!isNativeApp()) return;
-  try {
-    await StatusBar.setStyle({ style: Style.Dark }); // light icons on a dark app
-    await StatusBar.setBackgroundColor({ color: '#0e0d12' });
-  } catch {
-    // Not available on every Android version (edge-to-edge): harmless.
-  }
+  const apply = async () => {
+    const dark = window.matchMedia(SCHEME).matches;
+    try {
+      // Style.Dark = light icons (for a dark app); Style.Light = dark icons.
+      await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light });
+      await StatusBar.setBackgroundColor({ color: dark ? '#121110' : '#fbfaf8' });
+    } catch {
+      // Not available on every Android version (edge-to-edge): harmless.
+    }
+  };
+  await apply();
+  window.matchMedia(SCHEME).addEventListener('change', () => void apply());
 }
 
 /**

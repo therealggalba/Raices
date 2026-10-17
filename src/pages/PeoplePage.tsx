@@ -25,7 +25,7 @@ export function PeoplePage() {
         </div>
       </div>
       {people.length === 0 ? (
-        <EmptyState icon="☺">
+        <EmptyState>
           <p>Todavía no hay personas en este canal.</p>
         </EmptyState>
       ) : (

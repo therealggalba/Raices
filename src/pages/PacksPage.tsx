@@ -26,17 +26,14 @@ export function PacksPage() {
         <h1>Sobres</h1>
         <div className={styles.allowance} aria-label={packStatusText(packs)}>
           {Array.from({ length: packs.perDay }, (_, i) => (
-            <span key={i} className={i < packs.remaining ? styles.full : styles.used} aria-hidden>
-              🎁
-            </span>
+            <span key={i} className={i < packs.remaining ? styles.full : styles.used} aria-hidden />
           ))}
         </div>
         <p className={styles.status}>{packStatusText(packs)}</p>
-        {canOpen && <p className={styles.hint}>Elige de qué álbum quieres abrir el sobre.</p>}
       </header>
 
       {albums.length === 0 ? (
-        <EmptyState icon="🃏">
+        <EmptyState>
           <p>Ninguno de tus canales tiene cromos todavía.</p>
         </EmptyState>
       ) : (

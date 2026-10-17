@@ -21,7 +21,7 @@ export function CardPage() {
 
   if (!channel || !card) {
     return (
-      <EmptyState icon="🃏">
+      <EmptyState>
         <p>Este cromo no existe o ha sido eliminado.</p>
         <LinkButton to={channel ? albumUrl : '/albumes'}>Volver al álbum</LinkButton>
       </EmptyState>

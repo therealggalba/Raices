@@ -70,7 +70,7 @@ describe('local repository', () => {
     expect(snapshot.me.role).toBe('member');
     expect(snapshot.invitations).toEqual([]);
     expect((await rejection(repo.addVideo(DEMO_FRIENDS_ID, { ...videoInput, personIds: [] }))).code).toBe('forbidden');
-    expect((await rejection(repo.createInvitation(DEMO_FRIENDS_ID, 7))).code).toBe('forbidden');
+    expect((await rejection(repo.createInvitation(DEMO_FRIENDS_ID, 7, 'p-javi'))).code).toBe('forbidden');
     expect((await rejection(repo.addEvent(DEMO_FRIENDS_ID, eventInput))).code).toBe('forbidden');
   });
 
@@ -317,6 +317,7 @@ describe('invitations', () => {
       createdBy: 'u-marta',
       createdAt: '2026-10-14T00:00:00.000Z',
       expiresAt: '2026-10-21T00:00:00.000Z',
+      personId: 'p-alex',
     });
     mutate(db);
     return memoryStore({ [STORAGE_KEY]: JSON.stringify(db) });
@@ -327,7 +328,7 @@ describe('invitations', () => {
     const channelId = await repo.redeemInvitation('k7pm q2xd 9hwa', 'Lucía');
     expect(channelId).toBe(DEMO_FRIENDS_ID);
     const snapshot = await repo.loadChannel(channelId);
-    expect(snapshot.me).toMatchObject({ role: 'member', displayName: 'Lucía', invitationId: 'i-friends' });
+    expect(snapshot.me).toMatchObject({ role: 'member', displayName: 'Lucía', invitationId: 'i-friends', personId: 'p-alex' });
     // Single use: the code no longer works once redeemed.
     expect((await rejection(repo.redeemInvitation('K7PM-Q2XD-9HWA', 'Lucía'))).code).toBe('invalid');
   });
@@ -356,10 +357,13 @@ describe('invitations', () => {
 
   it('lets admins create and revoke invitations with a bounded expiry', async () => {
     const repo = createLocalRepository({ store: memoryStore(), now: () => NOW });
-    const invitation = await repo.createInvitation(DEMO_FAMILY_ID, 7);
-    expect(invitation.expiresAt).toBe('2026-10-22T10:00:00.000Z');
-    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 0))).code).toBe('invalid');
-    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 365))).code).toBe('invalid');
+    const invitation = await repo.createInvitation(DEMO_FAMILY_ID, 7, 'p-natalia');
+    expect(invitation).toMatchObject({ expiresAt: '2026-10-22T10:00:00.000Z', personId: 'p-natalia' });
+    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 0, 'p-natalia'))).code).toBe('invalid');
+    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 365, 'p-natalia'))).code).toBe('invalid');
+    // For someone who is already a member (Carlos is the visitor): refused.
+    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 7, 'p-carlos'))).code).toBe('conflict');
+    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 7, 'p-rosa'))).code).toBe('not-found');
     await repo.revokeInvitation(DEMO_FAMILY_ID, invitation.id);
     expect((await rejection(repo.revokeInvitation(DEMO_FAMILY_ID, invitation.id))).code).toBe('conflict');
   });
@@ -389,20 +393,26 @@ describe('family tree', () => {
     );
   });
 
-  it('links members to their person: themselves only, one member per person', async () => {
+  it('links members to their person: one member per person, admins can fix it', async () => {
     const me = (await repo.loadChannel(DEMO_FAMILY_ID)).me;
+    expect(me.personId).toBe('p-carlos');
+    // The visitor is admin here: may change anyone's, including their own.
     await repo.linkMemberPerson(DEMO_FAMILY_ID, me.userId, 'p-natalia');
     expect((await repo.loadChannel(DEMO_FAMILY_ID)).me.personId).toBe('p-natalia');
     const taken = await rejection(repo.linkMemberPerson(DEMO_FAMILY_ID, me.userId, 'p-elena'));
     expect(taken.code).toBe('conflict');
     expect(taken.message).toContain('Elena');
-    // The visitor is admin of this channel: may undo Luis's link, but not choose for him.
-    expect((await rejection(repo.linkMemberPerson(DEMO_FAMILY_ID, 'u-luis', 'p-jorge'))).code).toBe('forbidden');
+    await repo.linkMemberPerson(DEMO_FAMILY_ID, 'u-luis', 'p-jorge');
     await repo.linkMemberPerson(DEMO_FAMILY_ID, 'u-luis', null);
-    const snap = await repo.loadChannel(DEMO_FAMILY_ID);
-    expect(snap.members.find((m) => m.userId === 'u-luis')?.personId).toBeUndefined();
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).members.find((m) => m.userId === 'u-luis')?.personId).toBeUndefined();
     await repo.deletePerson(DEMO_FAMILY_ID, 'p-natalia');
     expect((await repo.loadChannel(DEMO_FAMILY_ID)).me.personId).toBeUndefined();
+  });
+
+  it('lets a plain member pick who they are only once', async () => {
+    // In the friends channel the visitor is a plain member.
+    const me = (await repo.loadChannel(DEMO_FRIENDS_ID)).me;
+    expect((await rejection(repo.linkMemberPerson(DEMO_FRIENDS_ID, me.userId, 'p-javi'))).code).toBe('forbidden');
   });
 
   it('stores gender and date of death (not before birth)', async () => {

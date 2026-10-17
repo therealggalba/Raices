@@ -10,8 +10,6 @@ export interface ThemeLook {
   accent: string;
   /** Repeated background motif. */
   motif: string;
-  /** Big central illustration. */
-  emblem: string;
 }
 
 /** Pack designs selectable per channel (Configuración del canal). */
@@ -22,7 +20,6 @@ export const PACK_LOOKS: Record<PackTheme, ThemeLook> = {
     art: 'linear-gradient(170deg, #b8f3ff 0%, #58c7a0 45%, #1f6f53 100%)',
     accent: '#0f5a40',
     motif: '✦',
-    emblem: '📸',
   },
   atardecer: {
     label: 'Atardecer',
@@ -30,7 +27,6 @@ export const PACK_LOOKS: Record<PackTheme, ThemeLook> = {
     art: 'linear-gradient(170deg, #fde68a 0%, #fb7185 50%, #7c2d55 100%)',
     accent: '#7c1d45',
     motif: '☀',
-    emblem: '🌅',
   },
   oceano: {
     label: 'Océano',
@@ -38,7 +34,6 @@ export const PACK_LOOKS: Record<PackTheme, ThemeLook> = {
     art: 'linear-gradient(170deg, #cffafe 0%, #38bdf8 45%, #1e3a8a 100%)',
     accent: '#132d6b',
     motif: '〰',
-    emblem: '🐚',
   },
   bosque: {
     label: 'Bosque',
@@ -46,7 +41,6 @@ export const PACK_LOOKS: Record<PackTheme, ThemeLook> = {
     art: 'linear-gradient(170deg, #ecfccb 0%, #65a30d 45%, #1a2e05 100%)',
     accent: '#24360b',
     motif: '❦',
-    emblem: '🌳',
   },
   vintage: {
     label: 'Vintage',
@@ -54,7 +48,6 @@ export const PACK_LOOKS: Record<PackTheme, ThemeLook> = {
     art: 'linear-gradient(170deg, #fdf4e3 0%, #d6a35c 50%, #4a2c12 100%)',
     accent: '#4a2c12',
     motif: '✧',
-    emblem: '🎞️',
   },
   galaxia: {
     label: 'Galaxia',
@@ -62,6 +55,5 @@ export const PACK_LOOKS: Record<PackTheme, ThemeLook> = {
     art: 'linear-gradient(170deg, #c4b5fd 0%, #6d28d9 45%, #0b0a26 100%)',
     accent: '#2e1065',
     motif: '✶',
-    emblem: '🌌',
   },
 };

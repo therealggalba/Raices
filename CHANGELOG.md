@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.0 — 2026-10-17
+
+- Cada invitación es para una persona concreta del canal: el administrador la elige al crearla y quien la usa
+  entra ya enlazado a su ficha. Quien entra en un canal sin ficha asignada (por ejemplo, su creador) tiene que
+  elegir quién es antes de usarlo (o, si es administrador, crear su ficha). Después solo un administrador puede
+  cambiarlo (Canal › Miembros). Aplica a todos los canales.
+- Las personas fallecidas ya no tienen cumpleaños: se recuerda el día de su fallecimiento («En memoria de…»,
+  «Hace N años»). Nuevo tipo de fecha «Fallecimiento».
+- Estética más sobria: blanco y naranja como colores principales, tema claro u oscuro según el móvil, una sola
+  tipografía (Inter), sin emojis decorativos ni degradados de colores, iconos de línea sencillos solo donde
+  ayudan, menos textos explicativos y árbol en tonos neutros. Logotipo provisional (cuadrado naranja).
+- Base de datos: migración `0004_invitation_person.sql`.
+
 ## 0.13.0 — 2026-10-17
 
 - Acceso: casilla «Recordarme en este dispositivo» (recuerda el usuario, nunca la contraseña; el gestor de

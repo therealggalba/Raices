@@ -101,8 +101,7 @@
   line-height: 0.8;
   letter-spacing: -0.06em;
   color: $color-bg;
-  -webkit-text-stroke: 2px $color-text-muted;
-  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  -webkit-text-stroke: 2px $color-text-dim;
 }
 
 .captioned {

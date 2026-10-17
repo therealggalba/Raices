@@ -9,7 +9,7 @@
   overflow-x: auto;
   margin: 0 (-$space-4);
   padding: $space-2 $space-4;
-  background: rgba(14, 13, 18, 0.92);
+  background: rgb(var(--bg-rgb) / 0.92);
   backdrop-filter: blur(8px);
   @include hide-scrollbar;
 
@@ -43,7 +43,7 @@
     height: 14px;
     border-radius: 50%;
     background: $color-accent;
-    box-shadow: 0 0 0 4px rgba(242, 180, 90, 0.2);
+    box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / 0.2);
   }
 }
 

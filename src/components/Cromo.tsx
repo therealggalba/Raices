@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from './Icon';
 import type { AlbumCard, Person } from '../types/domain';
 import { formatPartialDate } from '../utils/dates';
 import { FitImage } from './FitImage';
@@ -36,7 +37,7 @@ export function Cromo({ card, person, locked, copies = 0, ribbon }: Props) {
           )}
           {locked && (
             <span className={styles.lock}>
-              <span aria-hidden>🔒</span>
+              <Icon name="lock" size={22} />
               Cromo bloqueado
             </span>
           )}

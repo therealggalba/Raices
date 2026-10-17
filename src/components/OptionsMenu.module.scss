@@ -22,8 +22,8 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: $radius-md;
-  background: linear-gradient(135deg, $color-accent, $color-play);
-  color: #1b1408;
+  background: $color-accent;
+  color: $color-on-accent;
   font-weight: 800;
 }
 

@@ -4,7 +4,6 @@ import { ui } from '../components/ui-styles';
 import styles from './AboutPage.module.scss';
 
 interface Feature {
-  icon: string;
   title: string;
   text: string;
   /** Where to see it in the demo. */
@@ -13,41 +12,34 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    icon: '🏠',
     title: 'Canales privados',
     text: 'Cada familia o grupo de amigos tiene su canal. Solo entra quien recibe una invitación: un código de un solo uso que caduca. Dentro, los administradores añaden contenido y el resto disfruta de él.',
   },
   {
-    icon: '🎬',
     title: 'Vídeos como en una plataforma',
     text: 'Los vídeos de toda la vida, organizados en filas: añadidos recientemente, lo más visto, recuerdos del mes, favoritos… Se enlazan desde Google Drive o YouTube, se ven a pantalla completa y la app recuerda por dónde ibas.',
     to: '/',
   },
   {
-    icon: '🔎',
     title: 'Catálogo con filtros',
     text: 'Busca por canal, persona, tipo de evento (bodas, cumpleaños, Navidad…) o década. ¿Todos los vídeos de la abuela en los 90? Dos toques.',
     to: '/catalogo',
   },
   {
-    icon: '📅',
     title: 'Fechas que no se olvidan',
     text: 'Cumpleaños, aniversarios, bodas… se repiten cada año y la app calcula cuántos se cumplen. El día señalado avisa con un mensaje y una notificación en el móvil.',
     to: '/fechas',
   },
   {
-    icon: '🌳',
     title: 'Personas y árbol familiar',
     text: 'Cada persona tiene su ficha (biografía, fechas, vídeos en los que aparece) y el árbol genealógico se dibuja solo a partir de padres y parejas.',
   },
   {
-    icon: '🃏',
     title: 'Álbum de cromos',
     text: 'Las fotos de la familia se convierten en cromos coleccionables. Cada día hay 3 sobres de 5 cromos: los que aún no tienes salen borrosos hasta que te tocan, y los repetidos se acumulan.',
     to: '/albumes',
   },
   {
-    icon: '📱',
     title: 'App para el móvil',
     text: 'Funciona en el navegador y como app de Android, pensada para usarse con una mano en vertical.',
   },
@@ -85,15 +77,12 @@ export function AboutPage() {
         <ul className={styles.features}>
           {FEATURES.map((f) => (
             <li key={f.title} className={styles.feature}>
-              <span className={styles.icon} aria-hidden>
-                {f.icon}
-              </span>
               <div>
                 <h3>{f.title}</h3>
                 <p>{f.text}</p>
                 {f.to && (
                   <LinkButton to={f.to} variant="ghost" small>
-                    Verlo en la demo →
+                    Verlo en la demo
                   </LinkButton>
                 )}
               </div>
@@ -121,7 +110,7 @@ export function AboutPage() {
       </section>
 
       <section className={[styles.section, styles.privacy].join(' ')}>
-        <h2>🔒 Privado de verdad</h2>
+        <h2>Privado de verdad</h2>
         <p>
           Nada es público: cada canal solo lo ven sus miembros, las fotos de los cromos bloqueados no se pueden descargar
           y cada persona entra con su usuario y contraseña.

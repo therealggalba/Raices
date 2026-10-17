@@ -21,7 +21,7 @@ export function TimelinePage() {
 
   if (!timeline.length) {
     return (
-      <EmptyState icon="◷">
+      <EmptyState>
         <p>La cronología aparecerá cuando el canal tenga vídeos.</p>
       </EmptyState>
     );

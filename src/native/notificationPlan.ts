@@ -1,6 +1,5 @@
 import type { DateOccurrence } from '../types/domain';
 import { anniversaryLabel } from '../utils/events';
-import { EVENT_ICONS } from '../utils/labels';
 
 // Which local notifications the Android app schedules for important dates.
 // Pure (testable); the Capacitor calls live in nativeBridge.ts.
@@ -37,7 +36,7 @@ export function planDateNotifications(
     const label = anniversaryLabel(o);
     plan.push({
       id: notificationId(o.key, o.date),
-      title: `${EVENT_ICONS[o.type]} Hoy: ${o.title}`,
+      title: `Hoy: ${o.title}`,
       body: [label ?? '¡Es hoy!', channelName(o.channelId)].filter(Boolean).join(' · '),
       at,
     });

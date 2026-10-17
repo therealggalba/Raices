@@ -60,7 +60,7 @@ export function PersonFamily({ person }: { person: Person }) {
                 {chip(
                   partner,
                   [
-                    partnership.since && `💍 ${formatPartialDate(partnership.since)}`,
+                    partnership.since && `desde ${formatPartialDate(partnership.since)}`,
                     partnership.until && `separados ${formatPartialDate(partnership.until)}`,
                   ]
                     .filter(Boolean)
@@ -91,7 +91,7 @@ export function PersonFamily({ person }: { person: Person }) {
             ))}
             {isAdmin && !form && (
               <Button small onClick={() => setForm({})}>
-                💍 Añadir pareja
+                Añadir pareja
               </Button>
             )}
           </div>
@@ -116,9 +116,6 @@ export function PersonFamily({ person }: { person: Person }) {
       {group('Hijos', family.children)}
       {group('Hermanos', family.siblings)}
       <ErrorBanner message={error} />
-      {isAdmin && family.parents.length === 0 && (
-        <p className={ui.hint}>Sus padres se eligen en «Editar» (Progenitores).</p>
-      )}
     </section>
   );
 }
@@ -177,7 +174,7 @@ function PartnerForm({
       <Field label="Fecha de boda o inicio (opcional)" htmlFor="since">
         <input id="since" className={ui.input} type="date" value={since} onChange={(e) => setSince(e.target.value)} />
       </Field>
-      <Field label="Fecha de separación (opcional)" htmlFor="until" hint="Si se separaron, en el árbol se verán con línea discontinua">
+      <Field label="Fecha de separación (opcional)" htmlFor="until">
         <input id="until" className={ui.input} type="date" value={until} onChange={(e) => setUntil(e.target.value)} />
       </Field>
       <ErrorBanner message={error} />

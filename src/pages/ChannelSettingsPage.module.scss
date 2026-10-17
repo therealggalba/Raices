@@ -57,7 +57,7 @@
   gap: $space-3;
   padding: $space-3 $space-4;
   border-radius: $radius-md;
-  background: rgba(242, 180, 90, 0.1);
+  background: rgb(var(--accent-rgb) / 0.1);
   border: 1px dashed $color-accent;
 
   code {
@@ -146,5 +146,13 @@
 
 .packOptionOn {
   border-color: $color-accent;
-  background: rgba(242, 180, 90, 0.12);
+  background: rgb(var(--accent-rgb) / 0.12);
+}
+
+.personSelect {
+  margin-top: $space-1;
+  max-width: 260px;
+  min-height: 36px;
+  padding-block: 0;
+  font-size: 0.85rem;
 }

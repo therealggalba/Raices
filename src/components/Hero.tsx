@@ -1,6 +1,7 @@
 import type { Video } from '../types/domain';
 import { formatDuration, formatPartialDate } from '../utils/dates';
 import { CATEGORY_LABELS } from '../utils/labels';
+import { Icon } from './Icon';
 import { Thumbnail } from './Thumbnail';
 import { LinkButton } from './ui';
 import styles from './Hero.module.scss';
@@ -23,9 +24,10 @@ export function Hero({ video, kicker }: { video: Video; kicker: string }) {
         {video.description && <p className={styles.description}>{video.description}</p>}
         <div className={styles.actions}>
           <LinkButton to={to} state={{ autoplay: true }} variant="play">
-            ▶ Reproducir
+            <Icon name="play" size={18} />
+            Reproducir
           </LinkButton>
-          <LinkButton to={to}>ⓘ Más información</LinkButton>
+          <LinkButton to={to}>Más información</LinkButton>
         </div>
       </div>
     </section>

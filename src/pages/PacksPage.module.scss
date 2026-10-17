@@ -28,31 +28,23 @@
 .allowance {
   display: flex;
   gap: $space-2;
-  font-size: 2rem;
+
+  // One pill per daily pack: filled = still available.
+  span {
+    width: 28px;
+    height: 6px;
+    border-radius: $radius-pill;
+  }
 }
 
 .full {
-  animation: wiggle 2.4s ease-in-out infinite;
+  background: $color-accent;
 }
 
 .used {
-  filter: grayscale(1);
-  opacity: 0.3;
+  background: $color-line;
 }
 
-@keyframes wiggle {
-  0%,
-  85%,
-  100% {
-    transform: rotate(0);
-  }
-  90% {
-    transform: rotate(-10deg);
-  }
-  95% {
-    transform: rotate(10deg);
-  }
-}
 
 .status {
   font-weight: 700;

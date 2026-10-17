@@ -8,9 +8,7 @@
   align-items: center;
   gap: $space-6;
   padding: calc(#{$space-6} + #{$safe-top}) $space-4 calc(#{$space-6} + #{$safe-bottom});
-  background:
-    radial-gradient(circle at 50% 0%, rgba($color-accent, 0.14), transparent 60%),
-    $color-bg;
+  background: $color-bg;
 }
 
 .box {
@@ -23,8 +21,7 @@
 }
 
 .brand {
-  margin: 0;
-  font-size: 2.5rem;
+  justify-self: center;
 }
 
 .title {

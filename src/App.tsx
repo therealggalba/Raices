@@ -47,7 +47,7 @@ function ScrollToTop() {
 
 function NotFound() {
   return (
-    <EmptyState icon="🧭">
+    <EmptyState>
       <p>Esta página no existe.</p>
       <LinkButton to="/" variant="primary">
         Ir al inicio

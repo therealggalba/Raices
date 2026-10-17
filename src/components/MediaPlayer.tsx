@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Icon } from './Icon';
 import { config } from '../config';
 import { allowRotation, lockPortrait, prefersFullscreenVideo } from '../native/nativeBridge';
 import type { Video } from '../types/domain';
@@ -186,15 +187,15 @@ export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onSta
             rel="noopener noreferrer"
             onClick={countView}
           >
-            <span className={styles.playIcon} aria-hidden>
-              ↗
+            <span className={styles.playIcon}>
+              <Icon name="external" size={26} />
             </span>
             <span>Abrir el vídeo en una pestaña nueva</span>
           </a>
         ) : (
           <button type="button" className={styles.cover} onClick={start} aria-label={playLabel ?? `Reproducir ${video.title}`}>
-            <span className={styles.playIcon} aria-hidden>
-              ▶
+            <span className={styles.playIcon}>
+              <Icon name="play" size={30} />
             </span>
             {playLabel && <span className={styles.playLabel}>{playLabel}</span>}
           </button>
@@ -265,7 +266,7 @@ export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onSta
       {content}
       {started && (
         <button type="button" className={styles.closeFullscreen} onClick={exitFullscreen} aria-label="Salir de pantalla completa">
-          ✕
+          <Icon name="close" />
         </button>
       )}
     </div>

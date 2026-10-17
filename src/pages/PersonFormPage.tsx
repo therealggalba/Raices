@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button, EmptyState, ErrorBanner, Field, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
@@ -14,6 +14,9 @@ import styles from './PersonFormPage.module.scss';
 /** Add (/personas/nueva) or edit (/personas/:personId/editar) a person. Admins only. */
 export function PersonFormPage() {
   const { personId } = useParams();
+  // «No estoy en la lista»: the admin creating their own card.
+  const [params] = useSearchParams();
+  const isSelf = !personId && params.get('soyyo') === '1';
   const navigate = useNavigate();
   const { snapshot, isAdmin, reload, personById } = useChannel();
   const { run, pending, error } = useAction();
@@ -34,14 +37,14 @@ export function PersonFormPage() {
 
   if (!isAdmin) {
     return (
-      <EmptyState icon="🔒">
+      <EmptyState>
         <p>Solo los administradores pueden gestionar personas.</p>
       </EmptyState>
     );
   }
   if (personId && !existing) {
     return (
-      <EmptyState icon="🔍">
+      <EmptyState>
         <p>Esta persona no existe.</p>
       </EmptyState>
     );
@@ -55,7 +58,7 @@ export function PersonFormPage() {
   return (
     <div className={ui.page}>
       <div className={ui.pageHeader}>
-        <h1>{existing ? `Editar a ${existing.firstName}` : 'Añadir persona'}</h1>
+        <h1>{existing ? `Editar a ${existing.firstName}` : isSelf ? 'Tu ficha' : 'Añadir persona'}</h1>
         <LinkButton to={back} variant="ghost" small>
           Cancelar
         </LinkButton>
@@ -81,7 +84,9 @@ export function PersonFormPage() {
               await repository.updatePerson(channelId, existing.id, input);
               return existing.id;
             }
-            return (await repository.addPerson(channelId, input)).id;
+            const added = await repository.addPerson(channelId, input);
+            if (isSelf) await repository.linkMemberPerson(channelId, snapshot.me.userId, added.id);
+            return added.id;
           });
           if (id) {
             await reload();
@@ -95,14 +100,14 @@ export function PersonFormPage() {
         <Field label="Apellidos" htmlFor="lastName">
           <input id="lastName" className={ui.input} value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={80} />
         </Field>
-        <Field label="Género" htmlFor="gender" hint="Para decir «tío» o «tía» en el árbol de cada uno">
+        <Field label="Género" htmlFor="gender">
           <select id="gender" className={ui.input} value={gender} onChange={(e) => setGender(e.target.value as Gender | '')}>
             <option value="">Sin indicar</option>
             <option value="hombre">Hombre</option>
             <option value="mujer">Mujer</option>
           </select>
         </Field>
-        <Field label="Relación familiar" htmlFor="relationship" hint="Ej.: Abuela, Amiga de la familia. Quien se marque «soy yo» en su ficha verá su parentesco exacto con cada uno">
+        <Field label="Relación familiar" htmlFor="relationship" hint="Si no está en el árbol: amiga de la familia, vecino…">
           <input id="relationship" className={ui.input} value={relationship} onChange={(e) => setRelationship(e.target.value)} maxLength={60} />
         </Field>
         {snapshot.channel.kind === 'familia' && (
@@ -130,13 +135,12 @@ export function PersonFormPage() {
                   ))}
               </select>
             ))}
-            <span className={ui.hint}>Las parejas se añaden desde la ficha de la persona.</span>
           </fieldset>
         )}
-        <Field label="Fecha de nacimiento" htmlFor="birthDate" hint="Con ella se crea su cumpleaños automáticamente">
+        <Field label="Fecha de nacimiento" htmlFor="birthDate">
           <input id="birthDate" className={ui.input} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
         </Field>
-        <Field label="Fecha de fallecimiento (si ha fallecido)" htmlFor="deathDate" hint="Se mostrará con una cruz ✝">
+        <Field label="Fecha de fallecimiento" htmlFor="deathDate">
           <input
             id="deathDate"
             className={ui.input}
@@ -146,7 +150,7 @@ export function PersonFormPage() {
             onChange={(e) => setDeathDate(e.target.value)}
           />
         </Field>
-        <Field label="Fotografía (opcional)" htmlFor="photoUrl" hint="Enlace https a una imagen">
+        <Field label="Fotografía (opcional)" htmlFor="photoUrl">
           <input id="photoUrl" className={ui.input} type="url" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://" />
         </Field>
         <Field label="Biografía" htmlFor="biography">

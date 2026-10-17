@@ -15,7 +15,7 @@ import {
   parseCatalogParams,
 } from '../utils/catalogFilters';
 import { formatPartialDate } from '../utils/dates';
-import { CATEGORY_ICONS, CATEGORY_LABELS } from '../utils/labels';
+import { CATEGORY_LABELS } from '../utils/labels';
 import { fullName, sortPeople } from '../utils/people';
 import styles from './CatalogPage.module.scss';
 
@@ -119,7 +119,7 @@ export function CatalogPage() {
                       className={[ui.chip, on ? ui.chipActive : ''].join(' ')}
                       onClick={() => update((f) => ({ categories: toggle(f.categories, cat) }))}
                     >
-                      <span aria-hidden>{CATEGORY_ICONS[cat]}</span> {CATEGORY_LABELS[cat]}
+                      {CATEGORY_LABELS[cat]}
                     </button>
                   );
                 })}
@@ -206,7 +206,7 @@ export function CatalogPage() {
       </div>
 
       {results.length === 0 ? (
-        <EmptyState icon="🔍">
+        <EmptyState>
           <p>Ningún vídeo coincide con la búsqueda o los filtros.</p>
           {(active > 0 || filters.query) && (
             <Button onClick={() => setParams(new URLSearchParams(), { replace: true })}>Ver todo el catálogo</Button>

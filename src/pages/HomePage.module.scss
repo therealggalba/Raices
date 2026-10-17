@@ -73,8 +73,8 @@
   gap: $space-3;
   padding: $space-2 $space-3;
   border-radius: $radius-md;
-  background: linear-gradient(100deg, rgba(232, 80, 91, 0.28), rgba(242, 180, 90, 0.18) 60%, $color-bg-raised);
-  border: 1px solid rgba(242, 180, 90, 0.5);
+  background: rgb(var(--accent-rgb) / 0.08);
+  border: 1px solid rgb(var(--accent-rgb) / 0.5);
   color: $color-text;
   text-decoration: none;
 

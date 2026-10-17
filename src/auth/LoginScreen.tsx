@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { BrandMark } from '../components/BrandMark';
+import { Icon } from '../components/Icon';
 import type { ComponentProps, FormEvent, ReactNode } from 'react';
 import { Button, ErrorBanner } from '../components/ui';
 import { ui } from '../components/ui-styles';
@@ -239,17 +241,15 @@ export function LoginScreen() {
     if (!username) return '3-20 caracteres: letras sin tildes, números, punto o guion bajo.';
     const problem = usernameError(username);
     if (problem) return problem;
-    if (available === 'free') return '✓ Disponible';
-    if (available === 'taken') return '✗ Ya está cogido';
+    if (available === 'free') return 'Disponible';
+    if (available === 'taken') return 'Ya está cogido';
     return available === 'checking' ? 'Comprobando…' : '3-20 caracteres: letras sin tildes, números, punto o guion bajo.';
   })();
 
   return (
     <main className={styles.screen}>
       <div className={styles.box}>
-        <p className={styles.brand} aria-hidden>
-          🎞️
-        </p>
+        <BrandMark size={48} className={styles.brand} />
         <h1 className={styles.title}>FamilyMemories</h1>
 
         {step === 'login' && (
@@ -485,7 +485,7 @@ function PasswordInput({
           aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           aria-pressed={visible}
         >
-          {visible ? '🙈' : '👁'}
+          <Icon name={visible ? 'eyeOff' : 'eye'} size={20} />
         </button>
       </div>
     </Labeled>

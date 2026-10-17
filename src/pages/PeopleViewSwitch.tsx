@@ -9,7 +9,7 @@ export function PeopleViewSwitch({ channelId, active }: { channelId: string; act
         Lista
       </Link>
       <Link to={`/c/${channelId}/arbol`} aria-current={active === 'arbol' ? 'page' : undefined}>
-        🌳 Árbol
+        Árbol
       </Link>
     </nav>
   );

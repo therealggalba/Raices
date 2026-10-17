@@ -12,7 +12,7 @@ import { EVENT_TYPES } from '../types/domain';
 import type { EventInput, EventType, FamilyEvent } from '../types/domain';
 import { addDays, parsePartialDate } from '../utils/dates';
 import { occurrenceIn, upcomingEvents } from '../utils/events';
-import { EVENT_ICONS, EVENT_LABELS } from '../utils/labels';
+import { EVENT_LABELS } from '../utils/labels';
 
 /**
  * A channel's important dates: where they are added and edited. The yearly
@@ -50,10 +50,6 @@ export function EventsPage() {
           )}
         </div>
       </div>
-      <p className={ui.muted}>
-        Cada fecha vuelve cada año y muestra su número de aniversario. Los cumpleaños de las personas del canal se añaden
-        solos a partir de su fecha de nacimiento.
-      </p>
 
       {editing && (
         <EventForm
@@ -69,7 +65,7 @@ export function EventsPage() {
       <ErrorBanner message={error} />
 
       {upcoming.length === 0 ? (
-        <EmptyState icon="📅">
+        <EmptyState>
           <p>Este canal todavía no tiene fechas.</p>
         </EmptyState>
       ) : (
@@ -155,7 +151,7 @@ function EventForm({
         <select id="type" className={ui.input} value={type} onChange={(e) => setType(e.target.value as EventType)}>
           {EVENT_TYPES.map((t) => (
             <option key={t} value={t}>
-              {EVENT_ICONS[t]} {EVENT_LABELS[t]}
+              {EVENT_LABELS[t]}
             </option>
           ))}
         </select>

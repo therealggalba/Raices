@@ -49,16 +49,18 @@ export interface MemoriesRepository {
   updateChannel(channelId: string, input: ChannelInput): Promise<void>;
   leaveChannel(channelId: string): Promise<void>;
 
-  /** Joins the channel the code belongs to. Returns its id. */
+  /** Joins the channel the code belongs to, as the person it was made for. Returns its id. */
   redeemInvitation(code: string, displayName: string): Promise<string>;
-  createInvitation(channelId: string, expiresInDays: number): Promise<Invitation>;
+  /** Invitation for one person of the channel (not yet linked to any member). */
+  createInvitation(channelId: string, expiresInDays: number, personId: string): Promise<Invitation>;
   revokeInvitation(channelId: string, invitationId: string): Promise<void>;
 
   setMemberRole(channelId: string, userId: string, role: Role): Promise<void>;
   /**
-   * «Esta persona soy yo»: links a member to a person of the channel (kinship
-   * is then shown relative to them). Members link themselves; an admin can
-   * only undo someone else's link (personId null). One member per person.
+   * Which person of the channel a member is (kinship is shown relative to
+   * them). Normally set by the invitation; a member without one must pick
+   * theirs once (they can't change it later); admins can set or clear anyone's.
+   * One member per person.
    */
   linkMemberPerson(channelId: string, userId: string, personId: string | null): Promise<void>;
   removeMember(channelId: string, userId: string): Promise<void>;

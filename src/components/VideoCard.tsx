@@ -1,4 +1,5 @@
 import { useContext } from 'react';
+import { Icon } from './Icon';
 import { Link } from 'react-router-dom';
 import { LibraryContext } from '../hooks/library-context';
 import type { Video } from '../types/domain';
@@ -39,8 +40,8 @@ export function VideoCard({ video, favorite, rank, caption }: Props) {
           </span>
         )}
         {favorite && (
-          <span className={styles.favorite} aria-hidden>
-            ♥
+          <span className={styles.favorite} aria-label="En favoritos">
+            <Icon name="heartFilled" size={16} />
           </span>
         )}
       </span>

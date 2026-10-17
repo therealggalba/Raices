@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { BrandMark } from './BrandMark';
 import type { PackTheme } from '../types/domain';
 import { PACK_LOOKS } from './pack-looks';
 import styles from './PackArt.module.scss';
@@ -32,7 +33,7 @@ export function PackArt({ theme, title, className, style }: Props) {
     >
       <div className={[styles.band, styles.top].join(' ')}>
         <span className={styles.logo}>
-          <span aria-hidden>▶</span> FamilyMemories
+          <BrandMark size={14} /> FamilyMemories
         </span>
         <span className={styles.code}>{initials(title)}</span>
       </div>
@@ -41,7 +42,7 @@ export function PackArt({ theme, title, className, style }: Props) {
           {Array.from({ length: 40 }, () => look.motif).join(' ')}
         </span>
         <span className={styles.emblem} aria-hidden>
-          {look.emblem}
+          <BrandMark size={56} />
         </span>
         <div className={styles.titleBox}>
           <span className={styles.kicker}>Sobre de recuerdos</span>

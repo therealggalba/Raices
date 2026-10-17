@@ -1,5 +1,56 @@
 @use './variables' as *;
 
+// Theme tokens (see _variables.scss). Light by default, dark when the phone is
+// in dark mode. *-rgb are the same colours as "r g b" for translucent uses.
+:root {
+  color-scheme: light;
+  --bg: #fbfaf8;
+  --bg-rgb: 251 250 248;
+  --raised: #ffffff;
+  --raised-rgb: 255 255 255;
+  --panel: #f3f1ee;
+  --hover: #ebe8e4;
+  --line: #e5e1dc;
+  --text: #1f1c1a;
+  --muted: #6b655f;
+  --muted-rgb: 107 101 95;
+  --dim: #9b948d;
+  --accent: #e46c16;
+  --accent-rgb: 228 108 22;
+  --accent-strong: #c75b0c;
+  --on-accent: #ffffff;
+  --danger: #c43d3d;
+  --danger-rgb: 196 61 61;
+  --success: #2e8452;
+  // Subtle overlays: dark on light backgrounds, light on dark ones.
+  --tint-rgb: 31 28 26;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121110;
+    --bg-rgb: 18 17 16;
+    --raised: #1b1a18;
+    --raised-rgb: 27 26 24;
+    --panel: #23211f;
+    --hover: #2c2a27;
+    --line: #34312d;
+    --text: #f3f0ec;
+    --muted: #a9a39c;
+    --muted-rgb: 169 163 156;
+    --dim: #79736d;
+    --accent: #f07f2b;
+    --accent-rgb: 240 127 43;
+    --accent-strong: #ff9447;
+    --on-accent: #ffffff;
+    --danger: #e86a6a;
+    --danger-rgb: 232 106 106;
+    --success: #5cb781;
+    --tint-rgb: 255 255 255;
+  }
+}
+
 *,
 *::before,
 *::after {

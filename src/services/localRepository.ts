@@ -484,6 +484,11 @@ export function createLocalRepository({
       const at = nowIso();
       invitation.usedAt = at;
       invitation.usedBy = db.currentUserId;
+      const personId = invitation.personId;
+      const personFree =
+        !!personId &&
+        db.people.some((p) => p.id === personId && p.channelId === invitation.channelId) &&
+        !db.members.some((m) => m.channelId === invitation.channelId && m.personId === personId);
       db.members.push({
         channelId: invitation.channelId,
         userId: db.currentUserId,
@@ -491,13 +496,18 @@ export function createLocalRepository({
         role: 'member',
         joinedAt: at,
         invitationId: invitation.id,
+        ...(personFree ? { personId } : {}),
       });
       commit();
       return invitation.channelId;
     },
 
-    async createInvitation(channelId, expiresInDays) {
+    async createInvitation(channelId, expiresInDays, personId) {
       requireAdmin(channelId);
+      if (!isId(personId)) throw new RepositoryError('invalid', 'Elige para quién es la invitación');
+      findIn(db.people, channelId, personId, 'La persona');
+      const member = db.members.find((m) => m.channelId === channelId && m.personId === personId);
+      if (member) throw new RepositoryError('conflict', `Esa persona ya está en el canal (${member.displayName})`);
       if (!Number.isInteger(expiresInDays) || expiresInDays < 1 || expiresInDays > MAX_EXPIRY_DAYS) {
         throw new RepositoryError('invalid', `La caducidad debe estar entre 1 y ${MAX_EXPIRY_DAYS} días`);
       }
@@ -511,6 +521,7 @@ export function createLocalRepository({
         createdBy: db.currentUserId,
         createdAt: nowIso(),
         expiresAt: expiryFrom(now(), expiresInDays),
+        personId,
       };
       db.invitations.push(invitation);
       commit();
@@ -543,8 +554,10 @@ export function createLocalRepository({
       const me = requireMember(channelId);
       const target = db.members.find((m) => m.channelId === channelId && m.userId === userId);
       if (!target) throw new RepositoryError('not-found', 'Ese miembro no existe');
-      if (userId !== me.userId && (me.role !== 'admin' || personId !== null)) {
-        throw new RepositoryError('forbidden', 'Cada miembro elige quién es; un administrador solo puede deshacerlo');
+      // Admins set anyone's; a member only picks their own, once.
+      const choosingOwn = userId === me.userId && !target.personId && personId !== null;
+      if (me.role !== 'admin' && !choosingOwn) {
+        throw new RepositoryError('forbidden', 'Solo un administrador puede cambiar quién es cada miembro');
       }
       if (personId !== null) {
         findIn(db.people, channelId, personId, 'La persona');

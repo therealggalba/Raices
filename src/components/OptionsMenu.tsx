@@ -7,6 +7,7 @@ import { repository } from '../services';
 import type { ChannelSummary, User } from '../types/domain';
 import { CHANNEL_KIND_LABELS, ROLE_LABELS } from '../utils/labels';
 import { initials } from '../utils/people';
+import { Icon } from './Icon';
 import { Button, ErrorBanner } from './ui';
 import { ui } from './ui-styles';
 import styles from './OptionsMenu.module.scss';
@@ -85,9 +86,7 @@ export function OptionsMenu() {
         <span className={styles.avatar} aria-hidden>
           {user ? initials(user.name) || '?' : ''}
         </span>
-        <span className={styles.caret} aria-hidden>
-          ▾
-        </span>
+        <Icon name="chevronDown" size={16} className={styles.caret} />
       </button>
 
       {open && (
@@ -175,23 +174,14 @@ export function OptionsMenu() {
           <section className={styles.group}>
             {isDemo ? (
               <Link to="/saber-mas" className={styles.item}>
-                <span className={styles.icon} aria-hidden>
-                  ?
-                </span>
                 Saber más
               </Link>
             ) : (
               <>
                 <Link to="/nuevo" className={styles.item}>
-                  <span className={styles.icon} aria-hidden>
-                    ＋
-                  </span>
                   Crear canal
                 </Link>
                 <Link to="/unirse" className={styles.item}>
-                  <span className={styles.icon} aria-hidden>
-                    ⎆
-                  </span>
                   Unirme con código
                 </Link>
               </>
@@ -209,17 +199,11 @@ export function OptionsMenu() {
                   });
                 }}
               >
-                <span className={styles.icon} aria-hidden>
-                  ⏻
-                </span>
                 Cerrar sesión
               </button>
             )}
             {isDemo && auth.configured && (
               <button type="button" className={styles.item} onClick={auth.leaveDemo}>
-                <span className={styles.icon} aria-hidden>
-                  ✉
-                </span>
                 Entrar con mi cuenta
               </button>
             )}

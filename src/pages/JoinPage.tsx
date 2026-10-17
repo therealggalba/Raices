@@ -21,7 +21,7 @@ export function JoinPage() {
         </LinkButton>
       </div>
       <p className={ui.muted}>
-        Pide a un administrador del canal un código de invitación. Cada código sirve una sola vez y caduca.
+        Escribe el código que te ha dado un administrador del canal.
       </p>
       <form
         className={[ui.form, ui.card].join(' ')}

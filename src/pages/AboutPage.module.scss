@@ -57,10 +57,6 @@
 }
 
 .feature {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: $space-3;
-  align-items: start;
   padding: $space-4;
   background: $color-bg-raised;
   border: 1px solid $color-line;
@@ -78,10 +74,6 @@
   }
 }
 
-.icon {
-  font-size: 1.6rem;
-  line-height: 1;
-}
 
 .list {
   margin: 0;

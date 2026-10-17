@@ -91,6 +91,7 @@ describe('row mappers', () => {
       used_at: null,
       used_by: null,
       revoked_at: '2026-10-18T10:00:00Z',
+      person_id: null,
     });
     expect(inv.usedAt).toBeUndefined();
     expect(inv.revokedAt).toBe('2026-10-18T10:00:00Z');

@@ -6,7 +6,8 @@ import { foldText } from './text';
 
 // Important dates. Every date repeats yearly on the same day; its anniversary
 // number comes from the origin date. Birthdays are also derived from people's
-// birth dates (unless an explicit birthday already covers that person).
+// birth dates (unless an explicit birthday already covers that person), and
+// people who passed away are remembered on the day they died instead.
 
 /** Home strip highlight / "pronto" window. */
 export const ALERT_WINDOW_DAYS = 7;
@@ -17,7 +18,6 @@ interface DateSource {
   type: EventType;
   title: string;
   originDate: IsoDate;
-  inMemoriam?: boolean;
   personIds: string[];
   eventId?: string;
 }
@@ -33,16 +33,29 @@ function sources(events: readonly FamilyEvent[], people: readonly Person[]): Dat
     personIds: e.personIds,
     eventId: e.id,
   }));
+  const remembered = new Set(events.filter((e) => e.type === 'fallecimiento').flatMap((e) => e.personIds));
   for (const person of people) {
+    // Someone who passed away is remembered on the day they died, not on their birthday.
+    if (person.deathDate) {
+      if (remembered.has(person.id)) continue;
+      list.push({
+        key: `death:${person.id}`,
+        channelId: person.channelId,
+        type: 'fallecimiento',
+        title: `En memoria de ${person.firstName}`,
+        originDate: person.deathDate,
+        personIds: [person.id],
+      });
+      continue;
+    }
     if (!person.birthDate || covered.has(person.id)) continue;
     list.push({
       key: `birthday:${person.id}`,
       channelId: person.channelId,
       type: 'cumpleanos',
-      title: `Cumpleaños de ${person.firstName}${person.deathDate ? ' ✝' : ''}`,
+      title: `Cumpleaños de ${person.firstName}`,
       originDate: person.birthDate,
       personIds: [person.id],
-      ...(person.deathDate ? { inMemoriam: true } : {}),
     });
   }
   return list;
@@ -103,12 +116,12 @@ export function todaysEvents(events: readonly FamilyEvent[], people: readonly Pe
   return upcomingEvents(events, people, today, 0);
 }
 
-/** "Cumple 31", "Cumpliría 90", "31.º aniversario", or null the year it first happens. */
-export function anniversaryLabel(occurrence: Pick<DateOccurrence, 'type' | 'years' | 'inMemoriam'>): string | null {
+/** "Cumple 31", "31.º aniversario", "Hace 12 años" (deaths), or null the year it first happens. */
+export function anniversaryLabel(occurrence: Pick<DateOccurrence, 'type' | 'years'>): string | null {
   if (occurrence.years <= 0) return null;
-  if (occurrence.type !== 'cumpleanos') return `${occurrence.years}.º aniversario`;
-  // Someone who passed away: the age they would have turned.
-  return occurrence.inMemoriam ? `Cumpliría ${occurrence.years}` : `Cumple ${occurrence.years}`;
+  if (occurrence.type === 'cumpleanos') return `Cumple ${occurrence.years}`;
+  if (occurrence.type === 'fallecimiento') return `Hace ${occurrence.years} ${occurrence.years === 1 ? 'año' : 'años'}`;
+  return `${occurrence.years}.º aniversario`;
 }
 
 

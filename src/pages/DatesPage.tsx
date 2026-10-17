@@ -8,7 +8,7 @@ import { EVENT_TYPES } from '../types/domain';
 import type { DateFilters, DateOccurrence } from '../types/domain';
 import { monthName, monthShort, parsePartialDate } from '../utils/dates';
 import { dateParams, filterDates, occurrencesInYear, parseDateParams, parseYearParam } from '../utils/events';
-import { EVENT_ICONS, EVENT_LABELS } from '../utils/labels';
+import { EVENT_LABELS } from '../utils/labels';
 import styles from './DatesPage.module.scss';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -127,7 +127,7 @@ export function DatesPage() {
                   className={[ui.chip, on ? ui.chipActive : ''].join(' ')}
                   onClick={() => update((f) => ({ types: toggle(f.types, t) }))}
                 >
-                  <span aria-hidden>{EVENT_ICONS[t]}</span> {EVENT_LABELS[t]}
+                  {EVENT_LABELS[t]}
                 </button>
               );
             })}
@@ -164,7 +164,7 @@ export function DatesPage() {
       </header>
 
       {shown.length === 0 ? (
-        <EmptyState icon="📅">
+        <EmptyState>
           <p>{all.length ? 'Ninguna fecha coincide con los filtros.' : 'Todavía no hay fechas en tus canales.'}</p>
         </EmptyState>
       ) : (

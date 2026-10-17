@@ -89,14 +89,17 @@ ok(!!(await fails(null, `select * from public.channels`)), 'sin sesión no se pu
 ok(!!(await fails(B, `insert into public.channels (name, created_by) values ('x', $1)`, [B])), 'nadie crea canales saltándose la función');
 
 // Invitations
-const inv = (await as(A, `select * from public.create_invitation($1, 7)`, [ch]))[0];
+const inv = (await as(A, `select * from public.create_invitation($1, 7, $2)`, [ch, hijo.id]))[0];
 ok(/^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/.test(inv.code), `código de invitación válido (${inv.code})`);
-ok(!!(await fails(B, `select * from public.create_invitation($1, 7)`, [ch])), 'un no-admin no puede crear invitaciones');
+ok(!!(await fails(B, `select * from public.create_invitation($1, 7, $2)`, [ch, hijo.id])), 'un no-admin no puede crear invitaciones');
+ok((await fails(A, `select * from public.create_invitation($1, 7, null)`, [ch]))?.includes('para quién'), 'cada invitación es para una persona');
 const typed = inv.code.toLowerCase().replace(/-/g, ' ');
 ok((await as(B, `select public.redeem_invitation($1, 'Beto') id`, [typed]))[0].id === ch, 'B se une escribiendo el código en minúsculas y con espacios');
 ok((await fails(C, `select public.redeem_invitation($1, 'Carla')`, [inv.code])) ?.includes('no es válida'), 'el código ya usado no sirve (un solo uso)');
 ok((await fails(C, `select public.redeem_invitation('ZZZZ-ZZZZ-ZZZZ', 'Carla')`))?.includes('no es válida'), 'código inexistente: mismo mensaje');
 ok((await as(B, `select * from public.channels`)).length === 1, 'B ya ve el canal');
+ok((await as(B, `select person_id from public.channel_members where user_id = $1`, [B]))[0].person_id === hijo.id, 'B entra ya enlazado a la persona de su invitación');
+ok((await fails(A, `select * from public.create_invitation($1, 7, $2)`, [ch, hijo.id]))?.includes('ya está en el canal'), 'no se invita a quien ya es miembro');
 ok((await as(B, `select * from public.invitations`)).length === 0, 'un miembro no ve las invitaciones');
 
 // Permissions of a plain member
@@ -134,7 +137,7 @@ ok(!!(await fails(B, `insert into storage.objects (bucket_id, name) values ('cro
 // D opens a single pack (5 of 6): exactly one cromo stays locked for D.
 const Dusr = '00000000-0000-0000-0000-00000000000d';
 await db.exec(`insert into auth.users (id, email) values ('${Dusr}','dani@example.com')`);
-const inv2 = (await as(A, `select * from public.create_invitation($1, 1)`, [ch]))[0];
+const inv2 = (await as(A, `select * from public.create_invitation($1, 1, $2)`, [ch, abuelo.id]))[0];
 await as(Dusr, `select public.redeem_invitation($1, 'Dani')`, [inv2.code]);
 await as(Dusr, `select * from public.open_pack($1, 'America/Mexico_City')`, [ch]);
 const dOwned = new Set((await as(Dusr, `select card_id from public.card_copies`)).map((r) => r.card_id));
@@ -184,13 +187,17 @@ ok((await as(A, `update public.profiles set display_name = 'Ana M.' where id = $
 ok(!!(await fails(A, `update public.people set birth_date = '1950-01-01', death_date = '1940-01-01' where id = $1`, [abuelo.id])), 'el fallecimiento no puede ser anterior al nacimiento');
 ok((await as(A, `update public.people set gender = 'hombre', death_date = '2020-01-01' where id = $1 returning id`, [abuelo.id])).length === 1, 'se guardan el género y la fecha de fallecimiento');
 await as(A, `select public.set_member_person($1, $2, $3)`, [ch, A, hijo.id]);
-ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, A]))[0].person_id === hijo.id, 'un miembro se enlaza con su persona');
-ok((await fails(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, hijo.id]))?.includes('ya está enlazada'), 'una persona no puede ser dos miembros');
-ok(!!(await fails(Dusr, `select public.set_member_person($1, $2, null)`, [ch, A])), 'un miembro no puede tocar el enlace de otro');
-ok(!!(await fails(A, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id])), 'un admin no puede decidir quién es otro');
-await as(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id]);
+ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, A]))[0].person_id === hijo.id, 'un admin se asigna su persona');
+ok(!!(await fails(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, hijo.id])), 'un miembro ya asignado no puede cambiarse de persona');
+ok(!!(await fails(Dusr, `select public.set_member_person($1, $2, null)`, [ch, A])), 'un miembro no puede tocar la persona de otro');
 await as(A, `select public.set_member_person($1, $2, null)`, [ch, Dusr]);
-ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, Dusr]))[0].person_id === null, 'un admin sí puede deshacer un enlace equivocado');
+ok((await fails(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, hijo.id]))?.includes('ya está enlazada'), 'una persona no puede ser dos miembros');
+await as(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id]);
+ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, Dusr]))[0].person_id === abuelo.id, 'un miembro sin persona elige la suya una vez');
+ok(!!(await fails(Dusr, `select public.set_member_person($1, $2, null)`, [ch, Dusr])), 'después no puede quitársela');
+await as(A, `select public.set_member_person($1, $2, null)`, [ch, Dusr]);
+ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, Dusr]))[0].person_id === null, 'un admin sí puede corregirlo');
+ok((await as(A, `insert into public.events (channel_id, type, title, date) values ($1, 'fallecimiento', 'En memoria', '1990-01-01') returning id`, [ch])).length === 1, 'existe el tipo de fecha «fallecimiento»');
 ok(!!(await fails(C, `select public.set_member_person($1, $2, $3)`, [ch, C, abuelo.id])), 'quien no es del canal no puede enlazarse');
 
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');

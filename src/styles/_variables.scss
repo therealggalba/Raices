@@ -1,20 +1,24 @@
-// Centralized design tokens. Cinema-at-home ambience: near-black canvas,
-// warm amber highlights (old film, family photos) and a red accent for play.
-$color-bg: #0e0d12;
-$color-bg-raised: #17151d;
-$color-bg-panel: #201d28;
-$color-bg-hover: #2a2633;
-$color-line: #2f2b38;
-$color-text: #f4efe8;
-$color-text-muted: #a49dab;
-$color-text-dim: #6f6878;
-$color-accent: #f2b45a;
-$color-accent-strong: #ffcb7d;
-$color-play: #e8505b;
-$color-danger: #ff6b6b;
-$color-success: #6fcf97;
+// Centralized design tokens. White and orange, quiet and neutral; light or
+// dark following the phone. Colours are CSS custom properties (defined in
+// global.scss for both schemes) so one stylesheet serves both themes; for a
+// translucent version use rgb(var(--accent-rgb) / 0.2) and the like.
+$color-bg: var(--bg);
+$color-bg-raised: var(--raised);
+$color-bg-panel: var(--panel);
+$color-bg-hover: var(--hover);
+$color-line: var(--line);
+$color-text: var(--text);
+$color-text-muted: var(--muted);
+$color-text-dim: var(--dim);
+$color-accent: var(--accent);
+$color-accent-strong: var(--accent-strong);
+$color-on-accent: var(--on-accent);
+// The play colour is the accent too (no extra colours).
+$color-play: var(--accent);
+$color-danger: var(--danger);
+$color-success: var(--success);
 
-$font-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
+$font-display: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 $font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
 $radius-sm: 6px;
@@ -59,7 +63,7 @@ $bp-md: 768px;
 @mixin display-title {
   font-family: $font-display;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 @mixin focus-ring {

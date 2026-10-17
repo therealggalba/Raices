@@ -23,7 +23,6 @@ export function NewChannelPage() {
           Cancelar
         </LinkButton>
       </div>
-      <p className={ui.muted}>Serás su administrador: podrás añadir vídeos, personas y eventos e invitar a otros.</p>
       <form
         className={[ui.form, ui.card].join(' ')}
         onSubmit={async (e) => {
@@ -43,7 +42,7 @@ export function NewChannelPage() {
             required
           />
         </Field>
-        <Field label="Tipo de canal" htmlFor="kind" hint="Inicio solo mezcla en una misma fila vídeos de canales del mismo tipo">
+        <Field label="Tipo de canal" htmlFor="kind">
           <select id="kind" className={ui.input} value={kind} onChange={(e) => setKind(e.target.value as ChannelKind)}>
             {CHANNEL_KINDS.map((k) => (
               <option key={k} value={k}>

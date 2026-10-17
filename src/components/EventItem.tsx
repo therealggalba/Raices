@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { DateOccurrence, Person } from '../types/domain';
 import { formatDaysUntil, monthShort } from '../utils/dates';
 import { ALERT_WINDOW_DAYS, anniversaryLabel } from '../utils/events';
-import { EVENT_ICONS, EVENT_LABELS } from '../utils/labels';
+import { EVENT_LABELS } from '../utils/labels';
 import styles from './EventItem.module.scss';
 
 interface Props {
@@ -32,7 +32,7 @@ export function EventItem({ event, people, channelName, actions }: Props) {
       </span>
       <div className={styles.body}>
         <h3 className={styles.title}>
-          <span aria-hidden>{EVENT_ICONS[event.type]}</span> {event.title}
+          {event.title}
         </h3>
         <p className={styles.meta}>
           {label ? <strong className={styles.number}>{label}</strong> : EVENT_LABELS[event.type]}

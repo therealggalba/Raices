@@ -650,8 +650,18 @@ const DEMO_GENDERS: Record<string, Gender> = {
   'p-sofia': 'mujer', 'p-marta': 'mujer', 'p-javi': 'hombre', 'p-rosa': 'mujer', 'p-andres': 'hombre', 'p-lucia': 'mujer',
 };
 
+/** The visitor's own card in the channels where Carlos isn't a person yet. */
+const DEMO_VISITOR_PEOPLE: Person[] = [
+  { id: 'p-alex', channelId: DEMO_FRIENDS_ID, firstName: 'Álex', lastName: 'Prieto', birthDate: '1982-09-19', gender: 'hombre',
+    relationship: 'Amigo', biography: 'El que siempre lleva la cámara.', notes: '', parentIds: [] },
+  { id: 'p-carlos-primos', channelId: DEMO_COUSINS_ID, firstName: 'Carlos', lastName: 'Montero Sanz', birthDate: '1998-10-20',
+    gender: 'hombre', relationship: 'Sobrino de Rosa', biography: 'Hijo de Elena, la hermana de Rosa.', notes: '', parentIds: [] },
+];
+
 /** Who each demo member is in the tree (the visitor sees the family as Carlos). */
-const DEMO_SELVES: Record<string, string> = { 'u-elena': 'p-elena', 'u-luis': 'p-luis' };
+const DEMO_SELVES: Record<string, string> = {
+  'u-elena': 'p-elena', 'u-luis': 'p-luis', 'u-marta': 'p-marta', 'u-javi': 'p-javi', 'u-rosa': 'p-rosa',
+};
 
 /**
  * Demo details for the tree: the late great-grandparents, everyone's gender
@@ -670,10 +680,20 @@ export function addDemoPeopleDetails(db: Db, visitorId: string): void {
     const gender = DEMO_GENDERS[person.id];
     if (gender && !person.gender) person.gender = gender;
   }
-  const selves: Record<string, string> = { ...DEMO_SELVES, [visitorId]: 'p-carlos' };
+  // The visitor is Carlos in the family channels and Álex among the friends.
+  for (const person of DEMO_VISITOR_PEOPLE) {
+    if (db.channels.some((c) => c.id === person.channelId) && !db.people.some((p) => p.id === person.id)) {
+      db.people.push({ ...person });
+    }
+  }
+  const visitorPerson: Record<string, string> = {
+    [DEMO_FAMILY_ID]: 'p-carlos',
+    [DEMO_FRIENDS_ID]: 'p-alex',
+    [DEMO_COUSINS_ID]: 'p-carlos-primos',
+  };
   for (const m of db.members) {
-    const personId = selves[m.userId];
-    if (m.channelId === DEMO_FAMILY_ID && personId && db.people.some((p) => p.id === personId)) m.personId = personId;
+    const personId = m.userId === visitorId ? visitorPerson[m.channelId] : DEMO_SELVES[m.userId];
+    if (personId && db.people.some((p) => p.id === personId && p.channelId === m.channelId)) m.personId = personId;
   }
 }
 

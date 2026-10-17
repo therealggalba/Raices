@@ -21,7 +21,7 @@ describe('planDateNotifications', () => {
     const plan = planDateNotifications([occ('hoy', '2026-10-17'), occ('Gonzalo', '2027-03-30')], now, () => 'Familia');
     expect(plan).toHaveLength(1);
     expect(plan[0].at).toEqual(new Date(2027, 2, 30, 9, 0, 0));
-    expect(plan[0].title).toBe('🎂 Hoy: Cumpleaños de Gonzalo');
+    expect(plan[0].title).toBe('Hoy: Cumpleaños de Gonzalo');
     expect(plan[0].body).toBe('Cumple 31 · Familia');
   });
 

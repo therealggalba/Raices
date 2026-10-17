@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from './Icon';
 import { Link } from 'react-router-dom';
 import type { AlbumCard } from '../types/domain';
 import { formatPartialDate } from '../utils/dates';
@@ -32,16 +33,10 @@ export function CardThumb({ card, to, locked, copies = 0 }: Props) {
           )}
         </span>
         <span className={styles.photo}>
-          {failed ? (
-            <span className={styles.badge} aria-hidden>
-              🖼️
-            </span>
-          ) : (
-            <FitImage src={card.imageUrl} onError={() => setFailed(true)} />
-          )}
+          {!failed && <FitImage src={card.imageUrl} onError={() => setFailed(true)} />}
           {locked && (
-            <span className={styles.badge} aria-hidden>
-              🔒
+            <span className={styles.badge} aria-label="Bloqueado">
+              <Icon name="lock" size={18} />
             </span>
           )}
         </span>

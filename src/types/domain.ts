@@ -48,7 +48,7 @@ export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
 export const GENDERS = ['hombre', 'mujer'] as const;
 export type Gender = (typeof GENDERS)[number];
 
-export const EVENT_TYPES = ['cumpleanos', 'aniversario', 'comunion', 'bautizo', 'boda', 'otro'] as const;
+export const EVENT_TYPES = ['cumpleanos', 'aniversario', 'comunion', 'bautizo', 'boda', 'fallecimiento', 'otro'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /** "YYYY", "YYYY-MM" or "YYYY-MM-DD". */
@@ -225,6 +225,8 @@ export interface Invitation {
   usedAt?: IsoDateTime;
   usedBy?: string;
   revokedAt?: IsoDateTime;
+  /** Who the invitation is for: whoever uses it becomes this person of the channel. */
+  personId?: string;
 }
 
 export type InvitationStatus = 'active' | 'used' | 'expired' | 'revoked';
@@ -359,8 +361,6 @@ export interface DateOccurrence {
   personIds: string[];
   /** Id of the stored FamilyEvent; absent for birthdays derived from people. */
   eventId?: string;
-  /** Birthday of someone who passed away. */
-  inMemoriam?: boolean;
 }
 
 /** Filters of the yearly «Fechas» list (empty lists mean "any"). */

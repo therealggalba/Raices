@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button, ErrorBanner, Field } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
-import { fullName } from '../utils/people';
+import { fullName, sortPeople } from '../utils/people';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { shareText } from '../native/nativeBridge';
@@ -66,7 +66,7 @@ function ChannelInfoForm() {
       <Field label="Nombre" htmlFor="name">
         <input id="name" className={ui.input} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
       </Field>
-      <Field label="Tipo de canal" htmlFor="kind" hint="Inicio solo mezcla en una misma fila vídeos de canales del mismo tipo">
+      <Field label="Tipo de canal" htmlFor="kind">
         <select id="kind" className={ui.input} value={kind} onChange={(e) => setKind(e.target.value as ChannelKind)}>
           {CHANNEL_KINDS.map((k) => (
             <option key={k} value={k}>
@@ -90,12 +90,12 @@ function ChannelInfoForm() {
           ))}
         </div>
       </fieldset>
-      <Field label="Portada (opcional)" htmlFor="coverUrl" hint="Enlace https a una imagen">
+      <Field label="Portada (opcional)" htmlFor="coverUrl">
         <input id="coverUrl" className={ui.input} type="url" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://" />
       </Field>
       <ErrorBanner message={error} />
       <div className={ui.formActions}>
-        {saved && <span className={styles.saved}>✓ Guardado</span>}
+        {saved && <span className={styles.saved}>Guardado</span>}
         <Button type="submit" variant="primary" disabled={pending}>
           Guardar
         </Button>
@@ -106,7 +106,7 @@ function ChannelInfoForm() {
 
 function MembersSection() {
   const { snapshot, isAdmin, reload, personById } = useChannel();
-  const { channel, me, members, invitations } = snapshot;
+  const { channel, me, members, invitations, people } = snapshot;
   const { run, pending, error } = useAction();
   const sorted = [...members].sort((a, b) => (a.role === b.role ? a.displayName.localeCompare(b.displayName, 'es') : a.role === 'admin' ? -1 : 1));
 
@@ -137,8 +137,32 @@ function MembersSection() {
                 {ROLE_LABELS[m.role]} · desde {new Date(m.joinedAt).toLocaleDateString('es-ES')}
                 {isAdmin && joinedVia(m)}
               </span>
-              {m.personId && personById(m.personId) && (
-                <span className={styles.itemMeta}>En el árbol: {fullName(personById(m.personId)!)}</span>
+              {isAdmin ? (
+                <select
+                  className={[ui.input, styles.personSelect].join(' ')}
+                  aria-label={`Quién es ${m.displayName}`}
+                  value={m.personId ?? ''}
+                  disabled={pending}
+                  onChange={(e) => {
+                    const next = e.target.value || null;
+                    const label = next ? fullName(personById(next)!) : 'nadie';
+                    if (confirmAction(`¿${m.displayName} es ${label}?`)) {
+                      void act(() => repository.linkMemberPerson(channel.id, m.userId, next));
+                    }
+                  }}
+                >
+                  <option value="">Sin asignar</option>
+                  {sortPeople(people)
+                    .filter((p) => p.id === m.personId || !members.some((o) => o.personId === p.id))
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {fullName(p)}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                m.personId &&
+                personById(m.personId) && <span className={styles.itemMeta}>{fullName(personById(m.personId)!)}</span>
               )}
             </div>
             {isAdmin && m.userId !== me.userId && (
@@ -151,20 +175,6 @@ function MembersSection() {
                 >
                   {m.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
                 </Button>
-                {m.personId && (
-                  <Button
-                    small
-                    variant="ghost"
-                    disabled={pending}
-                    onClick={() => {
-                      if (confirmAction(`¿Deshacer el enlace de ${m.displayName} con su persona del árbol?`)) {
-                        void act(() => repository.linkMemberPerson(channel.id, m.userId, null));
-                      }
-                    }}
-                  >
-                    Quitar enlace
-                  </Button>
-                )}
                 <Button
                   small
                   variant="ghost"
@@ -185,10 +195,15 @@ function MembersSection() {
 }
 
 function InvitationsSection() {
-  const { snapshot, reload } = useChannel();
-  const { channel, members } = snapshot;
+  const { snapshot, reload, personById } = useChannel();
+  const { channel, members, people } = snapshot;
   const { run, pending, error } = useAction();
   const [days, setDays] = useState<number>(7);
+  // Only people who aren't a member yet can be invited.
+  const linked = new Set(members.map((m) => m.personId).filter(Boolean));
+  const candidates = sortPeople(people).filter((p) => !linked.has(p.id));
+  const [personId, setPersonId] = useState('');
+  const forPerson = candidates.some((p) => p.id === personId) ? personId : (candidates[0]?.id ?? '');
   const [created, setCreated] = useState<Invitation | null>(null);
   const [copied, setCopied] = useState(false);
   const [now] = useState(() => new Date().toISOString());
@@ -198,8 +213,23 @@ function InvitationsSection() {
   return (
     <section className={ui.section}>
       <h2>Invitaciones</h2>
-      <p className={ui.muted}>Cada código sirve para una sola persona y caduca. Compártelo por un canal privado.</p>
       <div className={[ui.card, styles.create].join(' ')}>
+        {candidates.length === 0 ? (
+          <p className={ui.muted}>
+            Todas las personas del canal ya son miembros. Para invitar a alguien nuevo, añádelo antes en{' '}
+            <Link to={`/c/${channel.id}/personas/nueva`}>Personas</Link>.
+          </p>
+        ) : (
+          <Field label="Para quién es" htmlFor="invite-person">
+            <select id="invite-person" className={ui.input} value={forPerson} onChange={(e) => setPersonId(e.target.value)}>
+              {candidates.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {fullName(p)}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         <Field label="Caducidad" htmlFor="expiry">
           <select id="expiry" className={ui.input} value={days} onChange={(e) => setDays(Number(e.target.value))}>
             {EXPIRY_OPTIONS_DAYS.map((d) => (
@@ -211,10 +241,10 @@ function InvitationsSection() {
         </Field>
         <Button
           variant="primary"
-          disabled={pending}
+          disabled={pending || !forPerson}
           onClick={async () => {
             setCopied(false);
-            const invitation = await run(() => repository.createInvitation(channel.id, days));
+            const invitation = await run(() => repository.createInvitation(channel.id, days, forPerson));
             if (invitation) {
               setCreated(invitation);
               await reload();
@@ -236,7 +266,7 @@ function InvitationsSection() {
                 setCopied(result === 'copied');
               }}
             >
-              {copied ? '✓ Copiado' : 'Compartir'}
+              {copied ? 'Copiado' : 'Compartir'}
             </Button>
           </div>
         )}
@@ -250,6 +280,9 @@ function InvitationsSection() {
               <li key={inv.id} className={styles.item}>
                 <div className={styles.itemBody}>
                   <code className={styles.smallCode}>{inv.code}</code>
+                  {inv.personId && personById(inv.personId) && (
+                    <span className={styles.itemMeta}>Para {fullName(personById(inv.personId)!)}</span>
+                  )}
                   <span className={styles.itemMeta}>
                     <span className={[styles.status, styles[status]].join(' ')}>{STATUS_LABELS[status]}</span>
                     {' · '}

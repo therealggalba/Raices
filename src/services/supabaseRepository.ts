@@ -331,9 +331,12 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       return must(await client.rpc('redeem_invitation', { p_code: code, p_display_name: name })) as string;
     },
 
-    async createInvitation(channelId, expiresInDays) {
+    async createInvitation(channelId, expiresInDays, personId) {
       requireId(channelId, 'El canal');
-      const row = must(await client.rpc('create_invitation', { p_channel: channelId, p_days: expiresInDays })) as InvitationRow;
+      if (!isId(personId)) throw new RepositoryError('invalid', 'Elige para quién es la invitación');
+      const row = must(
+        await client.rpc('create_invitation', { p_channel: channelId, p_days: expiresInDays, p_person: personId }),
+      ) as InvitationRow;
       return toInvitation(row);
     },
 

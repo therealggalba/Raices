@@ -5,7 +5,6 @@ import type { DateOccurrence } from '../types/domain';
 import { syncDateNotifications } from '../native/dateNotifications';
 import { isNativeApp, nativeNotificationPermission, requestNativeNotifications } from '../native/nativeBridge';
 import { anniversaryLabel, todaysEvents } from '../utils/events';
-import { EVENT_ICONS } from '../utils/labels';
 import { Button } from './ui';
 import styles from './TodayPopup.module.scss';
 
@@ -42,7 +41,7 @@ function writeSeen(seen: Seen) {
 function notificationText(o: DateOccurrence, channelName?: string): { title: string; body: string } {
   const label = anniversaryLabel(o);
   return {
-    title: `${EVENT_ICONS[o.type]} ${o.title}`,
+    title: o.title,
     body: [label ? `¡Hoy! ${label}` : '¡Es hoy!', channelName].filter(Boolean).join(' · '),
   };
 }
@@ -117,18 +116,12 @@ export function TodayPopup() {
         aria-labelledby="today-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <span className={styles.confetti} aria-hidden>
-          🎉
-        </span>
         <h2 id="today-title">Hoy es un día especial</h2>
         <ul className={styles.list}>
           {list.map((o) => {
             const label = anniversaryLabel(o);
             return (
               <li key={o.key} className={styles.item}>
-                <span className={styles.icon} aria-hidden>
-                  {EVENT_ICONS[o.type]}
-                </span>
                 <span className={styles.text}>
                   <strong>{o.title}</strong>
                   <span>
@@ -161,8 +154,8 @@ export function TodayPopup() {
               }}
             >
               {native
-                ? '🔔 Avisarme en el móvil de las próximas fechas'
-                : '🔔 Avisarme también con notificaciones del navegador'}
+                ? 'Avisarme en el móvil de las próximas fechas'
+                : 'Avisarme también con notificaciones del navegador'}
             </Button>
           )}
           <Link to="/fechas" className={styles.link} onClick={dismiss}>

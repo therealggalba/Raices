@@ -48,6 +48,7 @@ export interface InvitationRow {
   used_at: string | null;
   used_by: string | null;
   revoked_at: string | null;
+  person_id: string | null;
 }
 export interface PersonRow {
   id: string;
@@ -114,7 +115,7 @@ export interface CardRow {
 export const COLUMNS = {
   channels: 'id,name,description,kind,pack_theme,cover_url,created_at,created_by',
   members: 'channel_id,user_id,display_name,role,joined_at,invitation_id,person_id',
-  invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at',
+  invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at,person_id',
   people:
     'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,relationship,biography,notes,parent_ids',
   partnerships: 'id,channel_id,person_a,person_b,since,until',
@@ -162,6 +163,7 @@ export function toInvitation(r: InvitationRow): Invitation {
     usedAt: opt(r.used_at),
     usedBy: opt(r.used_by),
     revokedAt: opt(r.revoked_at),
+    ...(r.person_id ? { personId: r.person_id } : {}),
   };
 }
 

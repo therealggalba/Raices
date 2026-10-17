@@ -11,25 +11,7 @@
 .placeholder {
   position: relative;
   overflow: hidden;
-
-  // Film grain-ish vignette so generated covers feel less flat.
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.25), transparent 45%),
-      linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 60%);
-  }
-}
-
-.icon {
-  position: absolute;
-  top: 12%;
-  right: 8%;
-  font-size: clamp(1.4rem, 9cqw, 3rem);
-  opacity: 0.85;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+  background: $color-bg-panel;
 }
 
 .title {
@@ -42,7 +24,6 @@
   font-weight: 700;
   font-size: clamp(0.85rem, 7cqw, 1.6rem);
   line-height: 1.1;
-  color: #fff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  color: $color-text-muted;
   @include line-clamp(2);
 }

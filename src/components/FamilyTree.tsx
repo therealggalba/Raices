@@ -86,23 +86,6 @@ export function FamilyTree({ people, partnerships, personHref, viewerPersonId }:
           </g>
         </svg>
 
-        {layout.couples.map((c) => (
-          <span
-            key={c.partnership.id}
-            className={[styles.ring, c.separated ? styles.ringSeparated : ''].join(' ')}
-            style={{ left: PAD + (c.x1 + c.x2) / 2, top: PAD + c.y }}
-            title={
-              [
-                c.partnership.since && `Desde ${formatPartialDate(c.partnership.since)}`,
-                c.partnership.until && `separados en ${formatPartialDate(c.partnership.until)}`,
-              ]
-                .filter(Boolean)
-                .join(', ') || 'Pareja'
-            }
-          >
-            💍
-          </span>
-        ))}
 
         {layout.nodes.map(({ person, x, y }) => {
           const relation = viewerPersonId ? kinship(viewerPersonId, person.id, people, partnerships) : null;

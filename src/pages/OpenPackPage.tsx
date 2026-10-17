@@ -50,7 +50,7 @@ export function OpenPackPage() {
 
   if (!channel || !hasCards) {
     return (
-      <EmptyState icon="🎁">
+      <EmptyState>
         <p>Este álbum no existe o todavía no tiene cromos.</p>
         <LinkButton to="/sobres">Ver mis sobres</LinkButton>
       </EmptyState>
@@ -112,7 +112,7 @@ export function OpenPackPage() {
 
   if (library.packs.remaining === 0 && phase === 'ready') {
     return (
-      <EmptyState icon="🎁">
+      <EmptyState>
         <p>{packStatusText(library.packs)}</p>
         <LinkButton to={`/albumes/${channel.id}`}>Ver el álbum</LinkButton>
       </EmptyState>
@@ -167,7 +167,7 @@ export function OpenPackPage() {
           {library.packs.remaining > 0 ? (
             <>
               <LinkButton to="/sobres" variant="primary">
-                🎁 Abrir otro sobre ({library.packs.remaining})
+                Abrir otro sobre ({library.packs.remaining})
               </LinkButton>
               <LinkButton to={`/albumes/${channel.id}`}>Ver el álbum</LinkButton>
             </>

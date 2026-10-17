@@ -33,7 +33,7 @@ export function ChannelsPage() {
         </div>
       </div>
       {channels.length === 0 ? (
-        <EmptyState icon="📼">
+        <EmptyState>
           <p>Todavía no perteneces a ningún canal.</p>
         </EmptyState>
       ) : (

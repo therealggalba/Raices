@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../components/Icon';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { MediaPlayer } from '../components/MediaPlayer';
 import { PersonAvatar } from '../components/PersonAvatar';
@@ -39,7 +40,7 @@ export function VideoPage() {
 
   if (!video || !channel) {
     return (
-      <EmptyState icon="🔍">
+      <EmptyState>
         <p>Este vídeo no existe o ya no tienes acceso a él.</p>
         <LinkButton to="/">Volver al inicio</LinkButton>
       </EmptyState>
@@ -105,7 +106,8 @@ export function VideoPage() {
               })
             }
           >
-            {favorite ? '♥ En favoritos' : '♡ Añadir a favoritos'}
+            <Icon name={favorite ? 'heartFilled' : 'heart'} size={18} />
+            {favorite ? 'En favoritos' : 'Añadir a favoritos'}
           </Button>
           {isAdmin && (
             <>
@@ -148,7 +150,7 @@ export function VideoPage() {
                 setRestartKey(playerSession.current);
               }}
             >
-              ↺ Empezar desde el principio
+              Empezar desde el principio
             </Button>
           </div>
         )}

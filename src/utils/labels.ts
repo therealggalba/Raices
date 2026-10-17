@@ -11,33 +11,14 @@ export const CATEGORY_LABELS: Record<VideoCategory, string> = {
   otros: 'Otros recuerdos',
 };
 
-export const CATEGORY_ICONS: Record<VideoCategory, string> = {
-  vacaciones: '🏖️',
-  cumpleanos: '🎂',
-  navidad: '🎄',
-  boda: '💍',
-  comunion: '🕊️',
-  bautizo: '👶',
-  reunion: '👨‍👩‍👧‍👦',
-  otros: '🎞️',
-};
-
 export const EVENT_LABELS: Record<EventType, string> = {
   cumpleanos: 'Cumpleaños',
   aniversario: 'Aniversario',
   comunion: 'Comunión',
   bautizo: 'Bautizo',
   boda: 'Boda',
+  fallecimiento: 'Fallecimiento',
   otro: 'Otro evento',
-};
-
-export const EVENT_ICONS: Record<EventType, string> = {
-  cumpleanos: '🎂',
-  aniversario: '💞',
-  comunion: '🕊️',
-  bautizo: '👶',
-  boda: '💍',
-  otro: '📌',
 };
 
 export const CHANNEL_KIND_LABELS: Record<ChannelKind, string> = {

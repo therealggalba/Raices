@@ -114,7 +114,7 @@ $edge-md: $space-8;
 
 .prev {
   left: 0;
-  background: linear-gradient(to right, rgba(14, 13, 18, 0.9), rgba(14, 13, 18, 0));
+  background: linear-gradient(to right, rgb(var(--bg-rgb) / 0.9), rgb(var(--bg-rgb) / 0));
 
   span {
     animation: nudge-left 1.6s ease-in-out infinite;
@@ -123,7 +123,7 @@ $edge-md: $space-8;
 
 .next {
   right: 0;
-  background: linear-gradient(to left, rgba(14, 13, 18, 0.9), rgba(14, 13, 18, 0));
+  background: linear-gradient(to left, rgb(var(--bg-rgb) / 0.9), rgb(var(--bg-rgb) / 0));
 
   span {
     animation: nudge-right 1.6s ease-in-out infinite;
