@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.0 — 2026-10-17
+
+- Preparada como app Android (Capacitor 8): proyecto `android/` (orientación vertical fija), modo de compilación
+  `android`, scripts `build:android` / `android:sync` / `android:open` y flujo de GitHub Actions que genera el APK.
+- SCSS para pantallas táctiles verticales: márgenes seguros bajo la barra de estado y sobre la barra de gestos,
+  efectos *hover* solo con ratón (no se quedan pegados al tocar), sin selección ni menú de pulsación larga en la
+  interfaz y las fotos.
+- Fuentes Inter y Fraunces incluidas en la app (sin Google Fonts: funciona sin depender de terceros).
+- Nativo: botón Atrás, barra de estado, notificaciones locales de fechas importantes (a las 9:00, con la app
+  cerrada) y compartir invitaciones con la hoja nativa.
+
 ## 0.9.0 — 2026-10-17
 
 - Árbol genealógico en los canales de tipo Familia (Personas › 🌳 Árbol): generaciones de arriba abajo,

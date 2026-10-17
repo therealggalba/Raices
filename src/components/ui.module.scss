@@ -32,8 +32,10 @@
   background: $color-accent;
   color: #1b1408;
 
-  &:hover:not(:disabled) {
-    background: $color-accent-strong;
+  @include can-hover {
+    &:hover:not(:disabled) {
+      background: $color-accent-strong;
+    }
   }
 }
 
@@ -41,8 +43,10 @@
   background: $color-text;
   color: #111;
 
-  &:hover:not(:disabled) {
-    background: #fff;
+  @include can-hover {
+    &:hover:not(:disabled) {
+      background: #fff;
+    }
   }
 }
 
@@ -51,8 +55,10 @@
   color: $color-text;
   border-color: rgba(255, 255, 255, 0.12);
 
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.18);
+  @include can-hover {
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.18);
+    }
   }
 }
 
@@ -60,9 +66,11 @@
   background: transparent;
   color: $color-text-muted;
 
-  &:hover:not(:disabled) {
-    color: $color-text;
-    background: rgba(255, 255, 255, 0.06);
+  @include can-hover {
+    &:hover:not(:disabled) {
+      color: $color-text;
+      background: rgba(255, 255, 255, 0.06);
+    }
   }
 }
 
@@ -71,8 +79,10 @@
   color: $color-danger;
   border-color: rgba(255, 107, 107, 0.4);
 
-  &:hover:not(:disabled) {
-    background: rgba(255, 107, 107, 0.12);
+  @include can-hover {
+    &:hover:not(:disabled) {
+      background: rgba(255, 107, 107, 0.12);
+    }
   }
 }
 

@@ -86,8 +86,10 @@
     background: transparent;
   }
 
-  &:hover {
-    color: $color-text;
+  @include can-hover {
+    &:hover {
+      color: $color-text;
+    }
   }
 }
 

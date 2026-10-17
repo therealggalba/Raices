@@ -49,9 +49,11 @@
   font-size: 2.4rem;
   text-decoration: none;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: $color-accent-strong;
+  @include can-hover {
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: $color-accent-strong;
+    }
   }
 }
 

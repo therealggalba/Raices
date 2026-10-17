@@ -24,10 +24,16 @@
     transform 0.2s,
     box-shadow 0.2s;
 
-  .card:hover &,
   .card:focus-visible & {
     transform: scale(1.04);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  @include can-hover {
+    .card:hover & {
+      transform: scale(1.04);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
   }
 }
 

@@ -43,8 +43,10 @@
   color: $color-accent;
   text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
+  @include can-hover {
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -93,8 +95,10 @@
   color: $color-text;
   text-decoration: none;
 
-  &:hover {
-    border-color: $color-accent;
+  @include can-hover {
+    &:hover {
+      border-color: $color-accent;
+    }
   }
 }
 

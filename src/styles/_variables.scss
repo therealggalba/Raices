@@ -14,8 +14,8 @@ $color-play: #e8505b;
 $color-danger: #ff6b6b;
 $color-success: #6fcf97;
 
-$font-display: 'Fraunces', Georgia, serif;
-$font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+$font-display: 'Fraunces Variable', 'Fraunces', Georgia, serif;
+$font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
 $radius-sm: 6px;
 $radius-md: 10px;
@@ -32,12 +32,26 @@ $space-8: 2rem;
 
 $touch: 44px;
 $topbar-height: 3.5rem;
+// Android edge-to-edge / iOS notch: the system bars overlap the page, so
+// fixed bars reserve that space (0 on a normal desktop browser).
+$safe-top: env(safe-area-inset-top, 0px);
+$safe-bottom: env(safe-area-inset-bottom, 0px);
+/** Real height of the fixed header, status bar included. */
+$header-offset: calc(#{$topbar-height} + #{$safe-top});
 $bottomnav-height: 4rem;
 $content-max: 1200px;
 $bp-md: 768px;
 
 @mixin md-up {
   @media (min-width: $bp-md) {
+    @content;
+  }
+}
+
+// Hover effects only where a real pointer can hover (mouse, trackpad). On
+// touch screens (the Android app) they would stick after a tap.
+@mixin can-hover {
+  @media (hover: hover) and (pointer: fine) {
     @content;
   }
 }

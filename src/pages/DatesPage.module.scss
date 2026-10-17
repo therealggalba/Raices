@@ -50,8 +50,10 @@
     font-size: 1.4rem;
     line-height: 1;
 
-    &:hover {
-      background: rgba(255, 255, 255, 0.14);
+    @include can-hover {
+      &:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
     }
   }
 }
@@ -98,8 +100,10 @@
     color: $color-text;
     text-decoration: none;
 
-    &:hover {
-      background: $color-bg-hover;
+    @include can-hover {
+      &:hover {
+        background: $color-bg-hover;
+      }
     }
   }
 }
@@ -166,7 +170,7 @@
 .monthGroup {
   display: grid;
   gap: $space-2;
-  scroll-margin-top: calc(#{$topbar-height} + #{$space-3});
+  scroll-margin-top: calc(#{$header-offset} + #{$space-3});
 }
 
 .monthTitle {

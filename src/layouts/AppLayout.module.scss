@@ -11,7 +11,8 @@
   display: flex;
   align-items: center;
   gap: $space-2;
-  height: $topbar-height;
+  height: $header-offset;
+  padding-top: $safe-top;
   padding: 0 $space-3;
   background: linear-gradient(to bottom, rgba(14, 13, 18, 0.95), rgba(14, 13, 18, 0.7) 70%, rgba(14, 13, 18, 0));
   backdrop-filter: blur(6px);
@@ -87,8 +88,10 @@
   }
   text-decoration: none;
 
-  &:hover {
-    color: $color-text;
+  @include can-hover {
+    &:hover {
+      color: $color-text;
+    }
   }
 }
 
@@ -119,11 +122,14 @@
     display: grid;
   }
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
+  @include can-hover {
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
   }
 }
 
 .main {
-  min-height: calc(100dvh - #{$topbar-height});
+  min-height: calc(100dvh - #{$header-offset});
+  padding-bottom: $safe-bottom;
 }

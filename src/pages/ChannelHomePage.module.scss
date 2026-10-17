@@ -5,7 +5,7 @@
   grid-template-columns: minmax(0, 1fr);
   gap: $space-5;
   padding-bottom: $space-8;
-  margin-top: calc(-1 * #{$topbar-height});
+  margin-top: calc(-1 * #{$header-offset});
 }
 
 .rowTitle {
@@ -70,7 +70,9 @@
   font-size: 0.85rem;
   text-decoration: none;
 
-  &:hover {
-    color: $color-text;
+  @include can-hover {
+    &:hover {
+      color: $color-text;
+    }
   }
 }

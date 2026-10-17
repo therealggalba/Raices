@@ -60,7 +60,7 @@
   display: grid;
   gap: $space-2;
   width: min(340px, calc(100vw - 2 * #{$space-4}));
-  max-height: calc(100dvh - #{$topbar-height} - #{$space-6});
+  max-height: calc(100dvh - #{$header-offset} - #{$space-6});
   overflow-y: auto;
   padding: $space-3;
   border-radius: $radius-lg;
@@ -97,8 +97,10 @@
     display: grid;
   }
 
-  &:hover {
-    background: $color-bg-hover;
+  @include can-hover {
+    &:hover {
+      background: $color-bg-hover;
+    }
   }
 }
 
@@ -147,8 +149,10 @@
   text-align: left;
   text-decoration: none;
 
-  &:hover:not(:disabled) {
-    background: $color-bg-hover;
+  @include can-hover {
+    &:hover:not(:disabled) {
+      background: $color-bg-hover;
+    }
   }
 }
 

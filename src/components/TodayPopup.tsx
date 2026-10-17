@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLibrary } from '../hooks/library-context';
 import type { DateOccurrence } from '../types/domain';
+import { syncDateNotifications } from '../native/dateNotifications';
+import { isNativeApp, nativeNotificationPermission, requestNativeNotifications } from '../native/nativeBridge';
 import { anniversaryLabel, todaysEvents } from '../utils/events';
 import { EVENT_ICONS } from '../utils/labels';
 import { Button } from './ui';
@@ -72,14 +74,21 @@ export function TodayPopup() {
   const { library, today, channelById } = useLibrary();
   const list = useMemo(() => todaysEvents(library.events, library.people, today), [library, today]);
   const [open, setOpen] = useState(() => list.some((o) => !readSeen(today).dismissed.includes(o.key)));
-  const [permission, setPermission] = useState(() => (supportsNotifications() ? Notification.permission : 'denied'));
+  const native = isNativeApp();
+  const [permission, setPermission] = useState<string>(() =>
+    native ? 'unknown' : supportsNotifications() ? Notification.permission : 'denied',
+  );
+  // Android app: reminders are native, scheduled ahead (they work with the app closed).
+  useEffect(() => {
+    if (native) void nativeNotificationPermission().then((p) => setPermission(p === 'prompt' ? 'default' : p));
+  }, [native]);
   const closeRef = useRef<HTMLButtonElement>(null);
   const channelName = (id: string) => channelById(id)?.name;
 
   useEffect(() => {
     // Safe to re-run: already-notified dates are remembered for the day.
-    if (list.length) notifySystem(list, today, (id) => channelById(id)?.name);
-  }, [list, today, channelById]);
+    if (list.length && !native) notifySystem(list, today, (id) => channelById(id)?.name);
+  }, [list, today, channelById, native]);
 
   useEffect(() => {
     if (!open) return;
@@ -140,12 +149,20 @@ export function TodayPopup() {
               variant="ghost"
               small
               onClick={async () => {
+                if (native) {
+                  const granted = await requestNativeNotifications();
+                  setPermission(granted ? 'granted' : 'denied');
+                  if (granted) await syncDateNotifications(library, today);
+                  return;
+                }
                 const result = await Notification.requestPermission();
                 setPermission(result);
                 if (result === 'granted') notifySystem(list, today, channelName);
               }}
             >
-              🔔 Avisarme también con notificaciones del navegador
+              {native
+                ? '🔔 Avisarme en el móvil de las próximas fechas'
+                : '🔔 Avisarme también con notificaciones del navegador'}
             </Button>
           )}
           <Link to="/fechas" className={styles.link} onClick={dismiss}>

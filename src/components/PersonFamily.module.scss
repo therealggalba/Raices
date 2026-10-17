@@ -57,8 +57,10 @@
     color: $color-text-muted;
   }
 
-  &:hover {
-    border-color: $color-accent;
+  @include can-hover {
+    &:hover {
+      border-color: $color-accent;
+    }
   }
 }
 

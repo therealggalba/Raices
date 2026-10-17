@@ -23,6 +23,29 @@ body {
   min-height: 100dvh;
 }
 
+// Native-app feel (Android): no text selection or long-press menus on the
+// interface, and photos can't be dragged or saved with a long press (locked
+// cromos). Forms and long texts stay selectable.
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 a {
   color: $color-accent;
 }

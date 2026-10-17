@@ -2,7 +2,7 @@
 
 .shell {
   min-height: 100dvh;
-  padding-bottom: calc(#{$bottomnav-height} + env(safe-area-inset-bottom));
+  padding-bottom: calc(#{$bottomnav-height} + #{$safe-bottom});
 }
 
 .topbar {
@@ -12,7 +12,8 @@
   display: flex;
   align-items: center;
   gap: $space-3;
-  height: $topbar-height;
+  height: $header-offset;
+  padding-top: $safe-top;
   padding: 0 $space-4;
   background: linear-gradient(to bottom, rgba(14, 13, 18, 0.96), rgba(14, 13, 18, 0.82));
   backdrop-filter: blur(10px);
@@ -82,7 +83,7 @@
 }
 
 .main {
-  min-height: calc(100dvh - #{$topbar-height} - #{$bottomnav-height});
+  min-height: calc(100dvh - #{$header-offset} - #{$bottomnav-height});
 }
 
 .bottomnav {
@@ -93,8 +94,8 @@
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  height: calc(#{$bottomnav-height} + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(#{$bottomnav-height} + #{$safe-bottom});
+  padding-bottom: #{$safe-bottom};
   background: rgba(23, 21, 29, 0.97);
   backdrop-filter: blur(10px);
   border-top: 1px solid $color-line;
@@ -111,8 +112,10 @@
   font-weight: 600;
   text-decoration: none;
 
-  &:hover {
-    color: $color-text;
+  @include can-hover {
+    &:hover {
+      color: $color-text;
+    }
   }
 }
 

@@ -74,6 +74,27 @@ src/
   tests/                 Vitest
 ```
 
+## App Android (APK)
+
+FamilyMemories está pensada para usarse como **app nativa de Android** (Capacitor, ver
+`Proyectos/Guia_WebToAPK.md`). La misma base de código sirve la web y el APK:
+
+- `npm run build:android` compila la web con base `/` (modo `android`); `npm run android:sync` además la copia
+  al proyecto nativo `android/`. `npm run android:open` lo abre en Android Studio.
+- **GitHub Actions** (`.github/workflows/build-apk.yml`) compila el APK de depuración en cada push a `main` y lo
+  deja como artefacto (*Actions › Build Android APK › Artifacts*). Requiere **JDK 21** (Capacitor 8; la guía
+  general menciona 17, que ya no basta).
+- Preparado para pantallas verticales: orientación fija en vertical, márgenes seguros arriba y abajo
+  (`$safe-top`/`$safe-bottom`, `$header-offset`), efectos *hover* solo con ratón (`@include can-hover`), sin
+  selección de texto ni menú de pulsación larga en la interfaz, fuentes incluidas en el paquete.
+- Integraciones nativas (`src/native/`): botón Atrás de Android, barra de estado, **notificaciones locales de las
+  fechas importantes** (programadas a las 9:00, funcionan con la app cerrada) y hoja de compartir nativa para
+  las invitaciones. En la web degradan a su equivalente del navegador.
+- Pendiente de probar en un móvil real: vídeos de YouTube incrustados (Android puede rechazarlos en WebView;
+  los `.mp4` y Drive con clave van bien). Pendiente: icono y pantalla de inicio propios.
+- Para Supabase: iniciar sesión con **código de 6 dígitos por correo** (no enlace mágico), que no necesita volver
+  a la app desde el navegador.
+
 ## Desarrollo
 
 ```bash

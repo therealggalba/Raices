@@ -2,7 +2,7 @@
 
 .years {
   position: sticky;
-  top: $topbar-height;
+  top: $header-offset;
   z-index: 5;
   display: flex;
   gap: $space-2;
@@ -32,7 +32,7 @@
   position: relative;
   display: grid;
   gap: $space-3;
-  scroll-margin-top: calc(#{$topbar-height} + 4rem);
+  scroll-margin-top: calc(#{$header-offset} + 4rem);
 
   &::before {
     content: '';

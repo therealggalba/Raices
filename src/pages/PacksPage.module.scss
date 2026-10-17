@@ -80,9 +80,14 @@
   text-decoration: none;
   transition: transform 0.2s;
 
-  &:hover:not(.disabled),
   &:focus-visible {
     transform: translateY(-6px) rotate(-1deg);
+  }
+
+  @include can-hover {
+    &:hover:not(.disabled) {
+      transform: translateY(-6px) rotate(-1deg);
+    }
   }
 }
 

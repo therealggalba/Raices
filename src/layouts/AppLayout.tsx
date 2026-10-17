@@ -5,6 +5,7 @@ import { TodayPopup } from '../components/TodayPopup';
 import { ErrorBanner, Spinner } from '../components/ui';
 import { LibraryContext } from '../hooks/library-context';
 import type { LibraryContextValue } from '../hooks/library-context';
+import { syncDateNotifications } from '../native/dateNotifications';
 import { repository } from '../services';
 import { errorMessage } from '../services/repository';
 import type { Library } from '../types/domain';
@@ -43,6 +44,11 @@ export function AppLayout() {
       cancelled = true;
     };
   }, []);
+
+  // Android app: keep the date reminders in sync with the user's channels.
+  useEffect(() => {
+    if (library) void syncDateNotifications(library, today);
+  }, [library, today]);
 
   const value = useMemo<LibraryContextValue | null>(() => {
     if (!library) return null;

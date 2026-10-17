@@ -35,8 +35,10 @@
   text-decoration: none;
   transition: background 0.15s;
 
-  &:hover {
-    background: rgba(0, 0, 0, 0.2);
+  @include can-hover {
+    &:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
   }
 }
 
@@ -53,8 +55,10 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   transition: transform 0.15s;
 
-  .cover:hover & {
-    transform: scale(1.08);
+  @include can-hover {
+    .cover:hover & {
+      transform: scale(1.08);
+    }
   }
 }
 

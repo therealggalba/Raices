@@ -3,11 +3,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
+export default defineConfig(({ command, mode }) => ({
   plugins: [react()],
-  // En producción se sirve bajo /family-memories/ dentro de GalbaHUB. Mismo
-  // criterio que Galbateca/NTWE: base absoluta en build, raíz en local.
-  base: command === 'build' ? '/family-memories/' : '/',
+  // Web: se sirve bajo /family-memories/ dentro de GalbaHUB (mismo criterio
+  // que Galbateca/NTWE). APK (`--mode android`, Capacitor) y local: raíz.
+  base: command === 'build' && mode !== 'android' ? '/family-memories/' : '/',
   test: {
     environment: 'node',
     include: ['src/tests/**/*.test.ts'],

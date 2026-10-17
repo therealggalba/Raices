@@ -40,8 +40,10 @@ $edge-md: $space-8;
   font-weight: 600;
   text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
+  @include can-hover {
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -92,10 +94,16 @@ $edge-md: $space-8;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
   }
 
-  &:hover span,
   &:focus-visible span {
     color: $color-accent-strong;
     transform: scale(1.2);
+  }
+
+  @include can-hover {
+    &:hover span {
+      color: $color-accent-strong;
+      transform: scale(1.2);
+    }
   }
 
   @include md-up {

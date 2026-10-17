@@ -5,6 +5,7 @@ import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
+import { shareText } from '../native/nativeBridge';
 import { repository } from '../services';
 import { CHANNEL_KINDS, PACK_THEMES } from '../types/domain';
 import type { ChannelKind, Invitation, Member, PackTheme } from '../types/domain';
@@ -210,15 +211,14 @@ function InvitationsSection() {
             <Button
               small
               onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(created.code);
-                  setCopied(true);
-                } catch {
-                  setCopied(false);
-                }
+                const result = await shareText(
+                  `Invitación a ${channel.name}`,
+                  `Únete a «${channel.name}» en FamilyMemories con este código: ${created.code}`,
+                );
+                setCopied(result === 'copied');
               }}
             >
-              {copied ? '✓ Copiado' : 'Copiar'}
+              {copied ? '✓ Copiado' : 'Compartir'}
             </Button>
           </div>
         )}

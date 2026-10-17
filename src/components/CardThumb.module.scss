@@ -11,9 +11,14 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
   transition: transform 0.15s;
 
-  &:hover,
   &:focus-visible {
     transform: translateY(-3px) rotate(-0.5deg);
+  }
+
+  @include can-hover {
+    &:hover {
+      transform: translateY(-3px) rotate(-0.5deg);
+    }
   }
 }
 

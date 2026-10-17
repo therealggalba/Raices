@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { NativeBridge } from './native/NativeBridge';
 import { EmptyState, LinkButton } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
@@ -74,6 +75,7 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter basename={basename}>
         <ScrollToTop />
+        <NativeBridge />
         <Routes>
           <Route element={<AppLayout />}>
             <Route index element={<HomePage />} />

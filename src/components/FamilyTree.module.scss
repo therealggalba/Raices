@@ -3,7 +3,7 @@
 .scroller {
   position: relative;
   overflow: auto;
-  max-height: calc(100dvh - #{$topbar-height} - #{$bottomnav-height} - 9rem);
+  max-height: calc(100dvh - #{$header-offset} - #{$bottomnav-height} - 9rem);
   border-radius: $radius-lg;
   background:
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0) 0 0 / 22px 22px,
@@ -81,10 +81,16 @@
     border-color 0.15s,
     transform 0.15s;
 
-  &:hover,
   &:focus-visible {
     border-color: $color-accent;
     transform: translateY(-2px);
+  }
+
+  @include can-hover {
+    &:hover {
+      border-color: $color-accent;
+      transform: translateY(-2px);
+    }
   }
 }
 
