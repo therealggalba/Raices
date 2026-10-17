@@ -8,15 +8,18 @@
 -- Run once in: Supabase Dashboard > SQL Editor, after 0002_usernames.sql.
 -- =============================================================================
 
+-- Safe to run more than once.
 alter table public.people
-  add column death_date date,
-  add column gender text check (gender in ('hombre', 'mujer')),
-  add constraint people_death_after_birth check (death_date is null or birth_date is null or death_date >= birth_date);
+  add column if not exists death_date date,
+  add column if not exists gender text check (gender in ('hombre', 'mujer'));
+alter table public.people drop constraint if exists people_death_after_birth;
+alter table public.people add constraint people_death_after_birth
+  check (death_date is null or birth_date is null or death_date >= birth_date);
 
 -- One person per member and one member per person, inside a channel.
 alter table public.channel_members
-  add column person_id uuid references public.people (id) on delete set null;
-create unique index channel_members_person_key on public.channel_members (channel_id, person_id)
+  add column if not exists person_id uuid references public.people (id) on delete set null;
+create unique index if not exists channel_members_person_key on public.channel_members (channel_id, person_id)
   where person_id is not null;
 
 -- Members link themselves; an admin can only undo someone else's link.

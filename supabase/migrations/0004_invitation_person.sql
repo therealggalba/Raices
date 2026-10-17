@@ -10,8 +10,9 @@
 -- Run once in: Supabase Dashboard > SQL Editor, after 0003_people_details.sql.
 -- =============================================================================
 
+-- Safe to run more than once.
 alter table public.invitations
-  add column person_id uuid references public.people (id) on delete cascade;
+  add column if not exists person_id uuid references public.people (id) on delete cascade;
 
 alter table public.events drop constraint if exists events_type_check;
 alter table public.events add constraint events_type_check
