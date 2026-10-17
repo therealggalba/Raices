@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0 — 2026-10-17
+
+- Álbum de cromos (Fase 2, base): un álbum por canal organizado por personas (cada persona es una categoría,
+  más «Varios» para fotos de grupo). Cromos ilimitados con número de álbum estable (#1, #2…; nunca se
+  reutiliza), título, imagen por enlace https (vale una URL pública de Supabase Storage), fecha de la foto,
+  rareza (Común, Poco común, Raro, Épico, Legendario) y descripción.
+- Pantallas: pestaña «Álbum» en cada canal, cromo a tamaño completo al estilo de la app Android original
+  (con anterior/siguiente de la misma persona) y formulario para administradores.
+- Demo: cromos de ejemplo en los tres canales de prueba (y personas nuevas en Amigos y Primos). Al actualizar
+  datos guardados, el álbum de ejemplo se añade solo a los canales demo que sigan existiendo.
+- Esquema de datos v5 (cromos + contador por canal) con migración.
+- Pendiente de definir: sobres, colección por usuario, repetidos y probabilidades; subida directa a Supabase.
+
 ## 0.5.0 — 2026-10-16
 
 - Fechas importantes: tipo de evento, descripción, fecha de origen y personas; todas se repiten cada año y

@@ -130,8 +130,13 @@ describe('local repository', () => {
       createdBy: v1.currentUserId,
     });
     delete v1.progress;
+    delete v1.cards;
+    delete v1.cardSequence;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(4);
+    expect(migrated?.schemaVersion).toBe(5);
+    // Demo channels receive the example album on the way up to v5.
+    expect(migrated?.cards.length).toBeGreaterThan(0);
+    expect(migrated?.cards.every((c) => c.channelId.startsWith('demo-'))).toBe(true);
     expect(migrated?.views).toEqual([]);
     expect(migrated?.progress).toEqual([]);
     expect(migrated?.channels.map((c) => c.kind)).toEqual(['familia', 'amigos', 'otros', 'otros']);
@@ -146,6 +151,54 @@ describe('local repository', () => {
     const snapshot = await repo.loadChannel(DEMO_FAMILY_ID);
     expect(snapshot.people.some((p) => p.firstName === 'Hugo')).toBe(true);
     expect(snapshot.favoriteVideoIds).toContain('v-demo-2');
+  });
+
+  it('numbers cromos per channel, keeps numbers stable and enforces admin + validation', async () => {
+    const base = { title: 'En la playa', description: '', imageUrl: 'https://img.test/a.jpg', takenAt: '1999-08', rarity: 'raro' as const };
+    const before = (await repo.loadChannel(DEMO_FAMILY_ID)).cards;
+    const maxBefore = Math.max(...before.map((c) => c.number));
+    const card = await repo.addCard(DEMO_FAMILY_ID, { ...base, personId: 'p-carlos' });
+    expect(card.number).toBe(maxBefore + 1);
+    await repo.updateCard(DEMO_FAMILY_ID, card.id, { ...base, title: 'Playa 99', rarity: 'legendario' });
+    const edited = (await repo.loadChannel(DEMO_FAMILY_ID)).cards.find((c) => c.id === card.id)!;
+    expect(edited).toMatchObject({ number: card.number, title: 'Playa 99', rarity: 'legendario' });
+    expect(edited.personId).toBeUndefined();
+    await repo.deleteCard(DEMO_FAMILY_ID, card.id);
+    // The number is not reused.
+    expect((await repo.addCard(DEMO_FAMILY_ID, base)).number).toBe(maxBefore + 2);
+    expect((await rejection(repo.addCard(DEMO_FAMILY_ID, { ...base, imageUrl: 'javascript:alert(1)' }))).code).toBe('invalid');
+    expect((await rejection(repo.addCard(DEMO_FAMILY_ID, { ...base, personId: 'p-rosa' }))).code).toBe('invalid');
+    expect((await rejection(repo.addCard(DEMO_FRIENDS_ID, base))).code).toBe('forbidden');
+  });
+
+  it('keeps a deleted person\'s cromos in the album, without a person', async () => {
+    await repo.deletePerson(DEMO_FAMILY_ID, 'p-natalia');
+    const cards = (await repo.loadChannel(DEMO_FAMILY_ID)).cards;
+    const hers = cards.filter((c) => c.title === 'Primeros pasos');
+    expect(hers).toHaveLength(1);
+    expect(hers[0].personId).toBeUndefined();
+  });
+
+  it('brings the demo album into existing demo channels when upgrading from v4, leaving real ones alone', () => {
+    const v4 = buildDemoDb(NOW) as unknown as Record<string, unknown> & Db;
+    v4.schemaVersion = 4;
+    delete (v4 as Partial<Db>).cards;
+    delete (v4 as Partial<Db>).cardSequence;
+    v4.people = v4.people.filter((p) => !['p-marta', 'p-javi', 'p-rosa', 'p-andres', 'p-lucia', 'p-carlos'].includes(p.id));
+    v4.events = v4.events.map((e) => (e.id === 'e-cumple-marta' ? { ...e, personIds: [] } : e));
+    // The user left (and so deleted) the cousins channel, and has a real channel.
+    v4.channels = v4.channels.filter((c) => c.id !== DEMO_COUSINS_ID);
+    v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
+    const db = parseDb(JSON.stringify(v4))!;
+    expect(db.schemaVersion).toBe(5);
+    expect(db.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
+    expect(db.cards.some((c) => c.channelId === 'mi-familia')).toBe(false);
+    // Cromos of a person the user deleted (Carlos) are skipped.
+    expect(db.cards.some((c) => c.title === 'Tocando la batería')).toBe(false);
+    expect(db.cards.some((c) => c.title === 'La fuente' && c.personId === 'p-javi')).toBe(true);
+    expect(db.people.some((p) => p.id === 'p-rosa')).toBe(false);
+    expect(db.events.find((e) => e.id === 'e-cumple-marta')?.personIds).toEqual(['p-marta']);
+    expect(db.cardSequence[DEMO_FAMILY_ID]).toBe(18);
   });
 
   it('treats unknown channels and channels you do not belong to the same way', async () => {

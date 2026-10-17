@@ -1,4 +1,6 @@
 import type {
+  AlbumCard,
+  CardInput,
   ChannelInput,
   ChannelSnapshot,
   ChannelSummary,
@@ -64,6 +66,10 @@ export interface MemoriesRepository {
   addEvent(channelId: string, input: EventInput): Promise<FamilyEvent>;
   updateEvent(channelId: string, eventId: string, input: EventInput): Promise<void>;
   deleteEvent(channelId: string, eventId: string): Promise<void>;
+
+  addCard(channelId: string, input: CardInput): Promise<AlbumCard>;
+  updateCard(channelId: string, cardId: string, input: CardInput): Promise<void>;
+  deleteCard(channelId: string, cardId: string): Promise<void>;
 
   /** Local mode only: wipes everything and restores the demo data. */
   resetDemo(): Promise<void>;

@@ -1,10 +1,12 @@
-import { CHANNEL_KINDS, EVENT_TYPES, VIDEO_CATEGORIES } from '../types/domain';
+import { CHANNEL_KINDS, EVENT_TYPES, RARITIES, VIDEO_CATEGORIES } from '../types/domain';
 import type {
+  CardInput,
   ChannelInput,
   ChannelKind,
   EventInput,
   EventType,
   PersonInput,
+  Rarity,
   ValidationResult,
   VideoCategory,
   VideoInput,
@@ -46,6 +48,10 @@ export function isVideoCategory(value: unknown): value is VideoCategory {
 
 export function isChannelKind(value: unknown): value is ChannelKind {
   return typeof value === 'string' && (CHANNEL_KINDS as readonly string[]).includes(value);
+}
+
+export function isRarity(value: unknown): value is Rarity {
+  return typeof value === 'string' && (RARITIES as readonly string[]).includes(value);
 }
 
 export function isEventType(value: unknown): value is EventType {
@@ -250,6 +256,39 @@ export function validateEventInput(input: unknown): ValidationResult<EventInput>
       date: input.date as string,
       personIds,
       notes,
+    },
+  };
+}
+
+export function validateCardInput(input: unknown): ValidationResult<CardInput> {
+  if (!isRecord(input)) return { ok: false, errors: ['Datos del cromo inválidos'] };
+  const errors: string[] = [];
+  const title = readString(input, 'title', 'Título', LIMITS.title, errors);
+  const description = readString(input, 'description', 'Descripción', LIMITS.description, errors, {
+    required: false,
+    multiline: true,
+  });
+  let imageUrl = '';
+  if (typeof input.imageUrl !== 'string' || input.imageUrl.trim() === '') errors.push('Imagen: obligatoria');
+  else if (!isHttpsUrl(input.imageUrl)) errors.push('Imagen: debe ser un enlace https válido');
+  else imageUrl = input.imageUrl.trim();
+  if (!isPartialDate(input.takenAt)) errors.push('Fecha de la foto: usa AAAA, AAAA-MM o AAAA-MM-DD');
+  if (!isRarity(input.rarity)) errors.push('Rareza: inválida');
+  let personId: string | undefined;
+  if (input.personId !== undefined && input.personId !== null && input.personId !== '') {
+    if (isId(input.personId)) personId = input.personId;
+    else errors.push('Persona: inválida');
+  }
+  if (errors.length) return { ok: false, errors };
+  return {
+    ok: true,
+    value: {
+      title,
+      description,
+      imageUrl,
+      takenAt: input.takenAt as string,
+      rarity: input.rarity as Rarity,
+      ...(personId ? { personId } : {}),
     },
   };
 }

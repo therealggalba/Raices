@@ -1,0 +1,101 @@
+@use '../styles/variables' as *;
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-4;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: $space-4 $space-3 $space-8;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 $space-1;
+}
+
+.back {
+  color: $color-accent;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.position {
+  color: $color-text-dim;
+  font-size: 0.85rem;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: $space-1;
+
+  @include md-up {
+    grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+    gap: $space-3;
+  }
+}
+
+.arrow {
+  display: grid;
+  place-items: center;
+  height: 4rem;
+  border-radius: $radius-md;
+  color: $color-text;
+  font-size: 2.4rem;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: $color-accent-strong;
+  }
+}
+
+.prev {
+  animation: nudge-left 1.8s ease-in-out infinite;
+}
+
+.next {
+  animation: nudge-right 1.8s ease-in-out infinite;
+}
+
+@keyframes nudge-right {
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes nudge-left {
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+.info {
+  display: grid;
+  gap: $space-3;
+  justify-items: center;
+  text-align: center;
+}
+
+.rarity {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $color-accent;
+}
+
+.description {
+  max-width: 50ch;
+  white-space: pre-line;
+}
+
+.actions {
+  display: flex;
+  gap: $space-2;
+}

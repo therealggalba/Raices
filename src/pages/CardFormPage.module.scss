@@ -1,0 +1,74 @@
+@use '../styles/variables' as *;
+
+.imageRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: $space-3;
+  align-items: start;
+}
+
+.preview {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: $radius-md;
+  border: 1px dashed $color-line;
+  background: $color-bg-raised;
+  color: $color-text-dim;
+  font-size: 0.7rem;
+  text-align: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.rarityGroup {
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: $space-2;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-text-muted;
+  }
+}
+
+.rarities {
+  display: grid;
+  gap: $space-2;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 120px), 1fr));
+}
+
+.rarity {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: $space-2;
+  border-radius: $radius-md;
+  border: 1px solid $color-line;
+  background: $color-bg-raised;
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:focus-within {
+    outline: 2px solid $color-accent;
+    outline-offset: 2px;
+  }
+}
+
+.rarityOn {
+  border-color: $color-accent;
+  background: rgba(242, 180, 90, 0.15);
+}

@@ -1,5 +1,16 @@
 import { SCHEMA_VERSION } from '../types/domain';
-import type { FamilyEvent, Invitation, Member, Person, User, Video, VideoCategory, ViewRecord } from '../types/domain';
+import type {
+  AlbumCard,
+  FamilyEvent,
+  Invitation,
+  Member,
+  Person,
+  Rarity,
+  User,
+  Video,
+  VideoCategory,
+  ViewRecord,
+} from '../types/domain';
 import { addDays, sameDayInYear, toIsoDate } from '../utils/dates';
 import { newId } from '../utils/ids';
 import type { Db } from './localRepository';
@@ -109,6 +120,17 @@ export function buildDemoDb(now: Date): Db {
       relationship: 'Hija',
       biography: 'La pequeña de la casa. Quiere ser veterinaria (o astronauta, según el día).',
     }),
+    // Other channels (so their albums have categories too).
+    { id: 'p-marta', channelId: DEMO_FRIENDS_ID, firstName: 'Marta', lastName: 'Ibáñez', birthDate: sameDayInYear(today, 1982),
+      relationship: 'Amiga', biography: 'Delegada de clase y organizadora oficial de todas las cenas.', notes: '' },
+    { id: 'p-javi', channelId: DEMO_FRIENDS_ID, firstName: 'Javi', lastName: 'Ortega', birthDate: '1982-04-02',
+      relationship: 'Amigo', biography: 'El de la fuente. Ahora es serio (a ratos).', notes: '' },
+    { id: 'p-rosa', channelId: DEMO_COUSINS_ID, firstName: 'Rosa', lastName: 'Sanz Pardo', birthDate: '1975-05-12',
+      relationship: 'Prima', biography: 'Hermana pequeña de Elena. Guardiana de las fotos del pueblo.', notes: '' },
+    { id: 'p-andres', channelId: DEMO_COUSINS_ID, firstName: 'Andrés', lastName: 'Vidal', birthDate: '1973-02-08',
+      relationship: 'Primo político', biography: 'Pescador de río y cocinero de fabada.', notes: '' },
+    { id: 'p-lucia', channelId: DEMO_COUSINS_ID, firstName: 'Lucía', lastName: 'Vidal Sanz', birthDate: '2001-01-15',
+      relationship: 'Prima', biography: 'Hija de Rosa y Andrés.', notes: '' },
   ];
 
   let n = 0;
@@ -201,7 +223,7 @@ export function buildDemoDb(now: Date): Db {
       // Today: the demo always shows the «hoy» pop-up.
       title: 'Cumpleaños de Marta',
       date: sameDayInYear(today, 1982),
-      personIds: [],
+      personIds: ['p-marta'],
       notes: 'Cena sorpresa, como en los 30.',
     },
     {
@@ -210,7 +232,7 @@ export function buildDemoDb(now: Date): Db {
       type: 'cumpleanos',
       title: 'Cumpleaños de Javi',
       date: '1982-04-02',
-      personIds: [],
+      personIds: ['p-javi'],
       notes: '',
     },
     {
@@ -246,7 +268,7 @@ export function buildDemoDb(now: Date): Db {
       type: 'cumpleanos',
       title: 'Cumpleaños de la prima Lucía',
       date: '2001-01-15',
-      personIds: [],
+      personIds: ['p-lucia'],
       notes: '',
     },
     {
@@ -343,6 +365,60 @@ export function buildDemoDb(now: Date): Db {
     }
   }
 
+  // Album: free stock photos (picsum.photos), greyscale for the old ones.
+  const photo = (seed: string, year: number) =>
+    `https://picsum.photos/seed/fm-${seed}/600/800${year < 1990 ? '?grayscale' : ''}`;
+  const cardsPlan: [string, string | undefined, string, string, Rarity, string][] = [
+    // channel, person, title, takenAt, rarity, description
+    [DEMO_FAMILY_ID, 'p-antonio', 'La mili en Melilla', '1961', 'epico', 'Con el uniforme recién estrenado y cara de no haber dormido.'],
+    [DEMO_FAMILY_ID, 'p-antonio', 'Con su primera silla', '1968-05', 'comun', 'La primera silla del taller. Sigue en el salón.'],
+    [DEMO_FAMILY_ID, 'p-antonio', 'El taller de carpintería', '1975', 'raro', 'Serrín hasta las cejas.'],
+    [DEMO_FAMILY_ID, 'p-carmen', 'Primer día de maestra', '1965-09', 'raro', 'Escuela unitaria de Santo Tomé.'],
+    [DEMO_FAMILY_ID, 'p-carmen', 'La boda', '1966-10', 'legendario', 'Antonio y Carmen a la salida de Santa María.'],
+    [DEMO_FAMILY_ID, 'p-carmen', 'La tortilla del siglo', '1990', 'comun', 'Doce huevos y ni una sobra.'],
+    [DEMO_FAMILY_ID, 'p-luis', 'Con la videocámara nueva', '1990-12', 'poco-comun', 'El origen de todos los vídeos de este canal.'],
+    [DEMO_FAMILY_ID, 'p-luis', 'Graduación', '1993-06', 'raro', ''],
+    [DEMO_FAMILY_ID, 'p-elena', 'Uniforme de enfermera', '1995', 'comun', 'Primer día en el hospital.'],
+    [DEMO_FAMILY_ID, 'p-elena', 'Los 40', '2011-11-04', 'poco-comun', 'Fiesta sorpresa (que no fue tan sorpresa).'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Bañándome', '1999-07', 'poco-comun', 'La palangana del patio de los abuelos.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Disfrazado de pirata', '2001-02', 'comun', 'Carnaval del colegio.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Tocando la batería', '2013-12', 'comun', 'Primer ensayo con el grupo.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Selfie perruno', '2016-06', 'raro', 'Con Toby, el perro de los vecinos.'],
+    [DEMO_FAMILY_ID, 'p-carlos', 'Graduación', '2020-06', 'epico', 'Ingeniero, por fin.'],
+    [DEMO_FAMILY_ID, 'p-natalia', 'Primeros pasos', '2018-03', 'epico', 'Del sofá a la mesa, sin manos.'],
+    [DEMO_FAMILY_ID, 'p-natalia', 'Disfraz de astronauta', '2023-02', 'comun', ''],
+    [DEMO_FAMILY_ID, 'p-natalia', 'Sin el primer diente', '2023-09', 'poco-comun', 'El Ratoncito Pérez pagó dos euros.'],
+    [DEMO_FRIENDS_ID, 'p-marta', 'Orla de la facultad', '2004-06', 'raro', ''],
+    [DEMO_FRIENDS_ID, 'p-marta', 'En el tranvía 28', '2019-10', 'comun', 'Escapada a Lisboa.'],
+    [DEMO_FRIENDS_ID, 'p-javi', 'La fuente', '2002-04', 'legendario', 'La foto que Javi intentó destruir.'],
+    [DEMO_FRIENDS_ID, 'p-javi', 'El novio', '2015-09', 'epico', 'Boda con Laura.'],
+    [DEMO_FRIENDS_ID, undefined, 'La pandilla al completo', '2004-07', 'raro', 'Estación de Praga, viaje de fin de carrera.'],
+    [DEMO_COUSINS_ID, 'p-rosa', 'Verano en Asturias', '2001-08', 'comun', ''],
+    [DEMO_COUSINS_ID, 'p-rosa', 'Novia en el monasterio', '2008-10-11', 'legendario', 'Llovió, pero dio igual.'],
+    [DEMO_COUSINS_ID, 'p-andres', 'Pescando en el río', '2001-08', 'poco-comun', 'Tres truchas. Según él, cinco.'],
+    [DEMO_COUSINS_ID, 'p-lucia', 'Primer día de cole', '2005-09', 'comun', ''],
+    [DEMO_COUSINS_ID, 'p-lucia', 'Comunión', '2010-05', 'raro', 'El vestido con lazo azul.'],
+  ];
+  const numbers = new Map<string, number>();
+  const cards: AlbumCard[] = cardsPlan.map(([channelId, personId, title, takenAt, rarity, description], i) => {
+    const number = (numbers.get(channelId) ?? 0) + 1;
+    numbers.set(channelId, number);
+    const year = Number(takenAt.slice(0, 4));
+    return {
+      id: `c-demo-${i + 1}`,
+      channelId,
+      number,
+      ...(personId ? { personId } : {}),
+      title,
+      description,
+      imageUrl: title === 'Selfie perruno' ? 'https://picsum.photos/id/1025/600/800' : photo(String(i + 1), year),
+      takenAt,
+      rarity,
+      createdAt: iso(60 - i),
+      authorId: userId,
+    };
+  });
+
   return {
     schemaVersion: SCHEMA_VERSION,
     currentUserId: userId,
@@ -384,6 +460,8 @@ export function buildDemoDb(now: Date): Db {
       { channelId: DEMO_FRIENDS_ID, userId, videoId: 'v-demo-uni-6' },
     ],
     views,
+    cards,
+    cardSequence: Object.fromEntries(numbers),
     // Demo: a half-watched video so «continuar» can be seen straight away.
     progress: [
       {
@@ -396,4 +474,41 @@ export function buildDemoDb(now: Date): Db {
       },
     ],
   };
+}
+
+/** People added to the friends/cousins demo channels together with the album (schema v5). */
+const ALBUM_DEMO_PEOPLE = new Set(['p-marta', 'p-javi', 'p-rosa', 'p-andres', 'p-lucia']);
+const ALBUM_DEMO_EVENT_LINKS: Record<string, string> = {
+  'e-cumple-marta': 'p-marta',
+  'e-cumple-javi': 'p-javi',
+  'e-cumple-lucia': 'p-lucia',
+};
+
+/**
+ * Upgrade helper for stored data created before the album existed: brings
+ * the demo album (and the people it needs) into the demo channels that are
+ * still there. Real channels are never touched; demo people or cromos the
+ * user already deleted or changed are respected.
+ */
+export function addDemoAlbum(db: Db, now: Date): void {
+  const demo = buildDemoDb(now);
+  const channels = new Set(db.channels.map((c) => c.id));
+  const personIds = new Set(db.people.map((p) => p.id));
+  for (const person of demo.people) {
+    if (ALBUM_DEMO_PEOPLE.has(person.id) && channels.has(person.channelId) && !personIds.has(person.id)) {
+      db.people.push(person);
+      personIds.add(person.id);
+    }
+  }
+  for (const event of db.events) {
+    const link = ALBUM_DEMO_EVENT_LINKS[event.id];
+    if (link && personIds.has(link) && event.personIds.length === 0) event.personIds = [link];
+  }
+  const cardIds = new Set(db.cards.map((c) => c.id));
+  for (const card of demo.cards) {
+    if (!channels.has(card.channelId) || cardIds.has(card.id)) continue;
+    if (card.personId && !personIds.has(card.personId)) continue;
+    db.cards.push({ ...card, authorId: db.currentUserId });
+    db.cardSequence[card.channelId] = Math.max(db.cardSequence[card.channelId] ?? 0, card.number);
+  }
 }

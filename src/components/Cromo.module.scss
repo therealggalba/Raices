@@ -1,0 +1,110 @@
+@use '../styles/variables' as *;
+@use './rarity' as *;
+
+.cromo {
+  @include rarity-frames;
+
+  position: relative;
+  width: min(100%, 420px);
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 22px;
+  background: var(--frame);
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  color: #111;
+  overflow: hidden;
+}
+
+.inner {
+  display: grid;
+  gap: $space-2;
+  padding: $space-3;
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: $space-3;
+  min-width: 0;
+}
+
+.number {
+  flex: 0 0 auto;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #444;
+}
+
+.title {
+  min-width: 0;
+  font-family: $font-ui;
+  font-size: clamp(1.1rem, 5vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #111;
+}
+
+.photo {
+  padding: 6px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #555, #222);
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+}
+
+.broken {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  color: #ddd;
+  font-size: 0.9rem;
+}
+
+.person {
+  padding: $space-2 0;
+  text-align: center;
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.date {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #222;
+}
+
+.legendario::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.5) 50%, transparent 58%);
+  animation: shine 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-60%);
+  }
+  60%,
+  100% {
+    transform: translateX(60%);
+  }
+}

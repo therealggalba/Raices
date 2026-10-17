@@ -1,5 +1,6 @@
 import { CHANNEL_KINDS, ROLES, SCHEMA_VERSION } from '../types/domain';
 import type {
+  AlbumCard,
   Channel,
   ChannelSnapshot,
   ChannelSummary,
@@ -15,6 +16,7 @@ import type {
   ViewRecord,
   WatchProgress,
 } from '../types/domain';
+import { nextCardNumber } from '../utils/album';
 import { newId } from '../utils/ids';
 import { decideProgress } from '../utils/progress';
 import {
@@ -27,6 +29,7 @@ import {
 import {
   isId,
   isRecord,
+  validateCardInput,
   validateChannelInput,
   validateDisplayName,
   validateEventInput,
@@ -35,7 +38,7 @@ import {
 } from '../utils/validation';
 import type { MemoriesRepository } from './repository';
 import { RepositoryError } from './repository';
-import { buildDemoDb } from './seed';
+import { addDemoAlbum, buildDemoDb } from './seed';
 
 // Local backend for the public phase-1 MVP: the whole dataset lives in one
 // JSON document in the browser. It still behaves like a server: it checks
@@ -57,6 +60,9 @@ export interface Db {
   favorites: Favorite[];
   views: ViewRecord[];
   progress: WatchProgress[];
+  cards: AlbumCard[];
+  /** Channel id -> last album number issued (never goes back). */
+  cardSequence: Record<string, number>;
 }
 
 export interface KeyValueStore {
@@ -101,6 +107,7 @@ const COLLECTIONS = [
   'favorites',
   'views',
   'progress',
+  'cards',
 ] as const;
 
 /** Kinds given to channels created before kinds existed (schema v1). */
@@ -110,7 +117,7 @@ const V1_KINDS: Record<string, Db['channels'][number]['kind']> = {
 };
 
 /** Upgrades older stored documents in place; returns null when unknown. */
-export function migrateDb(data: Record<string, unknown>): Record<string, unknown> | null {
+export function migrateDb(data: Record<string, unknown>, now: Date = new Date()): Record<string, unknown> | null {
   if (data.schemaVersion === 1) {
     if (!Array.isArray(data.channels)) return null;
     data.channels = data.channels.map((c: unknown) =>
@@ -133,6 +140,15 @@ export function migrateDb(data: Record<string, unknown>): Record<string, unknown
     });
     data.schemaVersion = 4;
   }
+  if (data.schemaVersion === 4) {
+    data.cards = [];
+    data.cardSequence = {};
+    data.schemaVersion = 5;
+    // Demo channels get their example album (only the ones still present).
+    if (Array.isArray(data.channels) && Array.isArray(data.people) && Array.isArray(data.events)) {
+      addDemoAlbum(data as unknown as Db, now);
+    }
+  }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
 
@@ -152,6 +168,7 @@ export function parseDb(raw: string | null): Db | null {
     const list = data[key];
     if (!Array.isArray(list) || !list.every(isRecord)) return null;
   }
+  if (!isRecord(data.cardSequence) || !Object.values(data.cardSequence).every((n) => Number.isInteger(n))) return null;
   const db = data as unknown as Db;
   if (!db.users.some((u) => u.id === db.currentUserId)) return null;
   if (!db.members.every((m) => (ROLES as readonly string[]).includes(m.role))) return null;
@@ -239,6 +256,8 @@ export function createLocalRepository({
     db.favorites = inChannel(db.favorites);
     db.views = inChannel(db.views);
     db.progress = inChannel(db.progress);
+    db.cards = inChannel(db.cards);
+    delete db.cardSequence[channelId];
   }
 
   const repo: MemoriesRepository = {
@@ -345,6 +364,7 @@ export function createLocalRepository({
         people: of(db.people),
         videos: of(db.videos),
         events: of(db.events),
+        cards: of(db.cards),
         invitations: member.role === 'admin' ? of(db.invitations) : [],
         favoriteVideoIds: of(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
@@ -525,6 +545,8 @@ export function createLocalRepository({
       const unlink = (ids: string[]) => ids.filter((id) => id !== personId);
       for (const v of db.videos) if (v.channelId === channelId) v.personIds = unlink(v.personIds);
       for (const e of db.events) if (e.channelId === channelId) e.personIds = unlink(e.personIds);
+      // Their cromos stay in the album, under "Varios".
+      for (const c of db.cards) if (c.channelId === channelId && c.personId === personId) delete c.personId;
       commit();
     },
 
@@ -551,6 +573,44 @@ export function createLocalRepository({
       requireAdmin(channelId);
       findIn(db.events, channelId, eventId, 'El evento');
       db.events = db.events.filter((e) => e.id !== eventId);
+      commit();
+    },
+
+    async addCard(channelId, input) {
+      requireAdmin(channelId);
+      const value = ensure(validateCardInput(input));
+      if (value.personId) checkPeople(channelId, [value.personId]);
+      const card: AlbumCard = {
+        id: newId(),
+        channelId,
+        number: nextCardNumber(
+          db.cards.filter((c) => c.channelId === channelId),
+          db.cardSequence[channelId],
+        ),
+        ...value,
+        createdAt: nowIso(),
+        authorId: db.currentUserId,
+      };
+      db.cards.push(card);
+      db.cardSequence[channelId] = card.number;
+      commit();
+      return clone(card);
+    },
+
+    async updateCard(channelId, cardId, input) {
+      requireAdmin(channelId);
+      const card = findIn(db.cards, channelId, cardId, 'El cromo');
+      const value = ensure(validateCardInput(input));
+      if (value.personId) checkPeople(channelId, [value.personId]);
+      const { id, number, createdAt, authorId } = card;
+      db.cards[db.cards.indexOf(card)] = { id, channelId, number, createdAt, authorId, ...value };
+      commit();
+    },
+
+    async deleteCard(channelId, cardId) {
+      requireAdmin(channelId);
+      findIn(db.cards, channelId, cardId, 'El cromo');
+      db.cards = db.cards.filter((c) => c.id !== cardId);
       commit();
     },
 

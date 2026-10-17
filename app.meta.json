@@ -6,5 +6,5 @@
   "status": "development",
   "route": "/family-memories/",
   "visibility": "public (MVP de pruebas; privacidad pendiente)",
-  "version": "0.5.0"
+  "version": "0.6.0"
 }

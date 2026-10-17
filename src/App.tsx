@@ -4,6 +4,9 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { EmptyState, LinkButton } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
+import { AlbumPage } from './pages/AlbumPage';
+import { CardFormPage } from './pages/CardFormPage';
+import { CardPage } from './pages/CardPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { ChannelHomePage } from './pages/ChannelHomePage';
 import { ChannelSettingsPage } from './pages/ChannelSettingsPage';
@@ -77,6 +80,10 @@ export default function App() {
             <Route path="personas/nueva" element={<PersonFormPage />} />
             <Route path="personas/:personId" element={<PersonPage />} />
             <Route path="personas/:personId/editar" element={<PersonFormPage />} />
+            <Route path="album" element={<AlbumPage />} />
+            <Route path="album/nuevo" element={<CardFormPage />} />
+            <Route path="album/:cardId" element={<CardPage />} />
+            <Route path="album/:cardId/editar" element={<CardFormPage />} />
             <Route path="canal" element={<ChannelSettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>

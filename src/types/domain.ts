@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -34,6 +34,10 @@ export const VIDEO_CATEGORIES = [
   'otros',
 ] as const;
 export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
+
+/** Cromo rarity, from most to least frequent (Phase 2 spec). */
+export const RARITIES = ['comun', 'poco-comun', 'raro', 'epico', 'legendario'] as const;
+export type Rarity = (typeof RARITIES)[number];
 
 export const EVENT_TYPES = ['cumpleanos', 'aniversario', 'comunion', 'bautizo', 'boda', 'otro'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -120,6 +124,29 @@ export interface FamilyEvent {
   notes: string;
 }
 
+/**
+ * A collectible card (cromo) of the channel's album. The album is organised
+ * by person: each person of the channel is a category. Cards are open-ended:
+ * admins keep adding photos over time.
+ */
+export interface AlbumCard {
+  id: string;
+  channelId: string;
+  /** Album number (#49), assigned on creation, unique and stable per channel. */
+  number: number;
+  /** Category; absent when the person was deleted ("Varios"). */
+  personId?: string;
+  title: string;
+  description: string;
+  /** https image (any host, including a Supabase Storage public URL). */
+  imageUrl: string;
+  /** When the photo was taken. */
+  takenAt: PartialDate;
+  rarity: Rarity;
+  createdAt: IsoDateTime;
+  authorId: string;
+}
+
 export interface Invitation {
   id: string;
   channelId: string;
@@ -191,6 +218,15 @@ export interface VideoInput {
   personIds: string[];
 }
 
+export interface CardInput {
+  personId?: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  takenAt: PartialDate;
+  rarity: Rarity;
+}
+
 export interface EventInput {
   type: EventType;
   title: string;
@@ -217,6 +253,7 @@ export interface ChannelSnapshot {
   people: Person[];
   videos: Video[];
   events: FamilyEvent[];
+  cards: AlbumCard[];
   /** Only filled for admins. */
   invitations: Invitation[];
   favoriteVideoIds: string[];
