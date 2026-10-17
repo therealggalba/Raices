@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { FitImage } from '../components/FitImage';
 import { Button, EmptyState, ErrorBanner, Field, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
@@ -84,7 +85,7 @@ export function CardFormPage() {
         <div className={styles.imageRow}>
           <div className={styles.preview} aria-hidden>
             {showPreview && !previewFailed ? (
-              <img src={imageUrl.trim()} alt="" onError={() => setPreviewFailed(true)} />
+              <FitImage src={imageUrl.trim()} loading="eager" onError={() => setPreviewFailed(true)} />
             ) : (
               <span>{previewFailed ? 'No se puede cargar' : 'Vista previa'}</span>
             )}

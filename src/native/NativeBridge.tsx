@@ -7,7 +7,11 @@ export function NativeBridge() {
   const navigate = useNavigate();
   useEffect(() => {
     void setupStatusBar();
-    return listenBackButton(() => navigate(-1));
+    // Back while a video is in full screen closes the full screen first.
+    return listenBackButton(() => {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else navigate(-1);
+    });
   }, [navigate]);
   return null;
 }

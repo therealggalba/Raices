@@ -53,11 +53,13 @@
   border-radius: 4px;
   background: linear-gradient(135deg, #555, #222);
 
-  img {
-    display: block;
-    width: 100%;
+  // Standard cromo frame (3:4) for photos of any orientation.
+  .image {
     aspect-ratio: 3 / 4;
-    object-fit: cover;
+    height: auto;
+  }
+
+  img {
     transition: filter 0.8s ease, transform 0.8s ease;
   }
 }

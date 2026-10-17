@@ -58,7 +58,7 @@ describe('thumbnailFor', () => {
       'https://img.test/a.jpg',
     );
     expect(thumbnailFor({ mediaUrl: 'https://youtu.be/dQw4w9WgXcQ' })).toBe(
-      'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+      'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
     );
     expect(thumbnailFor({ mediaUrl: 'https://example.com/a.mp4' })).toBeNull();
     expect(isHttpsUrl('https://ok.test')).toBe(true);

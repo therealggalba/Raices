@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Cromo } from '../components/Cromo';
 import { PackArt } from '../components/PackArt';
-import { Button, EmptyState, ErrorBanner, LinkButton } from '../components/ui';
+import { EmptyState, ErrorBanner, LinkButton } from '../components/ui';
 import { useLibrary } from '../hooks/library-context';
 import { useScrollArrows } from '../hooks/useScrollArrows';
 import { repository } from '../services';
@@ -27,7 +27,6 @@ type Phase = 'ready' | 'tearing' | 'reveal';
  */
 export function OpenPackPage() {
   const { channelId = '' } = useParams();
-  const navigate = useNavigate();
   const { library, channelById, personById, reload } = useLibrary();
   const channel = channelById(channelId);
   const [phase, setPhase] = useState<Phase>('ready');
@@ -165,12 +164,21 @@ export function OpenPackPage() {
           {Math.min(current + 1, pulls.length)} / {pulls.length}
         </p>
         <div className={styles.actions}>
-          <Button variant="primary" onClick={() => navigate(library.packs.remaining > 0 ? '/sobres' : `/albumes/${channel.id}`)}>
-            ¡Visto bueno!
-          </Button>
-          <Link to={`/albumes/${channel.id}`} className={styles.albumLink}>
-            Ver el álbum
-          </Link>
+          {library.packs.remaining > 0 ? (
+            <>
+              <LinkButton to="/sobres" variant="primary">
+                🎁 Abrir otro sobre ({library.packs.remaining})
+              </LinkButton>
+              <LinkButton to={`/albumes/${channel.id}`}>Ver el álbum</LinkButton>
+            </>
+          ) : (
+            <>
+              <LinkButton to={`/albumes/${channel.id}`} variant="primary">
+                Ver el álbum
+              </LinkButton>
+              <LinkButton to="/albumes">Ver álbumes</LinkButton>
+            </>
+          )}
         </div>
       </div>
     );

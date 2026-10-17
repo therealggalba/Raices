@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AlbumCard, Person } from '../types/domain';
 import { formatPartialDate } from '../utils/dates';
+import { FitImage } from './FitImage';
 import styles from './Cromo.module.scss';
 
 /** Full-size cromo, styled after the original FamilyHub Android card. */
@@ -31,7 +32,7 @@ export function Cromo({ card, person, locked, copies = 0, ribbon }: Props) {
           {failed ? (
             <span className={styles.broken}>No se pudo cargar la imagen</span>
           ) : (
-            <img src={card.imageUrl} alt={locked ? '' : card.title} draggable={false} onError={() => setFailed(true)} />
+            <FitImage className={styles.image} src={card.imageUrl} alt={locked ? '' : card.title} loading="eager" onError={() => setFailed(true)} />
           )}
           {locked && (
             <span className={styles.lock}>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Video, VideoCategory } from '../types/domain';
 import { CATEGORY_ICONS } from '../utils/labels';
 import { thumbnailFor } from '../utils/media';
+import { FitImage } from './FitImage';
 import styles from './Thumbnail.module.scss';
 
 const PALETTES: Record<VideoCategory, [string, string]> = {
@@ -27,7 +28,7 @@ export function Thumbnail({ video, showTitle = true }: { video: Video; showTitle
   const [failed, setFailed] = useState(false);
 
   if (src && !failed) {
-    return <img className={styles.image} src={src} alt="" loading="lazy" onError={() => setFailed(true)} />;
+    return <FitImage className={styles.image} src={src} onError={() => setFailed(true)} />;
   }
 
   const [a, b] = PALETTES[video.category];

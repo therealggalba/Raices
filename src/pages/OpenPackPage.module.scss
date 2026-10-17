@@ -279,11 +279,8 @@ $cut-at: 13%; // height of the top band, where it is cut
 }
 
 .actions {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: $space-2;
-}
-
-.albumLink {
-  font-size: 0.9rem;
 }

@@ -1,7 +1,7 @@
 {
   "name": "family-memories",
   "private": true,
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5196",
@@ -18,6 +18,7 @@
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
     "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/screen-orientation": "^8.0.2",
     "@capacitor/share": "^8.0.3",
     "@capacitor/status-bar": "^8.0.4",
     "@fontsource-variable/fraunces": "^5.3.0",

@@ -50,13 +50,13 @@
   height: 170px;
   background: radial-gradient(ellipse at 50% 120%, rgba(242, 180, 90, 0.25), transparent 70%), $color-bg-panel;
 
-  img {
+  .coverCard {
     position: absolute;
     top: 22px;
     left: 50%;
     width: 92px;
     aspect-ratio: 3 / 4;
-    object-fit: cover;
+    overflow: hidden;
     border: 4px solid #e5e5ea;
     border-radius: 8px;
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
@@ -64,16 +64,16 @@
   }
 
   // Front photo in the middle, the others fanned out to each side.
-  img:nth-child(1) {
+  > .coverCard:nth-child(1) {
     z-index: 2;
     transform: translateX(-50%) translateY(-6px);
   }
 
-  img:nth-child(2) {
+  > .coverCard:nth-child(2) {
     transform: translateX(calc(-50% - 64px)) rotate(-9deg);
   }
 
-  img:nth-child(3) {
+  > .coverCard:nth-child(3) {
     transform: translateX(calc(-50% + 64px)) rotate(9deg);
   }
 }

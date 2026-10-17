@@ -85,7 +85,8 @@ export function resolveMedia(value: string, options: MediaOptions = {}): MediaSo
       kind: 'youtube',
       id: yt,
       embedUrl: `https://www.youtube-nocookie.com/embed/${yt}`,
-      thumbnailUrl: `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`,
+      // 16:9 thumbnail (hqdefault is 4:3 with black bars baked in).
+      thumbnailUrl: `https://i.ytimg.com/vi/${yt}/mqdefault.jpg`,
     };
   }
   const vimeo = vimeoId(url);

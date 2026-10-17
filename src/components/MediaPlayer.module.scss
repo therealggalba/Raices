@@ -68,3 +68,35 @@
   background: rgba(0, 0, 0, 0.6);
   font-size: 0.95rem;
 }
+
+// Full screen (phones): the frame fills the screen, black bars around the video.
+.frame:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  border-radius: 0;
+
+  .media {
+    object-fit: contain;
+  }
+}
+
+.closeFullscreen {
+  display: none;
+  position: absolute;
+  top: calc(#{$space-3} + #{$safe-top});
+  right: $space-3;
+  z-index: 5;
+  width: $touch;
+  height: $touch;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.1rem;
+
+  .frame:fullscreen & {
+    display: grid;
+    place-items: center;
+  }
+}

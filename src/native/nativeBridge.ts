@@ -1,6 +1,7 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { Share } from '@capacitor/share';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import type { PlannedNotification } from './notificationPlan';
@@ -32,6 +33,30 @@ export function listenBackButton(goBack: () => void): () => void {
     else void App.exitApp();
   });
   return () => void handle.then((h) => h.remove());
+}
+
+/** Videos in full screen may rotate to landscape; the rest of the app stays portrait. */
+export async function allowRotation(): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    await ScreenOrientation.unlock();
+  } catch {
+    // ignore
+  }
+}
+
+export async function lockPortrait(): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    await ScreenOrientation.lock({ orientation: 'portrait' });
+  } catch {
+    // ignore
+  }
+}
+
+/** Phones and tablets (the app, or a touch browser): videos open in full screen. */
+export function prefersFullscreenVideo(): boolean {
+  return isNativeApp() || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
 }
 
 export type NotificationPermission = 'granted' | 'denied' | 'prompt';

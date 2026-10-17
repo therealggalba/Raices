@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { config } from '../config';
+import { allowRotation, lockPortrait, prefersFullscreenVideo } from '../native/nativeBridge';
 import type { Video } from '../types/domain';
 import { resolveMedia } from '../utils/media';
 import { SAVE_INTERVAL_SECONDS } from '../utils/progress';
@@ -88,6 +89,7 @@ export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onSta
   const counted = useRef(false);
   const { report, attach } = useProgressReporter(onProgress);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const resumeFrom = startAt && startAt > 0 ? Math.floor(startAt) : 0;
 
   const countView = () => {
@@ -129,12 +131,52 @@ export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onSta
     return () => window.removeEventListener('message', onMessage);
   }, [started, isYoutube, report]);
 
-  const start = () => setStarted(true);
+  // Full screen on phones: the player frame goes full screen when playback
+  // starts and the app may rotate to landscape until it leaves full screen.
+  const enterFullscreen = () => {
+    const el = frameRef.current;
+    if (!el || !prefersFullscreenVideo() || document.fullscreenElement) return;
+    el.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => {
+      // Not allowed (e.g. no user gesture): the player stays inline.
+    });
+  };
+  const exitFullscreen = () => {
+    if (document.fullscreenElement === frameRef.current) void document.exitFullscreen().catch(() => {});
+  };
 
+  useEffect(() => {
+    const frame = frameRef.current;
+    const onChange = () => {
+      if (frame && document.fullscreenElement === frame) void allowRotation();
+      else void lockPortrait();
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      if (frame && document.fullscreenElement === frame) {
+        void document.exitFullscreen().catch(() => {});
+        void lockPortrait();
+      }
+    };
+  }, []);
+
+  // «Reproducir» from the hero starts here without a tap on the player: try.
+  useEffect(() => {
+    if (autoPlay && playable) enterFullscreen();
+    // Only on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const start = () => {
+    enterFullscreen(); // inside the tap: browsers only allow full screen from a gesture
+    setStarted(true);
+  };
+
+  let content;
   if (!media || media.kind === 'link' || !started) {
     const external = !media || media.kind === 'link';
-    return (
-      <div className={styles.frame}>
+    content = (
+      <>
         <Thumbnail video={video} showTitle={false} />
         {external ? (
           <a
@@ -157,48 +199,45 @@ export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onSta
             {playLabel && <span className={styles.playLabel}>{playLabel}</span>}
           </button>
         )}
-      </div>
+      </>
     );
-  }
-
-  if (media.kind === 'file' || (media.kind === 'drive' && media.streamUrl)) {
+  } else if (media.kind === 'file' || (media.kind === 'drive' && media.streamUrl)) {
     const fileSrc = media.kind === 'file' ? media.src : media.streamUrl;
-    return (
-      <div className={styles.frame}>
-        <video
-          className={styles.media}
-          src={fileSrc}
-          controls
-          playsInline
-          autoPlay
-          preload="auto"
-          onLoadedMetadata={(e) => {
-            const el = e.currentTarget;
-            attach(el);
-            if (resumeFrom && resumeFrom < el.duration) el.currentTime = resumeFrom;
-          }}
-          onTimeUpdate={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration)}
-          onPause={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration, true)}
-          onEnded={(e) => report(e.currentTarget.duration, e.currentTarget.duration, true)}
-        >
-          Tu navegador no puede reproducir este vídeo.
-        </video>
-      </div>
+    content = (
+      <video
+        className={styles.media}
+        src={fileSrc}
+        controls
+        playsInline
+        autoPlay
+        preload="auto"
+        onLoadedMetadata={(e) => {
+          const el = e.currentTarget;
+          attach(el);
+          if (resumeFrom && resumeFrom < el.duration) el.currentTime = resumeFrom;
+        }}
+        onTimeUpdate={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration)}
+        onPause={(e) => report(e.currentTarget.currentTime, e.currentTarget.duration, true)}
+        onEnded={(e) => {
+          report(e.currentTarget.duration, e.currentTarget.duration, true);
+          exitFullscreen();
+        }}
+      >
+        Tu navegador no puede reproducir este vídeo.
+      </video>
     );
-  }
+  } else {
+    let src = media.embedUrl;
+    const youtubeOrigin = media.kind === 'youtube' ? new URL(media.embedUrl).origin : null;
+    if (media.kind === 'youtube') {
+      const params = new URLSearchParams({ autoplay: '1', enablejsapi: '1', origin: window.location.origin });
+      if (resumeFrom) params.set('start', String(resumeFrom));
+      src = `${media.embedUrl}?${params}`;
+    } else if (media.kind === 'vimeo') {
+      src = `${media.embedUrl}?autoplay=1`;
+    }
 
-  let src = media.embedUrl;
-  const youtubeOrigin = media.kind === 'youtube' ? new URL(media.embedUrl).origin : null;
-  if (media.kind === 'youtube') {
-    const params = new URLSearchParams({ autoplay: '1', enablejsapi: '1', origin: window.location.origin });
-    if (resumeFrom) params.set('start', String(resumeFrom));
-    src = `${media.embedUrl}?${params}`;
-  } else if (media.kind === 'vimeo') {
-    src = `${media.embedUrl}?autoplay=1`;
-  }
-
-  return (
-    <div className={styles.frame}>
+    content = (
       <iframe
         ref={iframeRef}
         className={styles.media}
@@ -218,6 +257,17 @@ export function MediaPlayer({ video, autoPlay = false, startAt, playLabel, onSta
           }
         }}
       />
+    );
+  }
+
+  return (
+    <div ref={frameRef} className={styles.frame}>
+      {content}
+      {started && (
+        <button type="button" className={styles.closeFullscreen} onClick={exitFullscreen} aria-label="Salir de pantalla completa">
+          ✕
+        </button>
+      )}
     </div>
   );
 }

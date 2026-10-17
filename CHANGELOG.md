@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.0 — 2026-10-17
+
+- Vídeos: al reproducir en el móvil pasan a pantalla completa y, en la app, se pueden girar a horizontal; al
+  salir (✕, botón Atrás o al terminar) la app vuelve a vertical.
+- Sobres: al terminar, botones directos «Abrir otro sobre (N)» (si quedan) y «Ver el álbum» / «Ver álbumes» en
+  lugar de «¡Visto bueno!».
+- Carátulas de vídeos, cromos y portadas con tamaño estándar para fotos horizontales o verticales: la foto se ve
+  completa (sin recortar) y el espacio sobrante se rellena con la misma foto ampliada y desenfocada.
+  Miniaturas de YouTube en 16:9 (sin franjas negras).
+
 ## 0.10.0 — 2026-10-17
 
 - Preparada como app Android (Capacitor 8): proyecto `android/` (orientación vertical fija), modo de compilación

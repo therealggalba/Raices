@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { AlbumCard } from '../types/domain';
 import { formatPartialDate } from '../utils/dates';
+import { FitImage } from './FitImage';
 import styles from './CardThumb.module.scss';
 
 /** Small cromo for the album grid; locked ones show a blurred photo. */
@@ -36,7 +37,7 @@ export function CardThumb({ card, to, locked, copies = 0 }: Props) {
               🖼️
             </span>
           ) : (
-            <img src={card.imageUrl} alt="" loading="lazy" draggable={false} onError={() => setFailed(true)} />
+            <FitImage src={card.imageUrl} onError={() => setFailed(true)} />
           )}
           {locked && (
             <span className={styles.badge} aria-hidden>

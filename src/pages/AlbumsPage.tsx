@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FitImage } from '../components/FitImage';
 import { ProgressMeter } from '../components/ProgressMeter';
 import { EmptyState, LinkButton } from '../components/ui';
 import { useLibrary } from '../hooks/library-context';
@@ -42,7 +43,9 @@ export function AlbumsPage() {
               <span className={styles.cover} aria-hidden>
                 {cover.length ? (
                   cover.map((card) => (
-                    <img key={card.id} src={card.imageUrl} alt="" loading="lazy" />
+                    <span key={card.id} className={styles.coverCard}>
+                      <FitImage src={card.imageUrl} />
+                    </span>
                   ))
                 ) : (
                   <span className={styles.coverEmpty}>🔒</span>
