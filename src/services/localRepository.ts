@@ -11,6 +11,7 @@ import type {
   Library,
   PackOpening,
   PackPull,
+  Partnership,
   Member,
   Person,
   User,
@@ -20,6 +21,7 @@ import type {
   WatchProgress,
 } from '../types/domain';
 import { nextCardNumber } from '../utils/album';
+import { partnershipKey, wouldCreateCycle } from '../utils/familyTree';
 import { newId } from '../utils/ids';
 import { drawPack, packStatus, cryptoRandom } from '../utils/packs';
 import type { RandomFn } from '../utils/packs';
@@ -37,6 +39,7 @@ import {
   isRecord,
   validateCardInput,
   validateChannelInput,
+  validatePartnershipInput,
   validateDisplayName,
   validateEventInput,
   validatePersonInput,
@@ -44,7 +47,7 @@ import {
 } from '../utils/validation';
 import type { MemoriesRepository } from './repository';
 import { RepositoryError } from './repository';
-import { DEMO_PACK_THEMES, addDemoAlbum, buildDemoDb, demoUnlocks, extraDemoCopies } from './seed';
+import { DEMO_PACK_THEMES, addDemoAlbum, addDemoFamilyTree, buildDemoDb, demoUnlocks, extraDemoCopies } from './seed';
 import type { LegacyUnlock } from './seed';
 
 // Local backend for the public phase-1 MVP: the whole dataset lives in one
@@ -72,6 +75,7 @@ export interface Db {
   cardSequence: Record<string, number>;
   copies: CardCopy[];
   packs: PackOpening[];
+  partnerships: Partnership[];
 }
 
 export interface KeyValueStore {
@@ -119,6 +123,7 @@ const COLLECTIONS = [
   'cards',
   'copies',
   'packs',
+  'partnerships',
 ] as const;
 
 /** Kinds given to channels created before kinds existed (schema v1). */
@@ -190,6 +195,14 @@ export function migrateDb(data: Record<string, unknown>, now: Date = new Date())
       isRecord(c) ? { ...c, packTheme: (typeof c.id === 'string' && DEMO_PACK_THEMES[c.id]) || 'clasico' } : c,
     );
     data.schemaVersion = 7;
+  }
+  if (data.schemaVersion === 7) {
+    // Family tree: parents on each person, couples in their own collection.
+    if (!Array.isArray(data.people)) return null;
+    data.people = data.people.map((p: unknown) => (isRecord(p) ? { ...p, parentIds: [] } : p));
+    data.partnerships = [];
+    addDemoFamilyTree(data as unknown as Db);
+    data.schemaVersion = 8;
   }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
@@ -305,6 +318,7 @@ export function createLocalRepository({
     delete db.cardSequence[channelId];
     db.copies = inChannel(db.copies);
     db.packs = inChannel(db.packs);
+    db.partnerships = inChannel(db.partnerships);
   }
 
   const repo: MemoriesRepository = {
@@ -419,6 +433,7 @@ export function createLocalRepository({
         videos: of(db.videos),
         events: of(db.events),
         cards: of(db.cards),
+        partnerships: of(db.partnerships),
         invitations: member.role === 'admin' ? of(db.invitations) : [],
         favoriteVideoIds: of(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
@@ -580,7 +595,9 @@ export function createLocalRepository({
 
     async addPerson(channelId, input) {
       requireAdmin(channelId);
-      const person: Person = { id: newId(), channelId, ...ensure(validatePersonInput(input)) };
+      const value = ensure(validatePersonInput(input));
+      checkPeople(channelId, value.parentIds ?? []);
+      const person: Person = { id: newId(), channelId, ...value, parentIds: value.parentIds ?? [] };
       db.people.push(person);
       commit();
       return clone(person);
@@ -590,8 +607,16 @@ export function createLocalRepository({
       requireAdmin(channelId);
       const person = findIn(db.people, channelId, personId, 'La persona');
       const value = ensure(validatePersonInput(input));
+      const parentIds = value.parentIds ?? [];
+      checkPeople(channelId, parentIds);
+      const inChannel = db.people.filter((p) => p.channelId === channelId);
+      if (wouldCreateCycle(inChannel, person.id, parentIds)) {
+        throw new RepositoryError('invalid', 'Revisa los datos', [
+          'Progenitores: una persona no puede ser antepasada de sí misma',
+        ]);
+      }
       const index = db.people.indexOf(person);
-      db.people[index] = { id: person.id, channelId, ...value };
+      db.people[index] = { id: person.id, channelId, ...value, parentIds };
       commit();
     },
 
@@ -602,8 +627,42 @@ export function createLocalRepository({
       const unlink = (ids: string[]) => ids.filter((id) => id !== personId);
       for (const v of db.videos) if (v.channelId === channelId) v.personIds = unlink(v.personIds);
       for (const e of db.events) if (e.channelId === channelId) e.personIds = unlink(e.personIds);
+      for (const p of db.people) if (p.channelId === channelId) p.parentIds = unlink(p.parentIds);
+      db.partnerships = db.partnerships.filter((c) => !c.personIds.includes(personId));
       // Their cromos stay in the album, under "Varios".
       for (const c of db.cards) if (c.channelId === channelId && c.personId === personId) delete c.personId;
+      commit();
+    },
+
+    async addPartnership(channelId, input) {
+      requireAdmin(channelId);
+      const value = ensure(validatePartnershipInput(input));
+      checkPeople(channelId, value.personIds);
+      const key = partnershipKey(...value.personIds);
+      if (db.partnerships.some((c) => c.channelId === channelId && partnershipKey(...c.personIds) === key)) {
+        throw new RepositoryError('conflict', 'Esa pareja ya está registrada');
+      }
+      const partnership: Partnership = { id: newId(), channelId, ...value };
+      db.partnerships.push(partnership);
+      commit();
+      return clone(partnership);
+    },
+
+    async updatePartnership(channelId, partnershipId, input) {
+      requireAdmin(channelId);
+      const current = findIn(db.partnerships, channelId, partnershipId, 'La pareja');
+      const value = ensure(validatePartnershipInput(input));
+      if (partnershipKey(...value.personIds) !== partnershipKey(...current.personIds)) {
+        throw new RepositoryError('invalid', 'No se pueden cambiar las personas de una pareja');
+      }
+      db.partnerships[db.partnerships.indexOf(current)] = { id: current.id, channelId, ...value };
+      commit();
+    },
+
+    async deletePartnership(channelId, partnershipId) {
+      requireAdmin(channelId);
+      findIn(db.partnerships, channelId, partnershipId, 'La pareja');
+      db.partnerships = db.partnerships.filter((c) => c.id !== partnershipId);
       commit();
     },
 

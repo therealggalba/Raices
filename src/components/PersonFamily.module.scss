@@ -1,0 +1,77 @@
+@use '../styles/variables' as *;
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $space-3;
+}
+
+.treeLink {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.group {
+  display: grid;
+  gap: $space-2;
+
+  h3 {
+    font-family: $font-ui;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $color-text-dim;
+  }
+}
+
+.chips,
+.partners {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-2;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  padding: 3px $space-3 3px 3px;
+  border-radius: $radius-pill;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  color: $color-text;
+  font-size: 0.9rem;
+  text-decoration: none;
+
+  > span:last-child {
+    display: grid;
+    line-height: 1.15;
+  }
+
+  small {
+    font-size: 0.7rem;
+    color: $color-text-muted;
+  }
+
+  &:hover {
+    border-color: $color-accent;
+  }
+}
+
+.partner {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+}
+
+.partnerActions {
+  display: inline-flex;
+}
+
+.form {
+  margin-top: $space-2;
+}

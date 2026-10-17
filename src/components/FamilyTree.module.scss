@@ -1,0 +1,101 @@
+@use '../styles/variables' as *;
+
+.scroller {
+  position: relative;
+  overflow: auto;
+  max-height: calc(100dvh - #{$topbar-height} - #{$bottomnav-height} - 9rem);
+  border-radius: $radius-lg;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0) 0 0 / 22px 22px,
+    $color-bg-raised;
+  border: 1px solid $color-line;
+  overscroll-behavior: contain;
+}
+
+.canvas {
+  position: relative;
+  margin: 0 auto;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  fill: none;
+  stroke: rgba(242, 180, 90, 0.75);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.arrowHead {
+  fill: rgba(242, 180, 90, 0.9);
+  stroke: none;
+}
+
+.couple {
+  stroke: #f4d58a;
+  stroke-width: 3;
+}
+
+.separated {
+  stroke-dasharray: 6 6;
+  opacity: 0.6;
+}
+
+.ring {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: $color-bg-raised;
+  border: 2px solid #f4d58a;
+  font-size: 0.8rem;
+  transform: translate(-50%, -50%);
+  cursor: help;
+}
+
+.ringSeparated {
+  border-style: dashed;
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
+.card {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: $space-2;
+  border-radius: $radius-md;
+  background: $color-bg-panel;
+  border: 1px solid rgba(242, 180, 90, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  color: $color-text;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    border-color: $color-accent;
+    transform: translateY(-2px);
+  }
+}
+
+.name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.15;
+  @include line-clamp(2);
+}
+
+.birth {
+  font-size: 0.7rem;
+  color: $color-text-muted;
+}

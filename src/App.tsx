@@ -23,6 +23,7 @@ import { PeoplePage } from './pages/PeoplePage';
 import { PersonFormPage } from './pages/PersonFormPage';
 import { PersonPage } from './pages/PersonPage';
 import { TimelinePage } from './pages/TimelinePage';
+import { TreePage } from './pages/TreePage';
 import { VideoFormPage } from './pages/VideoFormPage';
 import { VideoPage } from './pages/VideoPage';
 
@@ -97,6 +98,7 @@ export default function App() {
             <Route path="cronologia" element={<TimelinePage />} />
             <Route path="eventos" element={<EventsPage />} />
             <Route path="personas" element={<PeoplePage />} />
+            <Route path="arbol" element={<TreePage />} />
             <Route path="personas/nueva" element={<PersonFormPage />} />
             <Route path="personas/:personId" element={<PersonPage />} />
             <Route path="personas/:personId/editar" element={<PersonFormPage />} />

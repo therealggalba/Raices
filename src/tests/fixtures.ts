@@ -9,6 +9,7 @@ export function makePerson(overrides: Partial<Person> = {}): Person {
     relationship: 'Hijo',
     biography: '',
     notes: '',
+    parentIds: [],
     ...overrides,
   };
 }

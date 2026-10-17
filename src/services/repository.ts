@@ -9,6 +9,8 @@ import type {
   Invitation,
   Library,
   PackPull,
+  Partnership,
+  PartnershipInput,
   Person,
   PersonInput,
   Role,
@@ -63,6 +65,11 @@ export interface MemoriesRepository {
   addPerson(channelId: string, input: PersonInput): Promise<Person>;
   updatePerson(channelId: string, personId: string, input: PersonInput): Promise<void>;
   deletePerson(channelId: string, personId: string): Promise<void>;
+
+  /** Family tree: a couple (wedding / separation dates optional). */
+  addPartnership(channelId: string, input: PartnershipInput): Promise<Partnership>;
+  updatePartnership(channelId: string, partnershipId: string, input: PartnershipInput): Promise<void>;
+  deletePartnership(channelId: string, partnershipId: string): Promise<void>;
 
   addEvent(channelId: string, input: EventInput): Promise<FamilyEvent>;
   updateEvent(channelId: string, eventId: string, input: EventInput): Promise<void>;

@@ -7,7 +7,9 @@ import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
 import type { PersonInput } from '../types/domain';
-import { fullName } from '../utils/people';
+import { descendantsOf } from '../utils/familyTree';
+import { fullName, sortPeople } from '../utils/people';
+import styles from './PersonFormPage.module.scss';
 
 /** Add (/personas/nueva) or edit (/personas/:personId/editar) a person. Admins only. */
 export function PersonFormPage() {
@@ -25,6 +27,8 @@ export function PersonFormPage() {
   const [photoUrl, setPhotoUrl] = useState(existing?.photoUrl ?? '');
   const [biography, setBiography] = useState(existing?.biography ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [parent1, setParent1] = useState(existing?.parentIds[0] ?? '');
+  const [parent2, setParent2] = useState(existing?.parentIds[1] ?? '');
 
   if (!isAdmin) {
     return (
@@ -41,6 +45,9 @@ export function PersonFormPage() {
     );
   }
 
+  // Anyone but the person and their descendants (no one is their own ancestor).
+  const below = existing ? descendantsOf(snapshot.people, existing.id) : new Set<string>();
+  const parentCandidates = sortPeople(snapshot.people).filter((p) => p.id !== existing?.id && !below.has(p.id));
   const back = existing ? `/c/${channelId}/personas/${existing.id}` : `/c/${channelId}/personas`;
 
   return (
@@ -63,6 +70,7 @@ export function PersonFormPage() {
             notes,
             ...(birthDate ? { birthDate } : {}),
             ...(photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
+            parentIds: [parent1, parent2].filter(Boolean),
           };
           const id = await run(async () => {
             if (existing) {
@@ -86,6 +94,34 @@ export function PersonFormPage() {
         <Field label="Relación familiar" htmlFor="relationship" hint="Ej.: Abuela paterna, Primo, Amiga de la familia">
           <input id="relationship" className={ui.input} value={relationship} onChange={(e) => setRelationship(e.target.value)} maxLength={60} />
         </Field>
+        {snapshot.channel.kind === 'familia' && (
+          <fieldset className={styles.parents}>
+            <legend>Progenitores (árbol familiar)</legend>
+            {[
+              ['parent1', parent1, setParent1, parent2],
+              ['parent2', parent2, setParent2, parent1],
+            ].map(([id, value, set, other]) => (
+              <select
+                key={id as string}
+                id={id as string}
+                aria-label={id === 'parent1' ? 'Progenitor 1' : 'Progenitor 2'}
+                className={ui.input}
+                value={value as string}
+                onChange={(e) => (set as (v: string) => void)(e.target.value)}
+              >
+                <option value="">— Sin indicar —</option>
+                {parentCandidates
+                  .filter((p) => p.id !== other)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {fullName(p)}
+                    </option>
+                  ))}
+              </select>
+            ))}
+            <span className={ui.hint}>Las parejas se añaden desde la ficha de la persona.</span>
+          </fieldset>
+        )}
         <Field label="Fecha de nacimiento" htmlFor="birthDate" hint="Con ella se crea su cumpleaños automáticamente">
           <input id="birthDate" className={ui.input} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
         </Field>

@@ -70,10 +70,14 @@ export function buildDemoDb(now: Date): Db {
     member(DEMO_COUSINS_ID, 'u-elena', 'Elena', 'member', 150),
   ];
 
-  const person = (id: string, p: Omit<Person, 'id' | 'channelId' | 'notes'> & { notes?: string }): Person => ({
+  const person = (
+    id: string,
+    p: Omit<Person, 'id' | 'channelId' | 'notes' | 'parentIds'> & { notes?: string },
+  ): Person => ({
     id,
     channelId: DEMO_FAMILY_ID,
     notes: '',
+    parentIds: [],
     ...p,
   });
 
@@ -123,15 +127,15 @@ export function buildDemoDb(now: Date): Db {
     }),
     // Other channels (so their albums have categories too).
     { id: 'p-marta', channelId: DEMO_FRIENDS_ID, firstName: 'Marta', lastName: 'Ibáñez', birthDate: sameDayInYear(today, 1982),
-      relationship: 'Amiga', biography: 'Delegada de clase y organizadora oficial de todas las cenas.', notes: '' },
+      relationship: 'Amiga', biography: 'Delegada de clase y organizadora oficial de todas las cenas.', notes: '', parentIds: [] },
     { id: 'p-javi', channelId: DEMO_FRIENDS_ID, firstName: 'Javi', lastName: 'Ortega', birthDate: '1982-04-02',
-      relationship: 'Amigo', biography: 'El de la fuente. Ahora es serio (a ratos).', notes: '' },
+      relationship: 'Amigo', biography: 'El de la fuente. Ahora es serio (a ratos).', notes: '', parentIds: [] },
     { id: 'p-rosa', channelId: DEMO_COUSINS_ID, firstName: 'Rosa', lastName: 'Sanz Pardo', birthDate: '1975-05-12',
-      relationship: 'Prima', biography: 'Hermana pequeña de Elena. Guardiana de las fotos del pueblo.', notes: '' },
+      relationship: 'Prima', biography: 'Hermana pequeña de Elena. Guardiana de las fotos del pueblo.', notes: '', parentIds: [] },
     { id: 'p-andres', channelId: DEMO_COUSINS_ID, firstName: 'Andrés', lastName: 'Vidal', birthDate: '1973-02-08',
-      relationship: 'Primo político', biography: 'Pescador de río y cocinero de fabada.', notes: '' },
+      relationship: 'Primo político', biography: 'Pescador de río y cocinero de fabada.', notes: '', parentIds: [] },
     { id: 'p-lucia', channelId: DEMO_COUSINS_ID, firstName: 'Lucía', lastName: 'Vidal Sanz', birthDate: '2001-01-15',
-      relationship: 'Prima', biography: 'Hija de Rosa y Andrés.', notes: '' },
+      relationship: 'Prima', biography: 'Hija de Rosa y Andrés.', notes: '', parentIds: [] },
   ];
 
   let n = 0;
@@ -419,7 +423,7 @@ export function buildDemoDb(now: Date): Db {
     };
   });
 
-  return {
+  const db: Db = {
     schemaVersion: SCHEMA_VERSION,
     currentUserId: userId,
     users,
@@ -467,6 +471,7 @@ export function buildDemoDb(now: Date): Db {
     cardSequence: Object.fromEntries(numbers),
     copies: demoCopies(cards, userId, now),
     packs: [],
+    partnerships: [],
     // Demo: a half-watched video so «continuar» can be seen straight away.
     progress: [
       {
@@ -479,6 +484,8 @@ export function buildDemoDb(now: Date): Db {
       },
     ],
   };
+  addDemoFamilyTree(db);
+  return db;
 }
 
 /** People added to the friends/cousins demo channels together with the album (schema v5). */
@@ -569,3 +576,64 @@ export const DEMO_PACK_THEMES: Record<string, PackTheme> = {
   [DEMO_FRIENDS_ID]: 'atardecer',
   [DEMO_COUSINS_ID]: 'oceano',
 };
+
+// ---- Demo family tree ------------------------------------------------------
+
+/** People who only exist to make the demo tree richer (Luis's sister's family). */
+const DEMO_TREE_PEOPLE: Person[] = [
+  { id: 'p-pilar', channelId: DEMO_FAMILY_ID, firstName: 'Pilar', lastName: 'Montero Lozano', birthDate: '1973-08-09',
+    relationship: 'Tía', biography: 'Hermana de Luis. La de los Reyes en su casa.', notes: '', parentIds: [] },
+  { id: 'p-jorge', channelId: DEMO_FAMILY_ID, firstName: 'Jorge', lastName: 'Ruiz Toledo', birthDate: '1970-01-22',
+    relationship: 'Tío político', biography: 'Marido de Pilar. Experto en barbacoas.', notes: '', parentIds: [] },
+  { id: 'p-sofia', channelId: DEMO_FAMILY_ID, firstName: 'Sofía', lastName: 'Ruiz Montero', birthDate: '2003-04-11',
+    relationship: 'Prima', biography: 'Hija de Pilar y Jorge. Estudia Bellas Artes.', notes: '', parentIds: [] },
+];
+
+const DEMO_PARENTS: Record<string, string[]> = {
+  'p-luis': ['p-antonio', 'p-carmen'],
+  'p-pilar': ['p-antonio', 'p-carmen'],
+  'p-carlos': ['p-luis', 'p-elena'],
+  'p-natalia': ['p-luis', 'p-elena'],
+  'p-sofia': ['p-pilar', 'p-jorge'],
+  'p-lucia': ['p-rosa', 'p-andres'],
+};
+
+/** Demo couples: [id, person, person, wedding date or the id of the anniversary event holding it]. */
+const DEMO_COUPLES: [string, string, string, string][] = [
+  ['pt-antonio-carmen', 'p-antonio', 'p-carmen', 'e-aniversario-abuelos'],
+  ['pt-luis-elena', 'p-luis', 'p-elena', '1996-06-15'],
+  ['pt-pilar-jorge', 'p-pilar', 'p-jorge', '2000-09-16'],
+  ['pt-rosa-andres', 'p-andres', 'p-rosa', '2008-10-11'],
+];
+
+/**
+ * Adds the demo family tree to the demo channels that exist: the extra
+ * relatives, parents and couples. Only fills what is missing, so people the
+ * user deleted or links they changed are respected (fresh demo + upgrades).
+ */
+export function addDemoFamilyTree(db: Db): void {
+  const channels = new Set(db.channels.map((c) => c.id));
+  const ids = new Set(db.people.map((p) => p.id));
+  for (const person of DEMO_TREE_PEOPLE) {
+    if (channels.has(person.channelId) && !ids.has(person.id)) {
+      db.people.push({ ...person, parentIds: [] });
+      ids.add(person.id);
+    }
+  }
+  for (const person of db.people) {
+    const parents = DEMO_PARENTS[person.id];
+    if (parents && person.parentIds.length === 0) person.parentIds = parents.filter((id) => ids.has(id));
+  }
+  const existing = new Set(db.partnerships.map((c) => [...c.personIds].sort().join('+')));
+  for (const [id, a, b, date] of DEMO_COUPLES) {
+    const person = db.people.find((p) => p.id === a);
+    if (!person || !ids.has(b) || existing.has([a, b].sort().join('+'))) continue;
+    const since = date.startsWith('e-') ? db.events.find((e) => e.id === date)?.date : date;
+    db.partnerships.push({
+      id,
+      channelId: person.channelId,
+      personIds: [a, b].sort() as [string, string],
+      ...(since ? { since } : {}),
+    });
+  }
+}

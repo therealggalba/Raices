@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { EventItem } from '../components/EventItem';
 import { PersonAvatar } from '../components/PersonAvatar';
+import { PersonFamily } from '../components/PersonFamily';
 import { EmptyState, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { VideoRow } from '../components/VideoRow';
@@ -52,6 +53,7 @@ export function PersonPage() {
       </header>
 
       <div className={styles.content}>
+        {channel.kind === 'familia' && <PersonFamily key={person.id} person={person} />}
         {person.biography && (
           <section className={ui.section}>
             <h2>Biografía</h2>

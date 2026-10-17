@@ -6,6 +6,7 @@ import type {
   PackTheme,
   EventInput,
   EventType,
+  PartnershipInput,
   PersonInput,
   ValidationResult,
   VideoCategory,
@@ -168,6 +169,8 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
     else errors.push('Fecha de nacimiento: fecha inválida');
   }
   const photoUrl = readOptionalUrl(input, 'photoUrl', 'Fotografía', errors);
+  const parentIds = readIdList(input, 'parentIds', 'Progenitores', errors);
+  if (parentIds.length > 2) errors.push('Progenitores: como máximo dos');
   if (errors.length) return { ok: false, errors };
   return {
     ok: true,
@@ -177,10 +180,34 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
       relationship,
       biography,
       notes,
+      parentIds,
       ...(birthDate ? { birthDate } : {}),
       ...(photoUrl ? { photoUrl } : {}),
     },
   };
+}
+
+export function validatePartnershipInput(input: unknown): ValidationResult<PartnershipInput> {
+  if (!isRecord(input)) return { ok: false, errors: ['Datos de la pareja inválidos'] };
+  const errors: string[] = [];
+  const ids = input.personIds;
+  let personIds: [string, string] = ['', ''];
+  if (!Array.isArray(ids) || ids.length !== 2 || !ids.every(isId)) errors.push('Pareja: hacen falta dos personas');
+  else if (ids[0] === ids[1]) errors.push('Pareja: deben ser dos personas distintas');
+  else personIds = [ids[0], ids[1]].sort() as [string, string];
+  const dates: { since?: string; until?: string } = {};
+  for (const [key, label] of [
+    ['since', 'Fecha de boda o inicio'],
+    ['until', 'Fecha de separación'],
+  ] as const) {
+    const v = input[key];
+    if (v === undefined || v === null || v === '') continue;
+    if (isIsoDate(v)) dates[key] = v;
+    else errors.push(`${label}: fecha inválida`);
+  }
+  if (dates.since && dates.until && dates.until < dates.since) errors.push('Fecha de separación: anterior al inicio');
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, value: { personIds, ...dates } };
 }
 
 /** Normalizes free-form tags: lowercase, trimmed, no "#", deduplicated. */

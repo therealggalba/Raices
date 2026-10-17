@@ -134,8 +134,9 @@ describe('local repository', () => {
     delete v1.cardSequence;
     delete v1.copies;
     delete v1.packs;
+    delete v1.partnerships;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(7);
+    expect(migrated?.schemaVersion).toBe(8);
     // Demo channels receive the example album on the way up to v5.
     expect(migrated?.cards.length).toBeGreaterThan(0);
     expect(migrated?.cards.every((c) => c.channelId.startsWith('demo-'))).toBe(true);
@@ -188,13 +189,14 @@ describe('local repository', () => {
     delete (v4 as Partial<Db>).cardSequence;
     delete (v4 as Partial<Db>).copies;
     delete (v4 as Partial<Db>).packs;
+    delete (v4 as Partial<Db>).partnerships;
     v4.people = v4.people.filter((p) => !['p-marta', 'p-javi', 'p-rosa', 'p-andres', 'p-lucia', 'p-carlos'].includes(p.id));
     v4.events = v4.events.map((e) => (e.id === 'e-cumple-marta' ? { ...e, personIds: [] } : e));
     // The user left (and so deleted) the cousins channel, and has a real channel.
     v4.channels = v4.channels.filter((c) => c.id !== DEMO_COUSINS_ID);
     v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', packTheme: 'clasico', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
     const db = parseDb(JSON.stringify(v4))!;
-    expect(db.schemaVersion).toBe(7);
+    expect(db.schemaVersion).toBe(8);
     expect(db.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
     expect(db.cards.some((c) => c.channelId === 'mi-familia')).toBe(false);
     // Cromos of a person the user deleted (Carlos) are skipped.
@@ -225,10 +227,11 @@ describe('local repository', () => {
     v5.schemaVersion = 5;
     delete (v5 as Partial<Db>).copies;
     delete (v5 as Partial<Db>).packs;
+    delete (v5 as Partial<Db>).partnerships;
     for (const c of v5.cards as unknown as Record<string, unknown>[]) c.rarity = 'raro';
     for (const c of v5.channels as unknown as Record<string, unknown>[]) delete c.packTheme;
     const db = parseDb(JSON.stringify(v5))!;
-    expect(db.schemaVersion).toBe(7);
+    expect(db.schemaVersion).toBe(8);
     expect(db.cards.every((c) => !('rarity' in c))).toBe(true);
     expect(db.copies.length).toBeGreaterThan(0);
     expect(db.copies.every((c) => c.userId === db.currentUserId && c.count >= 1)).toBe(true);
@@ -359,6 +362,77 @@ describe('invitations', () => {
     expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 365))).code).toBe('invalid');
     await repo.revokeInvitation(DEMO_FAMILY_ID, invitation.id);
     expect((await rejection(repo.revokeInvitation(DEMO_FAMILY_ID, invitation.id))).code).toBe('conflict');
+  });
+});
+
+describe('family tree', () => {
+  let repo: MemoriesRepository;
+  const base = { lastName: '', relationship: '', biography: '', notes: '' };
+
+  beforeEach(() => {
+    repo = createLocalRepository({ store: memoryStore(), now: () => NOW });
+  });
+
+  it('comes with the demo tree: parents and couples', async () => {
+    const snap = await repo.loadChannel(DEMO_FAMILY_ID);
+    expect(snap.people.find((p) => p.id === 'p-carlos')?.parentIds).toEqual(['p-luis', 'p-elena']);
+    expect(snap.partnerships.map((c) => c.personIds.join('+')).sort()).toEqual([
+      'p-antonio+p-carmen',
+      'p-elena+p-luis',
+      'p-jorge+p-pilar',
+    ]);
+    expect(snap.partnerships.find((c) => c.id === 'pt-antonio-carmen')?.since).toBe(
+      snap.events.find((e) => e.id === 'e-aniversario-abuelos')?.date,
+    );
+  });
+
+  it('rejects more than two parents, foreign parents and ancestry loops', async () => {
+    const tooMany = await rejection(repo.addPerson(DEMO_FAMILY_ID, { ...base, firstName: 'X', parentIds: ['p-luis', 'p-elena', 'p-jorge'] }));
+    expect(tooMany.code).toBe('invalid');
+    expect((await rejection(repo.addPerson(DEMO_FAMILY_ID, { ...base, firstName: 'X', parentIds: ['p-rosa'] }))).code).toBe('invalid');
+    // Antonio cannot become his grandson's child.
+    const loop = await rejection(repo.updatePerson(DEMO_FAMILY_ID, 'p-antonio', { ...base, firstName: 'Antonio', parentIds: ['p-carlos'] }));
+    expect(loop.details.join()).toContain('antepasada');
+    expect((await rejection(repo.updatePerson(DEMO_FAMILY_ID, 'p-luis', { ...base, firstName: 'Luis', parentIds: ['p-luis'] }))).code).toBe('invalid');
+  });
+
+  it('adds, edits and removes couples, without duplicates', async () => {
+    const hugo = await repo.addPerson(DEMO_FAMILY_ID, { ...base, firstName: 'Hugo', parentIds: ['p-pilar', 'p-jorge'] });
+    const ana = await repo.addPerson(DEMO_FAMILY_ID, { ...base, firstName: 'Ana' });
+    const couple = await repo.addPartnership(DEMO_FAMILY_ID, { personIds: [hugo.id, ana.id], since: '2024-05-01' });
+    expect((await rejection(repo.addPartnership(DEMO_FAMILY_ID, { personIds: [ana.id, hugo.id] }))).code).toBe('conflict');
+    await repo.updatePartnership(DEMO_FAMILY_ID, couple.id, { personIds: [ana.id, hugo.id], since: '2024-05-01', until: '2026-01-01' });
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).partnerships.find((c) => c.id === couple.id)?.until).toBe('2026-01-01');
+    expect((await rejection(repo.addPartnership(DEMO_FAMILY_ID, { personIds: [hugo.id, hugo.id] }))).code).toBe('invalid');
+    expect((await rejection(repo.addPartnership(DEMO_FRIENDS_ID, { personIds: ['p-marta', 'p-javi'] }))).code).toBe('forbidden');
+    await repo.deletePartnership(DEMO_FAMILY_ID, couple.id);
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).partnerships.some((c) => c.id === couple.id)).toBe(false);
+  });
+
+  it('unlinks a deleted person from children and couples', async () => {
+    await repo.deletePerson(DEMO_FAMILY_ID, 'p-luis');
+    const snap = await repo.loadChannel(DEMO_FAMILY_ID);
+    expect(snap.people.find((p) => p.id === 'p-carlos')?.parentIds).toEqual(['p-elena']);
+    expect(snap.partnerships.some((c) => c.personIds.includes('p-luis'))).toBe(false);
+  });
+
+  it('brings the demo tree into existing data when upgrading from v7', () => {
+    const v7 = buildDemoDb(NOW) as unknown as Record<string, unknown> & Db;
+    v7.schemaVersion = 7;
+    delete (v7 as Partial<Db>).partnerships;
+    v7.people = v7.people
+      .filter((p) => !['p-pilar', 'p-jorge', 'p-sofia', 'p-natalia'].includes(p.id))
+      .map((p) => {
+        const { parentIds: _ignored, ...rest } = p;
+        return rest as typeof p;
+      });
+    const db = parseDb(JSON.stringify(v7))!;
+    expect(db.schemaVersion).toBe(8);
+    expect(db.people.every((p) => Array.isArray(p.parentIds))).toBe(true);
+    expect(db.people.some((p) => p.id === 'p-sofia')).toBe(true);
+    // Natalia was deleted by the user: she stays deleted.
+    expect(db.people.some((p) => p.id === 'p-natalia')).toBe(false);
+    expect(db.people.find((p) => p.id === 'p-lucia')?.parentIds).toEqual(['p-rosa', 'p-andres']);
   });
 });
 

@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -93,6 +93,20 @@ export interface Person {
   relationship: string;
   biography: string;
   notes: string;
+  /** Up to two parents, people of the same channel (family tree). */
+  parentIds: string[];
+}
+
+/** Two people of a channel who are (or were) a couple. */
+export interface Partnership {
+  id: string;
+  channelId: string;
+  /** Always two different people, stored sorted. */
+  personIds: [string, string];
+  /** Wedding / start date. */
+  since?: IsoDate;
+  /** Separation date (the couple is shown as separated). */
+  until?: IsoDate;
 }
 
 export interface Video {
@@ -251,6 +265,14 @@ export interface PersonInput {
   relationship: string;
   biography: string;
   notes: string;
+  /** Up to two parents (omitted = none). */
+  parentIds?: string[];
+}
+
+export interface PartnershipInput {
+  personIds: [string, string];
+  since?: IsoDate;
+  until?: IsoDate;
 }
 
 export interface VideoInput {
@@ -300,6 +322,7 @@ export interface ChannelSnapshot {
   videos: Video[];
   events: FamilyEvent[];
   cards: AlbumCard[];
+  partnerships: Partnership[];
   /** Only filled for admins. */
   invitations: Invitation[];
   favoriteVideoIds: string[];

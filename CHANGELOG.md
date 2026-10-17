@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0 — 2026-10-17
+
+- Árbol genealógico en los canales de tipo Familia (Personas › 🌳 Árbol): generaciones de arriba abajo,
+  parejas unidas por una línea con 💍 (discontinua si se separaron) y flechas descendentes hacia los hijos.
+  Cada tarjeta: nombre completo y fecha de nacimiento. Cada pareja queda centrada sobre sus descendientes.
+- Vínculos: hasta dos progenitores por persona (se eligen al editarla; nunca un descendiente) y parejas con
+  fecha de boda y de separación opcionales. Sección «Familia» en la ficha de cada persona: padres, pareja(s),
+  hijos y hermanos, con alta, edición de fechas y baja de parejas.
+- Demo: árbol de la Familia Montero (con la rama de Pilar y Jorge) y de Primos Sanz.
+- Esquema de datos v8 (progenitores y parejas) con migración.
+- Pendiente: parentesco calculado respecto a quien mira («Abuelo», «Bisabuelo»…).
+
 ## 0.8.0 — 2026-10-17
 
 - Sobres: 3 al día por usuario (entre todos los álbumes, se renuevan a medianoche, no se acumulan); el

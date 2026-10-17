@@ -1,0 +1,16 @@
+@use '../styles/variables' as *;
+
+.parents {
+  display: grid;
+  gap: $space-2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: $space-1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-text-muted;
+  }
+}

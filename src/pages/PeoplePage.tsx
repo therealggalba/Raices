@@ -5,6 +5,7 @@ import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
 import { ageOn, fullName, sortPeople } from '../utils/people';
 import styles from './PeoplePage.module.scss';
+import { PeopleViewSwitch } from './PeopleViewSwitch';
 
 export function PeoplePage() {
   const { snapshot, today, isAdmin } = useChannel();
@@ -14,11 +15,14 @@ export function PeoplePage() {
     <div className={[ui.page, ui.pageWide].join(' ')}>
       <div className={ui.pageHeader}>
         <h1>Personas</h1>
-        {isAdmin && (
-          <LinkButton to={`/c/${channel.id}/personas/nueva`} variant="primary" small>
-            + Añadir persona
-          </LinkButton>
-        )}
+        <div className={ui.chips}>
+          {channel.kind === 'familia' && <PeopleViewSwitch channelId={channel.id} active="lista" />}
+          {isAdmin && (
+            <LinkButton to={`/c/${channel.id}/personas/nueva`} variant="primary" small>
+              + Añadir persona
+            </LinkButton>
+          )}
+        </div>
       </div>
       {people.length === 0 ? (
         <EmptyState icon="☺">

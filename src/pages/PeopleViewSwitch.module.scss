@@ -1,0 +1,26 @@
+@use '../styles/variables' as *;
+
+.switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: $radius-pill;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 $space-3;
+    border-radius: $radius-pill;
+    color: $color-text-muted;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  a[aria-current='page'] {
+    background: $color-accent;
+    color: #1b1408;
+  }
+}
