@@ -11,5 +11,13 @@ export const config = {
   supabaseAnonKey: env(import.meta.env.VITE_SUPABASE_ANON_KEY),
 } as const;
 
+declare const __APP_VERSION__: string;
+
+/** «0.14.0» or «0.14.0 (compilación 58)» in the APK built by CI. */
+export const appVersion = (() => {
+  const build = env(import.meta.env.VITE_BUILD_NUMBER);
+  return build && /^\d+$/.test(build) ? `${__APP_VERSION__} (compilación ${build})` : __APP_VERSION__;
+})();
+
 /** Real accounts are available (otherwise the app only runs the local demo). */
 export const supabaseConfigured = !!(config.supabaseUrl && config.supabaseAnonKey);

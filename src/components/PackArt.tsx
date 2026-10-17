@@ -33,7 +33,7 @@ export function PackArt({ theme, title, className, style }: Props) {
     >
       <div className={[styles.band, styles.top].join(' ')}>
         <span className={styles.logo}>
-          <BrandMark size={14} /> FamilyMemories
+          <BrandMark size={14} /> Raíces
         </span>
         <span className={styles.code}>{initials(title)}</span>
       </div>

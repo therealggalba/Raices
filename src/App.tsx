@@ -87,7 +87,7 @@ export default function App() {
 /** Login screen until there is an account or the visitor chose the demo. */
 function AuthGate() {
   const { status, userId } = useAuth();
-  if (status === 'loading') return <Spinner label="Abriendo FamilyMemories…" />;
+  if (status === 'loading') return <Spinner label="Abriendo Raíces…" />;
   if (status === 'signed-out') return <LoginScreen />;
   // A different account (or the demo) starts from a clean tree: no data of
   // the previous one survives in any screen's state.

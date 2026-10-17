@@ -2,7 +2,7 @@ import type { MemoriesRepository } from './repository';
 import { RepositoryError } from './repository';
 
 /** Shown when the demo is asked to change anything. */
-export const DEMO_READ_ONLY_MESSAGE = 'La demo es solo para mirar. Crea una cuenta para usar FamilyMemories con tu familia.';
+export const DEMO_READ_ONLY_MESSAGE = 'La demo es solo para mirar. Crea una cuenta para usar Raíces con tu familia.';
 
 /** What a visitor can still do in the demo: watch, mark favourites and open packs. */
 const ALLOWED = new Set<keyof MemoriesRepository>([

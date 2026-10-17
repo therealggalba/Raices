@@ -27,7 +27,7 @@ export function HomePage() {
   if (!library.channels.length) {
     return (
       <EmptyState>
-        <h1>Bienvenido a FamilyMemories</h1>
+        <h1>Bienvenido a Raíces</h1>
         <p>Únete al canal de tu familia con un código de invitación o crea uno nuevo.</p>
         <div className={styles.emptyActions}>
           <LinkButton to="/unirse">Unirme con código</LinkButton>

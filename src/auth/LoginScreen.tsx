@@ -250,7 +250,7 @@ export function LoginScreen() {
     <main className={styles.screen}>
       <div className={styles.box}>
         <BrandMark size={48} className={styles.brand} />
-        <h1 className={styles.title}>FamilyMemories</h1>
+        <h1 className={styles.title}>Raíces</h1>
 
         {step === 'login' && (
           <form className={[ui.form, styles.form].join(' ')} onSubmit={submitLogin}>

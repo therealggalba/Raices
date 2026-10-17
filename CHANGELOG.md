@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0 — 2026-10-17
+
+- La app pasa a llamarse **Raíces** (nombre visible en Android, títulos y textos; el paquete sigue siendo
+  `com.ggalba.familymemories` para que se actualice encima de la instalada).
+- Logotipo: árbol blanco con raíces y un botón de «play» en la copa, sobre fondo naranja. Iconos de Android
+  (normal, redondo y adaptativo), pantalla de arranque naranja y favicon. Fuentes en `brand/` y script
+  `brand/generate-android-assets.sh` para regenerarlos.
+- Versiones distinguibles: cada APK se llama `Raices-v<versión>-build<número>.apk` (el número de compilación
+  sube en cada build) y la versión aparece en el menú de opciones y en la información de la app de Android.
+
 ## 0.14.0 — 2026-10-17
 
 - Cada invitación es para una persona concreta del canal: el administrador la elige al crearla y quien la usa

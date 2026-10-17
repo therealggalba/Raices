@@ -261,7 +261,7 @@ function InvitationsSection() {
               onClick={async () => {
                 const result = await shareText(
                   `Invitación a ${channel.name}`,
-                  `Únete a «${channel.name}» en FamilyMemories con este código: ${created.code}`,
+                  `Únete a «${channel.name}» en Raíces con este código: ${created.code}`,
                 );
                 setCopied(result === 'copied');
               }}

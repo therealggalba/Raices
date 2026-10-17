@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
+import { appVersion } from '../config';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
@@ -210,6 +211,8 @@ export function OptionsMenu() {
           </section>
           <ErrorBanner message={error} />
           <p className={styles.footnote}>
+            Raíces {appVersion}
+            <br />
             {isDemo
               ? 'Demo del portfolio: una familia ficticia que solo se puede mirar.'
               : `Sesión iniciada como ${auth.email ?? 'usuario'}. Solo los miembros de cada canal ven su contenido.`}

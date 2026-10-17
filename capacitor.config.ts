@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // (Vite `--mode android`: base "/" instead of /family-memories/).
 const config: CapacitorConfig = {
   appId: 'com.ggalba.familymemories',
-  appName: 'FamilyMemories',
+  appName: 'Raíces',
   webDir: 'dist',
   android: {
     // Light app background while the WebView starts.

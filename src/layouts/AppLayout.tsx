@@ -69,9 +69,9 @@ export function AppLayout() {
   return (
     <div className={styles.shell}>
       <header className={styles.header}>
-        <Link to="/" className={styles.brand} aria-label="FamilyMemories, inicio">
+        <Link to="/" className={styles.brand} aria-label="Raíces, inicio">
           <BrandMark className={styles.logo} />
-          <span className={styles.brandName}>FamilyMemories</span>
+          <span className={styles.brandName}>Raíces</span>
         </Link>
         <nav className={styles.tabs} aria-label="Principal">
           <NavLink to="/" end className={navClass}>

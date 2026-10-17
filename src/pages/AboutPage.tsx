@@ -58,7 +58,7 @@ const USE_CASES = [
   'Consultar el árbol para explicar a los niños quién era quién en las fotos antiguas.',
 ];
 
-/** «Saber más» (demo only): what FamilyMemories is, for whom and what it can do. */
+/** «Saber más» (demo only): what Raíces is, for whom and what it can do. */
 export function AboutPage() {
   const { configured, leaveDemo } = useAuth();
   return (
@@ -67,7 +67,7 @@ export function AboutPage() {
         <p className={styles.kicker}>Saber más</p>
         <h1 className={styles.title}>Los recuerdos de tu familia, en un solo sitio</h1>
         <p className={styles.lead}>
-          FamilyMemories es un espacio privado para guardar, ver y celebrar los recuerdos de una familia o un grupo: vídeos,
+          Raíces es un espacio privado para guardar, ver y celebrar los recuerdos de una familia o un grupo: vídeos,
           fechas importantes, personas y un álbum de cromos con sus fotos.
         </p>
       </header>
