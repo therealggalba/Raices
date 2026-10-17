@@ -1,10 +1,11 @@
-import { CHANNEL_KINDS, EVENT_TYPES, PACK_THEMES, VIDEO_CATEGORIES } from '../types/domain';
+import { CHANNEL_KINDS, EVENT_TYPES, GENDERS, PACK_THEMES, VIDEO_CATEGORIES } from '../types/domain';
 import type {
   CardInput,
   ChannelInput,
   ChannelKind,
   PackTheme,
   EventInput,
+  Gender,
   EventType,
   PartnershipInput,
   PersonInput,
@@ -168,6 +169,17 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
     if (isIsoDate(input.birthDate)) birthDate = input.birthDate;
     else errors.push('Fecha de nacimiento: fecha inválida');
   }
+  let deathDate: string | undefined;
+  if (input.deathDate !== undefined && input.deathDate !== null && input.deathDate !== '') {
+    if (!isIsoDate(input.deathDate)) errors.push('Fecha de fallecimiento: fecha inválida');
+    else if (birthDate && input.deathDate < birthDate) errors.push('Fecha de fallecimiento: no puede ser anterior al nacimiento');
+    else deathDate = input.deathDate;
+  }
+  let gender: Gender | undefined;
+  if (input.gender !== undefined && input.gender !== null && input.gender !== '') {
+    if ((GENDERS as readonly unknown[]).includes(input.gender)) gender = input.gender as Gender;
+    else errors.push('Género: valor inválido');
+  }
   const photoUrl = readOptionalUrl(input, 'photoUrl', 'Fotografía', errors);
   const parentIds = readIdList(input, 'parentIds', 'Progenitores', errors);
   if (parentIds.length > 2) errors.push('Progenitores: como máximo dos');
@@ -182,6 +194,8 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
       notes,
       parentIds,
       ...(birthDate ? { birthDate } : {}),
+      ...(deathDate ? { deathDate } : {}),
+      ...(gender ? { gender } : {}),
       ...(photoUrl ? { photoUrl } : {}),
     },
   };

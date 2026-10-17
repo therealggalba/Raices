@@ -1,0 +1,96 @@
+@use '../styles/variables' as *;
+
+.hero {
+  display: grid;
+  gap: $space-2;
+  padding: $space-4 0;
+}
+
+.kicker {
+  margin: 0;
+  color: $color-accent;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+.title {
+  @include display-title;
+  margin: 0;
+  font-size: clamp(1.6rem, 6vw, 2.4rem);
+}
+
+.lead {
+  margin: 0;
+  color: $color-text-muted;
+  max-width: 60ch;
+}
+
+.section {
+  display: grid;
+  gap: $space-3;
+  padding: $space-4 0;
+  border-top: 1px solid $color-line;
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-3;
+
+  @include md-up {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: $space-3;
+  align-items: start;
+  padding: $space-4;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+
+  h3 {
+    margin: 0 0 $space-1;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0 0 $space-2;
+    color: $color-text-muted;
+    font-size: 0.92rem;
+  }
+}
+
+.icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.list {
+  margin: 0;
+  padding-left: $space-5;
+  display: grid;
+  gap: $space-2;
+  color: $color-text-muted;
+}
+
+.privacy {
+  justify-items: start;
+}

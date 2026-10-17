@@ -55,6 +55,12 @@ export interface MemoriesRepository {
   revokeInvitation(channelId: string, invitationId: string): Promise<void>;
 
   setMemberRole(channelId: string, userId: string, role: Role): Promise<void>;
+  /**
+   * «Esta persona soy yo»: links a member to a person of the channel (kinship
+   * is then shown relative to them). Members link themselves; an admin can
+   * only undo someone else's link (personId null). One member per person.
+   */
+  linkMemberPerson(channelId: string, userId: string, personId: string | null): Promise<void>;
   removeMember(channelId: string, userId: string): Promise<void>;
 
   addVideo(channelId: string, input: VideoInput): Promise<Video>;

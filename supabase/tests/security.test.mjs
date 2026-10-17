@@ -180,5 +180,18 @@ ok(!!(await fails(null, `select * from public.login_attempts`)), 'nadie puede le
 ok(!!(await fails(A, `update public.profiles set username = 'otro' where id = $1`, [A])), 'el nombre de usuario no se puede cambiar');
 ok((await as(A, `update public.profiles set display_name = 'Ana M.' where id = $1 returning id`, [A])).length === 1, 'el nombre visible sí');
 
+// People details and «Esta persona soy yo»
+ok(!!(await fails(A, `update public.people set birth_date = '1950-01-01', death_date = '1940-01-01' where id = $1`, [abuelo.id])), 'el fallecimiento no puede ser anterior al nacimiento');
+ok((await as(A, `update public.people set gender = 'hombre', death_date = '2020-01-01' where id = $1 returning id`, [abuelo.id])).length === 1, 'se guardan el género y la fecha de fallecimiento');
+await as(A, `select public.set_member_person($1, $2, $3)`, [ch, A, hijo.id]);
+ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, A]))[0].person_id === hijo.id, 'un miembro se enlaza con su persona');
+ok((await fails(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, hijo.id]))?.includes('ya está enlazada'), 'una persona no puede ser dos miembros');
+ok(!!(await fails(Dusr, `select public.set_member_person($1, $2, null)`, [ch, A])), 'un miembro no puede tocar el enlace de otro');
+ok(!!(await fails(A, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id])), 'un admin no puede decidir quién es otro');
+await as(Dusr, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id]);
+await as(A, `select public.set_member_person($1, $2, null)`, [ch, Dusr]);
+ok((await as(A, `select person_id from public.channel_members where channel_id = $1 and user_id = $2`, [ch, Dusr]))[0].person_id === null, 'un admin sí puede deshacer un enlace equivocado');
+ok(!!(await fails(C, `select public.set_member_person($1, $2, $3)`, [ch, C, abuelo.id])), 'quien no es del canal no puede enlazarse');
+
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);

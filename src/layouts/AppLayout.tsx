@@ -95,7 +95,7 @@ export function AppLayout() {
               <path d="m20 20-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </Link>
-          <OptionsMenu onChanged={reload} />
+          <OptionsMenu />
         </div>
       </header>
       <main className={styles.main}>

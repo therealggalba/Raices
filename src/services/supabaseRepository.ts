@@ -349,6 +349,13 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       must(await client.rpc('set_member_role', { p_channel: channelId, p_user: memberId, p_role: role }));
     },
 
+    async linkMemberPerson(channelId, memberId, personId) {
+      requireId(channelId, 'El canal');
+      requireId(memberId, 'Ese miembro');
+      if (personId !== null) requireId(personId, 'La persona');
+      must(await client.rpc('set_member_person', { p_channel: channelId, p_user: memberId, p_person: personId }));
+    },
+
     async removeMember(channelId, memberId) {
       requireId(channelId, 'El canal');
       requireId(memberId, 'Ese miembro');
@@ -588,6 +595,8 @@ function personColumns(value: PersonInput) {
     first_name: value.firstName,
     last_name: value.lastName,
     birth_date: value.birthDate ?? null,
+    death_date: value.deathDate ?? null,
+    gender: value.gender ?? null,
     photo_url: value.photoUrl ?? null,
     relationship: value.relationship,
     biography: value.biography,

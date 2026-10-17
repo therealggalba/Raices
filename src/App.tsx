@@ -8,6 +8,7 @@ import { NativeBridge } from './native/NativeBridge';
 import { EmptyState, LinkButton, Spinner } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
+import { AboutPage } from './pages/AboutPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { AlbumsPage } from './pages/AlbumsPage';
 import { CardFormPage } from './pages/CardFormPage';
@@ -112,6 +113,7 @@ function AppRoutes() {
           <Route path="canales" element={<ChannelsPage />} />
           <Route path="unirse" element={<JoinPage />} />
           <Route path="nuevo" element={<NewChannelPage />} />
+          <Route path="saber-mas" element={<AboutPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="c/:channelId" element={<ChannelLayout />}>

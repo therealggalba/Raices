@@ -78,7 +78,7 @@ export interface TreeSizes {
   gapY: number;
 }
 
-export const DEFAULT_TREE_SIZES: TreeSizes = { cardWidth: 136, cardHeight: 64, gapX: 28, gapY: 84 };
+export const DEFAULT_TREE_SIZES: TreeSizes = { cardWidth: 136, cardHeight: 80, gapX: 28, gapY: 84 };
 
 export interface TreeNode {
   person: Person;
@@ -195,15 +195,27 @@ export function layoutTree(
   const levels = [...new Set(gen.values())].sort((a, b) => a - b);
   const rowOfLevel = new Map(levels.map((l, i) => [l, i]));
   const x = new Map<string, number>();
-  const place = (u: Unit, left: number) => {
-    const membersLeft = left + (u.width - membersWidth(u)) / 2;
-    u.members.forEach((id, i) => x.set(id, membersLeft + i * (W + gapX)));
+  // Married-in partners go on the outer side: siblings on the left half get
+  // them on their left, so brothers and sisters stay together in the middle
+  // and the arrows from their parents are symmetric.
+  // The parents sit centred over their children (the cards of the children
+  // themselves, not their in-laws), without leaving their own block.
+  const place = (u: Unit, left: number, partnersOnLeft = false) => {
     const kidsWidth = u.children.reduce((sum, c, i) => sum + c.width + (i ? gapX : 0), 0);
     let cursor = left + (u.width - kidsWidth) / 2;
-    for (const child of u.children) {
-      place(child, cursor);
+    u.children.forEach((child, i) => {
+      place(child, cursor, i < (u.children.length - 1) / 2);
       cursor += child.width + gapX;
+    });
+    const span = membersWidth(u);
+    let membersLeft = left + (u.width - span) / 2;
+    if (u.children.length) {
+      const heads = u.children.map((c) => x.get(c.members[0])! + W / 2);
+      const centre = (Math.min(...heads) + Math.max(...heads)) / 2;
+      membersLeft = Math.min(Math.max(centre - span / 2, left), left + u.width - span);
     }
+    const order = partnersOnLeft ? [...u.members.slice(1).reverse(), u.members[0]] : u.members;
+    order.forEach((id, i) => x.set(id, membersLeft + i * (W + gapX)));
   };
   let cursor = 0;
   for (const root of roots) {
@@ -211,10 +223,12 @@ export function layoutTree(
     cursor += root.width + gapX * 2;
   }
 
+  // Start at 0 (a block's free side may have stayed empty).
+  const minX = x.size ? Math.min(...x.values()) : 0;
   const nodes: TreeNode[] = people.map((person) => ({
     person,
     level: gen.get(person.id)!,
-    x: x.get(person.id)!,
+    x: x.get(person.id)! - minX,
     y: rowOfLevel.get(gen.get(person.id)!)! * (H + gapY),
   }));
   const pos = new Map(nodes.map((n) => [n.person.id, n]));

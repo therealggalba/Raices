@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, ErrorBanner, Field } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
+import { fullName } from '../utils/people';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { shareText } from '../native/nativeBridge';
@@ -104,7 +105,7 @@ function ChannelInfoForm() {
 }
 
 function MembersSection() {
-  const { snapshot, isAdmin, reload } = useChannel();
+  const { snapshot, isAdmin, reload, personById } = useChannel();
   const { channel, me, members, invitations } = snapshot;
   const { run, pending, error } = useAction();
   const sorted = [...members].sort((a, b) => (a.role === b.role ? a.displayName.localeCompare(b.displayName, 'es') : a.role === 'admin' ? -1 : 1));
@@ -136,6 +137,9 @@ function MembersSection() {
                 {ROLE_LABELS[m.role]} · desde {new Date(m.joinedAt).toLocaleDateString('es-ES')}
                 {isAdmin && joinedVia(m)}
               </span>
+              {m.personId && personById(m.personId) && (
+                <span className={styles.itemMeta}>En el árbol: {fullName(personById(m.personId)!)}</span>
+              )}
             </div>
             {isAdmin && m.userId !== me.userId && (
               <div className={styles.itemActions}>
@@ -147,6 +151,20 @@ function MembersSection() {
                 >
                   {m.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}
                 </Button>
+                {m.personId && (
+                  <Button
+                    small
+                    variant="ghost"
+                    disabled={pending}
+                    onClick={() => {
+                      if (confirmAction(`¿Deshacer el enlace de ${m.displayName} con su persona del árbol?`)) {
+                        void act(() => repository.linkMemberPerson(channel.id, m.userId, null));
+                      }
+                    }}
+                  >
+                    Quitar enlace
+                  </Button>
+                )}
                 <Button
                   small
                   variant="ghost"

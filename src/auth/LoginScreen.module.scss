@@ -33,9 +33,19 @@
   font-size: 2rem;
 }
 
-.lead {
-  margin: 0;
+.check {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  min-height: $touch;
   color: $color-text-muted;
+  cursor: pointer;
+
+  input {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: $color-accent;
+  }
 }
 
 .form {

@@ -53,3 +53,14 @@
   white-space: pre-line;
   max-width: 70ch;
 }
+
+.cross {
+  color: $color-text-muted;
+  font-weight: 400;
+}
+
+.me {
+  margin: 0;
+  color: $color-success;
+  font-size: 0.9rem;
+}

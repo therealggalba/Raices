@@ -64,3 +64,12 @@ export function parseLogin(value: string): { kind: 'email'; email: string } | { 
   const username = normalizeUsername(value);
   return USERNAME_RE.test(username) ? { kind: 'username', username } : null;
 }
+
+/** The session closes after this long without using the app. */
+export const SESSION_IDLE_DAYS = 30;
+
+/** True when the app was last used more than SESSION_IDLE_DAYS ago (unknown = still valid). */
+export function sessionExpired(lastUsedMs: number | null, nowMs: number): boolean {
+  if (lastUsedMs === null || !Number.isFinite(lastUsedMs)) return false;
+  return nowMs - lastUsedMs > SESSION_IDLE_DAYS * 24 * 60 * 60 * 1000;
+}

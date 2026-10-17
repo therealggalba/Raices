@@ -4,6 +4,7 @@ import type {
   ChannelKind,
   EventType,
   FamilyEvent,
+  Gender,
   Invitation,
   Member,
   PackTheme,
@@ -35,6 +36,7 @@ export interface MemberRow {
   role: Role;
   joined_at: string;
   invitation_id: string | null;
+  person_id: string | null;
 }
 export interface InvitationRow {
   id: string;
@@ -53,6 +55,8 @@ export interface PersonRow {
   first_name: string;
   last_name: string;
   birth_date: string | null;
+  death_date: string | null;
+  gender: Gender | null;
   photo_url: string | null;
   relationship: string;
   biography: string;
@@ -109,9 +113,10 @@ export interface CardRow {
 /** Columns to select for each table (album_cards cannot be read with `*`). */
 export const COLUMNS = {
   channels: 'id,name,description,kind,pack_theme,cover_url,created_at,created_by',
-  members: 'channel_id,user_id,display_name,role,joined_at,invitation_id',
+  members: 'channel_id,user_id,display_name,role,joined_at,invitation_id,person_id',
   invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at',
-  people: 'id,channel_id,first_name,last_name,birth_date,photo_url,relationship,biography,notes,parent_ids',
+  people:
+    'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,relationship,biography,notes,parent_ids',
   partnerships: 'id,channel_id,person_a,person_b,since,until',
   videos:
     'id,channel_id,title,description,media_url,thumbnail_url,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id',
@@ -142,6 +147,7 @@ export function toMember(r: MemberRow): Member {
     role: r.role,
     joinedAt: r.joined_at,
     ...(r.invitation_id ? { invitationId: r.invitation_id } : {}),
+    ...(r.person_id ? { personId: r.person_id } : {}),
   };
 }
 
@@ -166,6 +172,8 @@ export function toPerson(r: PersonRow): Person {
     firstName: r.first_name,
     lastName: r.last_name,
     ...(r.birth_date ? { birthDate: r.birth_date } : {}),
+    ...(r.death_date ? { deathDate: r.death_date } : {}),
+    ...(r.gender ? { gender: r.gender } : {}),
     ...(r.photo_url ? { photoUrl: r.photo_url } : {}),
     relationship: r.relationship,
     biography: r.biography,

@@ -6,7 +6,7 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import type { PersonInput } from '../types/domain';
+import type { Gender, PersonInput } from '../types/domain';
 import { descendantsOf } from '../utils/familyTree';
 import { fullName, sortPeople } from '../utils/people';
 import styles from './PersonFormPage.module.scss';
@@ -23,6 +23,8 @@ export function PersonFormPage() {
   const [firstName, setFirstName] = useState(existing?.firstName ?? '');
   const [lastName, setLastName] = useState(existing?.lastName ?? '');
   const [birthDate, setBirthDate] = useState(existing?.birthDate ?? '');
+  const [deathDate, setDeathDate] = useState(existing?.deathDate ?? '');
+  const [gender, setGender] = useState<Gender | ''>(existing?.gender ?? '');
   const [relationship, setRelationship] = useState(existing?.relationship ?? '');
   const [photoUrl, setPhotoUrl] = useState(existing?.photoUrl ?? '');
   const [biography, setBiography] = useState(existing?.biography ?? '');
@@ -69,6 +71,8 @@ export function PersonFormPage() {
             biography,
             notes,
             ...(birthDate ? { birthDate } : {}),
+            ...(deathDate ? { deathDate } : {}),
+            ...(gender ? { gender } : {}),
             ...(photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
             parentIds: [parent1, parent2].filter(Boolean),
           };
@@ -91,7 +95,14 @@ export function PersonFormPage() {
         <Field label="Apellidos" htmlFor="lastName">
           <input id="lastName" className={ui.input} value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={80} />
         </Field>
-        <Field label="Relación familiar" htmlFor="relationship" hint="Ej.: Abuela paterna, Primo, Amiga de la familia">
+        <Field label="Género" htmlFor="gender" hint="Para decir «tío» o «tía» en el árbol de cada uno">
+          <select id="gender" className={ui.input} value={gender} onChange={(e) => setGender(e.target.value as Gender | '')}>
+            <option value="">Sin indicar</option>
+            <option value="hombre">Hombre</option>
+            <option value="mujer">Mujer</option>
+          </select>
+        </Field>
+        <Field label="Relación familiar" htmlFor="relationship" hint="Ej.: Abuela, Amiga de la familia. Quien se marque «soy yo» en su ficha verá su parentesco exacto con cada uno">
           <input id="relationship" className={ui.input} value={relationship} onChange={(e) => setRelationship(e.target.value)} maxLength={60} />
         </Field>
         {snapshot.channel.kind === 'familia' && (
@@ -124,6 +135,16 @@ export function PersonFormPage() {
         )}
         <Field label="Fecha de nacimiento" htmlFor="birthDate" hint="Con ella se crea su cumpleaños automáticamente">
           <input id="birthDate" className={ui.input} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+        </Field>
+        <Field label="Fecha de fallecimiento (si ha fallecido)" htmlFor="deathDate" hint="Se mostrará con una cruz ✝">
+          <input
+            id="deathDate"
+            className={ui.input}
+            type="date"
+            value={deathDate}
+            min={birthDate || undefined}
+            onChange={(e) => setDeathDate(e.target.value)}
+          />
         </Field>
         <Field label="Fotografía (opcional)" htmlFor="photoUrl" hint="Enlace https a una imagen">
           <input id="photoUrl" className={ui.input} type="url" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://" />

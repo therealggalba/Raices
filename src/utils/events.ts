@@ -17,6 +17,7 @@ interface DateSource {
   type: EventType;
   title: string;
   originDate: IsoDate;
+  inMemoriam?: boolean;
   personIds: string[];
   eventId?: string;
 }
@@ -38,9 +39,10 @@ function sources(events: readonly FamilyEvent[], people: readonly Person[]): Dat
       key: `birthday:${person.id}`,
       channelId: person.channelId,
       type: 'cumpleanos',
-      title: `Cumpleaños de ${person.firstName}`,
+      title: `Cumpleaños de ${person.firstName}${person.deathDate ? ' ✝' : ''}`,
       originDate: person.birthDate,
       personIds: [person.id],
+      ...(person.deathDate ? { inMemoriam: true } : {}),
     });
   }
   return list;
@@ -101,10 +103,12 @@ export function todaysEvents(events: readonly FamilyEvent[], people: readonly Pe
   return upcomingEvents(events, people, today, 0);
 }
 
-/** "Cumple 31", "31.º aniversario", or null the year it first happens. */
-export function anniversaryLabel(occurrence: Pick<DateOccurrence, 'type' | 'years'>): string | null {
+/** "Cumple 31", "Cumpliría 90", "31.º aniversario", or null the year it first happens. */
+export function anniversaryLabel(occurrence: Pick<DateOccurrence, 'type' | 'years' | 'inMemoriam'>): string | null {
   if (occurrence.years <= 0) return null;
-  return occurrence.type === 'cumpleanos' ? `Cumple ${occurrence.years}` : `${occurrence.years}.º aniversario`;
+  if (occurrence.type !== 'cumpleanos') return `${occurrence.years}.º aniversario`;
+  // Someone who passed away: the age they would have turned.
+  return occurrence.inMemoriam ? `Cumpliría ${occurrence.years}` : `Cumple ${occurrence.years}`;
 }
 
 

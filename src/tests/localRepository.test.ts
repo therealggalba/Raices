@@ -378,12 +378,44 @@ describe('family tree', () => {
     expect(snap.people.find((p) => p.id === 'p-carlos')?.parentIds).toEqual(['p-luis', 'p-elena']);
     expect(snap.partnerships.map((c) => c.personIds.join('+')).sort()).toEqual([
       'p-antonio+p-carmen',
+      'p-dolores+p-manuel',
       'p-elena+p-luis',
       'p-jorge+p-pilar',
     ]);
+    expect(snap.people.find((p) => p.id === 'p-manuel')?.deathDate).toBe('1989-01-27');
+    expect(snap.me.personId).toBe('p-carlos');
     expect(snap.partnerships.find((c) => c.id === 'pt-antonio-carmen')?.since).toBe(
       snap.events.find((e) => e.id === 'e-aniversario-abuelos')?.date,
     );
+  });
+
+  it('links members to their person: themselves only, one member per person', async () => {
+    const me = (await repo.loadChannel(DEMO_FAMILY_ID)).me;
+    await repo.linkMemberPerson(DEMO_FAMILY_ID, me.userId, 'p-natalia');
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).me.personId).toBe('p-natalia');
+    const taken = await rejection(repo.linkMemberPerson(DEMO_FAMILY_ID, me.userId, 'p-elena'));
+    expect(taken.code).toBe('conflict');
+    expect(taken.message).toContain('Elena');
+    // The visitor is admin of this channel: may undo Luis's link, but not choose for him.
+    expect((await rejection(repo.linkMemberPerson(DEMO_FAMILY_ID, 'u-luis', 'p-jorge'))).code).toBe('forbidden');
+    await repo.linkMemberPerson(DEMO_FAMILY_ID, 'u-luis', null);
+    const snap = await repo.loadChannel(DEMO_FAMILY_ID);
+    expect(snap.members.find((m) => m.userId === 'u-luis')?.personId).toBeUndefined();
+    await repo.deletePerson(DEMO_FAMILY_ID, 'p-natalia');
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).me.personId).toBeUndefined();
+  });
+
+  it('stores gender and date of death (not before birth)', async () => {
+    const added = await repo.addPerson(DEMO_FAMILY_ID, {
+      ...base,
+      firstName: 'Ramón',
+      gender: 'hombre',
+      birthDate: '1920-01-01',
+      deathDate: '1999-05-05',
+    });
+    expect(added).toMatchObject({ gender: 'hombre', deathDate: '1999-05-05' });
+    const bad = await rejection(repo.addPerson(DEMO_FAMILY_ID, { ...base, firstName: 'X', birthDate: '1950-01-01', deathDate: '1940-01-01' }));
+    expect(bad.details).toContain('Fecha de fallecimiento: no puede ser anterior al nacimiento');
   });
 
   it('rejects more than two parents, foreign parents and ancestry loops', async () => {

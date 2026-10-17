@@ -16,6 +16,7 @@ import {
 } from './account';
 import { useAuth } from './auth-context';
 import { authErrorMessage } from './authErrors';
+import { rememberedLogin, setRememberedLogin } from './devicePrefs';
 import styles from './LoginScreen.module.scss';
 
 type Step = 'login' | 'signup' | 'verify' | 'forgot' | 'reset';
@@ -32,7 +33,8 @@ const RESEND_SECONDS = 60;
 export function LoginScreen() {
   const { enterDemo, stayOnLogin } = useAuth();
   const [step, setStep] = useState<Step>('login');
-  const [login, setLogin] = useState('');
+  const [login, setLogin] = useState(() => rememberedLogin() ?? '');
+  const [remember, setRemember] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -119,7 +121,10 @@ export function LoginScreen() {
         address = data;
       }
       const { error: failure } = await client.auth.signInWithPassword({ email: address, password });
-      if (!failure) return null; // the auth listener opens the app
+      if (!failure) {
+        setRememberedLogin(remember ? login.trim() : null);
+        return null; // the auth listener opens the app
+      }
       if (failure.code === 'email_not_confirmed') {
         setEmail(address);
         go('verify', 'Antes de entrar, confirma tu correo con el código que te enviamos al crear la cuenta.');
@@ -246,7 +251,6 @@ export function LoginScreen() {
           🎞️
         </p>
         <h1 className={styles.title}>FamilyMemories</h1>
-        <p className={styles.lead}>Los vídeos, fechas y cromos de tu familia, en un solo sitio y solo para vosotros.</p>
 
         {step === 'login' && (
           <form className={[ui.form, styles.form].join(' ')} onSubmit={submitLogin}>
@@ -269,6 +273,10 @@ export function LoginScreen() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <label className={styles.check}>
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              Recordarme en este dispositivo
+            </label>
             <Button type="submit" variant="primary" block disabled={pending}>
               {pending ? 'Entrando…' : 'Entrar'}
             </Button>

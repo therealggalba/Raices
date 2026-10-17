@@ -44,6 +44,8 @@ describe('row mappers', () => {
       first_name: 'Pilar',
       last_name: 'Montero',
       birth_date: '1950-02-01',
+      death_date: '2020-05-03',
+      gender: 'mujer',
       photo_url: null,
       relationship: 'Abuela',
       biography: '',
@@ -51,6 +53,8 @@ describe('row mappers', () => {
       parent_ids: [],
     });
     expect(person.birthDate).toBe('1950-02-01');
+    expect(person.deathDate).toBe('2020-05-03');
+    expect(person.gender).toBe('mujer');
     expect('photoUrl' in person).toBe(false);
     expect(person.parentIds).toEqual([]);
   });

@@ -1,4 +1,5 @@
-import type { IsoDate, Person } from '../types/domain';
+import type { IsoDate, Partnership, Person } from '../types/domain';
+import { capitalize, kinship } from './kinship';
 import { parsePartialDate } from './dates';
 
 export function fullName(person: Pick<Person, 'firstName' | 'lastName'>): string {
@@ -21,6 +22,27 @@ export function ageOn(birthDate: IsoDate | undefined, today: IsoDate): number | 
   if (!b?.month || !b.day || !t?.month || !t.day) return null;
   const hadBirthday = t.month > b.month || (t.month === b.month && t.day >= b.day);
   return t.year - b.year - (hadBirthday ? 0 : 1);
+}
+
+/** Age reached: today's age, or the age at death (with `deceased`). */
+export function lifeAge(person: Pick<Person, 'birthDate' | 'deathDate'>, today: IsoDate): { years: number; deceased: boolean } | null {
+  const years = ageOn(person.birthDate, person.deathDate ?? today);
+  return years === null ? null : { years, deceased: !!person.deathDate };
+}
+
+/**
+ * What a person is to the viewer: kinship from the family tree when the
+ * viewer said who they are in the channel («Tío», «Yo»…), otherwise the
+ * free-text relationship of the person.
+ */
+export function relationTo(
+  person: Person,
+  viewerPersonId: string | undefined,
+  people: readonly Person[],
+  partnerships: readonly Partnership[],
+): string {
+  const derived = viewerPersonId ? kinship(viewerPersonId, person.id, people, partnerships) : null;
+  return derived ? capitalize(derived) : person.relationship;
 }
 
 /** Oldest first; people without a birth date go last, alphabetically. */

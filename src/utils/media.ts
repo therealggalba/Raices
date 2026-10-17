@@ -110,9 +110,19 @@ export function resolveMedia(value: string, options: MediaOptions = {}): MediaSo
   return { kind: 'link', href: url.href };
 }
 
+/** Image bundled with the app for the demo ("/…/demo/boda-baile.webp"). */
+export function isDemoAsset(value: string): boolean {
+  return /^\/(?:[\w-]+\/)*demo\/[\w-]+\.webp$/.test(value);
+}
+
+/** URL of a demo image bundled with the app (public/demo). */
+export function demoAsset(name: string): string {
+  return `${import.meta.env.BASE_URL}demo/${name}.webp`;
+}
+
 /** Explicit thumbnail first, then the one the provider exposes (YouTube, Google Drive). */
 export function thumbnailFor(video: { thumbnailUrl?: string; mediaUrl: string }): string | null {
-  if (video.thumbnailUrl && isHttpsUrl(video.thumbnailUrl)) return video.thumbnailUrl;
+  if (video.thumbnailUrl && (isHttpsUrl(video.thumbnailUrl) || isDemoAsset(video.thumbnailUrl))) return video.thumbnailUrl;
   const media = resolveMedia(video.mediaUrl);
   return media?.kind === 'youtube' || media?.kind === 'drive' ? media.thumbnailUrl : null;
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Partnership, Person } from '../types/domain';
 import { formatPartialDate } from '../utils/dates';
 import { DEFAULT_TREE_SIZES, layoutTree } from '../utils/familyTree';
+import { kinship, capitalize } from '../utils/kinship';
 import { fullName } from '../utils/people';
 import styles from './FamilyTree.module.scss';
 
@@ -14,24 +15,41 @@ interface Props {
   partnerships: readonly Partnership[];
   /** Link for a person's card. */
   personHref(person: Person): string;
+  /** The viewer's own person («Yo»): kinship is shown relative to them and the tree starts centred on them. */
+  viewerPersonId?: string;
+}
+
+/** «n. 12 mar 1941» or «1941 – ✝ 2020». */
+function lifeLine(person: Person): string {
+  if (person.deathDate) {
+    const born = person.birthDate ? person.birthDate.slice(0, 4) : '?';
+    return `${born} – ✝ ${person.deathDate.slice(0, 4)}`;
+  }
+  return person.birthDate ? `n. ${formatPartialDate(person.birthDate)}` : 'Fecha desconocida';
 }
 
 /**
  * Generations top to bottom. Couples are joined by a line with a ring
  * (dashed when separated); arrows go down from the parents to each child.
- * Each card: full name and date of birth. Scrolls in both directions.
+ * Each card: kinship to the viewer (when they said who they are), full
+ * name and dates. Scrolls in both directions.
  */
-export function FamilyTree({ people, partnerships, personHref }: Props) {
+export function FamilyTree({ people, partnerships, personHref, viewerPersonId }: Props) {
   const layout = layoutTree(people, partnerships);
   const width = layout.width + PAD * 2;
   const height = layout.height + PAD * 2;
   const scroller = useRef<HTMLDivElement>(null);
 
-  // Start centred on the oldest generation.
+  // Start centred on the viewer's card, or on the middle of the tree.
+  const viewerNode = layout.nodes.find((n) => n.person.id === viewerPersonId);
+  const focusX = viewerNode ? PAD + viewerNode.x + W / 2 : width / 2;
+  const focusY = viewerNode ? PAD + viewerNode.y + H / 2 : 0;
   useEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-  }, [width]);
+    if (!el) return;
+    el.scrollLeft = focusX - el.clientWidth / 2;
+    el.scrollTop = viewerNode ? focusY - el.clientHeight / 2 : 0;
+  }, [focusX, focusY, viewerNode]);
 
   return (
     <div className={styles.scroller} ref={scroller}>
@@ -86,17 +104,22 @@ export function FamilyTree({ people, partnerships, personHref }: Props) {
           </span>
         ))}
 
-        {layout.nodes.map(({ person, x, y }) => (
-          <Link
-            key={person.id}
-            to={personHref(person)}
-            className={styles.card}
-            style={{ left: PAD + x, top: PAD + y, width: W, height: H }}
-          >
-            <span className={styles.name}>{fullName(person)}</span>
-            <span className={styles.birth}>{person.birthDate ? `n. ${formatPartialDate(person.birthDate)}` : 'Fecha desconocida'}</span>
-          </Link>
-        ))}
+        {layout.nodes.map(({ person, x, y }) => {
+          const relation = viewerPersonId ? kinship(viewerPersonId, person.id, people, partnerships) : null;
+          const isMe = person.id === viewerPersonId;
+          return (
+            <Link
+              key={person.id}
+              to={personHref(person)}
+              className={[styles.card, isMe ? styles.me : '', person.deathDate ? styles.deceased : ''].join(' ')}
+              style={{ left: PAD + x, top: PAD + y, width: W, height: H }}
+            >
+              {relation && <span className={styles.relation}>{capitalize(relation)}</span>}
+              <span className={styles.name}>{fullName(person)}</span>
+              <span className={styles.birth}>{lifeLine(person)}</span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

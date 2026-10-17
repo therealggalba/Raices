@@ -5,6 +5,7 @@ import type {
   FamilyEvent,
   Invitation,
   Member,
+  Gender,
   Person,
   User,
   Video,
@@ -14,6 +15,7 @@ import type {
 } from '../types/domain';
 import { addDays, sameDayInYear, toIsoDate } from '../utils/dates';
 import { newId } from '../utils/ids';
+import { demoAsset } from '../utils/media';
 import type { Db } from './localRepository';
 
 // Demo data for the public MVP. Everyone in it is fictional. Some dates are
@@ -32,6 +34,46 @@ const CLIPS = [
   { url: 'https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4', seconds: 596 },
   // MDN CC0 sample, 5 s.
   { url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', seconds: 5 },
+];
+
+// Family photos bundled with the app (public/demo, free Unsplash photos, see
+// CREDITOS.md there): covers of the demo videos and photos of its cromos.
+const DEMO_VIDEO_COVERS: Record<string, string> = {
+  'La boda de los abuelos': 'boda-baile',
+  'Primer verano en Cádiz': 'antigua-ninos',
+  'Boda de Luis y Elena': 'boda-coche',
+  'Bautizo de Carlos': 'bautizo-agua',
+  'Navidad en casa de los abuelos': 'navidad-arbol',
+  'Carlos cumple 5': 'cumple-velas',
+  'Primera comunión de Carlos': 'familia-cesped',
+  'Pirineos en caravana': 'montana-familia',
+  'Bodas de oro de Antonio y Carmen': 'comida-festin',
+  'Llega Natalia': 'padre-hija',
+  'Concierto de Carlos': 'navidad-luces',
+  'Navidad 2019': 'navidad-cuento',
+  'Natalia cumple 6': 'cumple-tarta',
+  'Verano en Galicia': 'playa-paseo',
+  'Comida de domingo': 'comida-familia',
+  'Reyes en casa de la tía Pilar': 'navidad-luces',
+  'Viaje de fin de carrera': 'amigos-coche',
+  'Cena de los 20 años': 'comida-grupo',
+  'Fiesta de la primavera': 'amigos-playa',
+  'Los 30 de Marta': 'cumple-mascota',
+  'Boda de Javi y Laura': 'boda-abrazo',
+  'Escapada a Lisboa': 'madre-hijo-agua',
+  'Nochevieja en el pueblo': 'navidad-decorar',
+  'Verano en la casa de Asturias': 'playa-orilla',
+  'Comunión de Lucía': 'padre-nina-flores',
+  'Boda de Rosa y Andrés': 'familia-otono',
+};
+
+/** Cromo photos, in the order of the demo album plan. */
+const DEMO_CARD_PHOTOS = [
+  'antigua-retrato', 'antigua-arboles', 'antigua-perro', 'antigua-campo', 'boda-baile', 'comida-festin',
+  'navidad-cuento', 'graduacion-chicos', 'abuela-nino', 'cumple-tarta', 'bautizo-nino', 'navidad-nino',
+  'navidad-luces', 'antigua-perro', 'graduacion-birretes', 'padre-hija', 'cumple-velas', 'padre-nina-flores',
+  'graduacion-birretes', 'madre-hijo-agua', 'amigos-playa', 'boda-abrazo', 'amigos-coche', 'playa-orilla',
+  'boda-coche', 'abuelo-planta', 'navidad-decorar', 'familia-parque',
 ];
 
 export function buildDemoDb(now: Date): Db {
@@ -370,9 +412,7 @@ export function buildDemoDb(now: Date): Db {
     }
   }
 
-  // Album: free stock photos (picsum.photos), greyscale for the old ones.
-  const photo = (seed: string, year: number) =>
-    `https://picsum.photos/seed/fm-${seed}/600/800${year < 1990 ? '?grayscale' : ''}`;
+  // Album: bundled family photos (DEMO_CARD_PHOTOS).
   const cardsPlan: [string, string | undefined, string, string, string][] = [
     // channel, person, title, takenAt, description
     [DEMO_FAMILY_ID, 'p-antonio', 'La mili en Melilla', '1961', 'Con el uniforme recién estrenado y cara de no haber dormido.'],
@@ -408,7 +448,6 @@ export function buildDemoDb(now: Date): Db {
   const cards: AlbumCard[] = cardsPlan.map(([channelId, personId, title, takenAt, description], i) => {
     const number = (numbers.get(channelId) ?? 0) + 1;
     numbers.set(channelId, number);
-    const year = Number(takenAt.slice(0, 4));
     return {
       id: `c-demo-${i + 1}`,
       channelId,
@@ -416,12 +455,17 @@ export function buildDemoDb(now: Date): Db {
       ...(personId ? { personId } : {}),
       title,
       description,
-      imageUrl: title === 'Selfie perruno' ? 'https://picsum.photos/id/1025/600/800' : photo(String(i + 1), year),
+      imageUrl: demoAsset(DEMO_CARD_PHOTOS[i % DEMO_CARD_PHOTOS.length]),
       takenAt,
       createdAt: iso(60 - i),
       authorId: userId,
     };
   });
+
+  for (const v of [...videos, ...friendsVideos, ...cousinsVideos]) {
+    const cover = DEMO_VIDEO_COVERS[v.title];
+    if (cover) v.thumbnailUrl = demoAsset(cover);
+  }
 
   const db: Db = {
     schemaVersion: SCHEMA_VERSION,
@@ -485,6 +529,7 @@ export function buildDemoDb(now: Date): Db {
     ],
   };
   addDemoFamilyTree(db);
+  addDemoPeopleDetails(db, userId);
   return db;
 }
 
@@ -588,6 +633,49 @@ const DEMO_TREE_PEOPLE: Person[] = [
   { id: 'p-sofia', channelId: DEMO_FAMILY_ID, firstName: 'Sofía', lastName: 'Ruiz Montero', birthDate: '2003-04-11',
     relationship: 'Prima', biography: 'Hija de Pilar y Jorge. Estudia Bellas Artes.', notes: '', parentIds: [] },
 ];
+
+/** Antonio's parents, who passed away (the tree shows them with a cross). */
+const DEMO_ANCESTORS: Person[] = [
+  { id: 'p-manuel', channelId: DEMO_FAMILY_ID, firstName: 'Manuel', lastName: 'Montero Vidal', birthDate: '1912-06-03',
+    deathDate: '1989-01-27', relationship: 'Bisabuelo', notes: '', parentIds: [],
+    biography: 'Agricultor en Úbeda. De él heredó Antonio la paciencia y las manos de carpintero.' },
+  { id: 'p-dolores', channelId: DEMO_FAMILY_ID, firstName: 'Dolores', lastName: 'Ruiz Cano', birthDate: '1916-12-08',
+    deathDate: '2004-04-15', relationship: 'Bisabuela', notes: '', parentIds: [],
+    biography: 'Costurera. Hizo a mano el vestido de novia de Carmen.' },
+];
+
+const DEMO_GENDERS: Record<string, Gender> = {
+  'p-manuel': 'hombre', 'p-dolores': 'mujer', 'p-antonio': 'hombre', 'p-carmen': 'mujer', 'p-luis': 'hombre',
+  'p-elena': 'mujer', 'p-pilar': 'mujer', 'p-jorge': 'hombre', 'p-carlos': 'hombre', 'p-natalia': 'mujer',
+  'p-sofia': 'mujer', 'p-marta': 'mujer', 'p-javi': 'hombre', 'p-rosa': 'mujer', 'p-andres': 'hombre', 'p-lucia': 'mujer',
+};
+
+/** Who each demo member is in the tree (the visitor sees the family as Carlos). */
+const DEMO_SELVES: Record<string, string> = { 'u-elena': 'p-elena', 'u-luis': 'p-luis' };
+
+/**
+ * Demo details for the tree: the late great-grandparents, everyone's gender
+ * and who each member is, so kinship is shown relative to the visitor.
+ */
+export function addDemoPeopleDetails(db: Db, visitorId: string): void {
+  if (db.channels.some((c) => c.id === DEMO_FAMILY_ID)) {
+    for (const person of DEMO_ANCESTORS) if (!db.people.some((p) => p.id === person.id)) db.people.push({ ...person });
+    const antonio = db.people.find((p) => p.id === 'p-antonio');
+    if (antonio && antonio.parentIds.length === 0) antonio.parentIds = ['p-manuel', 'p-dolores'];
+    if (!db.partnerships.some((c) => c.id === 'pt-manuel-dolores')) {
+      db.partnerships.push({ id: 'pt-manuel-dolores', channelId: DEMO_FAMILY_ID, personIds: ['p-dolores', 'p-manuel'], since: '1938-05-14' });
+    }
+  }
+  for (const person of db.people) {
+    const gender = DEMO_GENDERS[person.id];
+    if (gender && !person.gender) person.gender = gender;
+  }
+  const selves: Record<string, string> = { ...DEMO_SELVES, [visitorId]: 'p-carlos' };
+  for (const m of db.members) {
+    const personId = selves[m.userId];
+    if (m.channelId === DEMO_FAMILY_ID && personId && db.people.some((p) => p.id === personId)) m.personId = personId;
+  }
+}
 
 const DEMO_PARENTS: Record<string, string[]> = {
   'p-luis': ['p-antonio', 'p-carmen'],

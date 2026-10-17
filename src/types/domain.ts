@@ -44,6 +44,10 @@ export const VIDEO_CATEGORIES = [
 ] as const;
 export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
 
+/** Optional, used for gendered kinship words (tío / tía). */
+export const GENDERS = ['hombre', 'mujer'] as const;
+export type Gender = (typeof GENDERS)[number];
+
 export const EVENT_TYPES = ['cumpleanos', 'aniversario', 'comunion', 'bautizo', 'boda', 'otro'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -80,6 +84,8 @@ export interface Member {
   joinedAt: IsoDateTime;
   /** Invitation used to join (traceability). Absent for the channel creator. */
   invitationId?: string;
+  /** The person of the channel this member is («Esta persona soy yo»): kinship is shown relative to them. */
+  personId?: string;
 }
 
 export interface Person {
@@ -88,6 +94,9 @@ export interface Person {
   firstName: string;
   lastName: string;
   birthDate?: IsoDate;
+  /** Shown with a cross (✝). */
+  deathDate?: IsoDate;
+  gender?: Gender;
   photoUrl?: string;
   /** Free text: "Abuelo materno", "Prima", "Amigo de la familia"… */
   relationship: string;
@@ -261,6 +270,8 @@ export interface PersonInput {
   firstName: string;
   lastName: string;
   birthDate?: IsoDate;
+  deathDate?: IsoDate;
+  gender?: Gender;
   photoUrl?: string;
   relationship: string;
   biography: string;
@@ -348,6 +359,8 @@ export interface DateOccurrence {
   personIds: string[];
   /** Id of the stored FamilyEvent; absent for birthdays derived from people. */
   eventId?: string;
+  /** Birthday of someone who passed away. */
+  inMemoriam?: boolean;
 }
 
 /** Filters of the yearly «Fechas» list (empty lists mean "any"). */

@@ -1,11 +1,12 @@
+import { readOnlyDemo } from './demoRepository';
 import { createLocalRepository, memoryStore } from './localRepository';
 import type { MemoriesRepository } from './repository';
 import { getSupabase } from './supabaseClient';
 import { createSupabaseRepository } from './supabaseRepository';
 
 // Two backends behind the same contract: the portfolio demo (fictional data,
-// in memory only: it starts over on every launch and is not meant to be used
-// for real) and Supabase (real accounts and shared channels). The auth layer picks one before any screen is rendered; screens
+// in memory only and read-only: it starts over on every launch and can only
+// be looked at) and Supabase (real accounts and shared channels). The auth layer picks one before any screen is rendered; screens
 // just import `repository`.
 
 let local: MemoriesRepository | null = null;
@@ -21,7 +22,7 @@ export function selectBackend(mode: Backend): void {
     remote ??= createSupabaseRepository(client);
     current = remote;
   } else {
-    local ??= createLocalRepository({ store: memoryStore() });
+    local ??= readOnlyDemo(createLocalRepository({ store: memoryStore() }));
     current = local;
   }
 }

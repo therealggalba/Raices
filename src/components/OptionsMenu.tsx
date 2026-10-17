@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
@@ -13,9 +13,9 @@ import styles from './OptionsMenu.module.scss';
 
 /**
  * Right-hand header menu: profile, channels and the less frequent actions
- * (create, join, restore demo) that stay out of the way of watching.
+ * (create, join, account) that stay out of the way of watching.
  */
-export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
+export function OptionsMenu() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [channels, setChannels] = useState<ChannelSummary[]>([]);
@@ -24,7 +24,6 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
   const { run, pending, error } = useAction();
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const auth = useAuth();
   const isDemo = auth.status !== 'signed-in';
@@ -94,7 +93,17 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
       {open && (
         <div id={panelId} className={styles.panel} role="dialog" aria-label="Opciones">
           <section className={styles.profile}>
-            {editing ? (
+            {isDemo ? (
+              <div className={styles.profileButton}>
+                <span className={styles.bigAvatar} aria-hidden>
+                  {user ? initials(user.name) : ''}
+                </span>
+                <span>
+                  <strong>{user?.name}</strong>
+                  <span className={styles.hint}>Visitante de la demo</span>
+                </span>
+              </div>
+            ) : editing ? (
               <form
                 className={styles.nameForm}
                 onSubmit={async (e) => {
@@ -164,46 +173,28 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
           </section>
 
           <section className={styles.group}>
-            <Link to="/nuevo" className={styles.item}>
-              <span className={styles.icon} aria-hidden>
-                ＋
-              </span>
-              Crear canal
-            </Link>
-            <Link to="/unirse" className={styles.item}>
-              <span className={styles.icon} aria-hidden>
-                ⎆
-              </span>
-              Unirme con código
-            </Link>
-            {isDemo && (
-              <button
-                type="button"
-                className={styles.item}
-                disabled={pending}
-                onClick={async () => {
-                  if (
-                    !confirmAction(
-                      'Se borrarán todos los cambios hechos en este navegador y se restaurará la demo. ¿Continuar?',
-                    )
-                  )
-                    return;
-                  const done = await run(async () => {
-                    await repository.resetDemo();
-                    return true;
-                  });
-                  if (done) {
-                    await onChanged();
-                    setOpen(false);
-                    navigate('/');
-                  }
-                }}
-              >
+            {isDemo ? (
+              <Link to="/saber-mas" className={styles.item}>
                 <span className={styles.icon} aria-hidden>
-                  ↺
+                  ?
                 </span>
-                Restaurar datos de demostración
-              </button>
+                Saber más
+              </Link>
+            ) : (
+              <>
+                <Link to="/nuevo" className={styles.item}>
+                  <span className={styles.icon} aria-hidden>
+                    ＋
+                  </span>
+                  Crear canal
+                </Link>
+                <Link to="/unirse" className={styles.item}>
+                  <span className={styles.icon} aria-hidden>
+                    ⎆
+                  </span>
+                  Unirme con código
+                </Link>
+              </>
             )}
             {auth.status === 'signed-in' && (
               <button
@@ -236,7 +227,7 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
           <ErrorBanner message={error} />
           <p className={styles.footnote}>
             {isDemo
-              ? 'Demo del portfolio: familia ficticia; los cambios se pierden al cerrar la app.'
+              ? 'Demo del portfolio: una familia ficticia que solo se puede mirar.'
               : `Sesión iniciada como ${auth.email ?? 'usuario'}. Solo los miembros de cada canal ven su contenido.`}
           </p>
         </div>

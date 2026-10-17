@@ -539,6 +539,24 @@ export function createLocalRepository({
       commit();
     },
 
+    async linkMemberPerson(channelId, userId, personId) {
+      const me = requireMember(channelId);
+      const target = db.members.find((m) => m.channelId === channelId && m.userId === userId);
+      if (!target) throw new RepositoryError('not-found', 'Ese miembro no existe');
+      if (userId !== me.userId && (me.role !== 'admin' || personId !== null)) {
+        throw new RepositoryError('forbidden', 'Cada miembro elige quién es; un administrador solo puede deshacerlo');
+      }
+      if (personId !== null) {
+        findIn(db.people, channelId, personId, 'La persona');
+        const taken = db.members.find((m) => m.channelId === channelId && m.personId === personId && m.userId !== userId);
+        if (taken) throw new RepositoryError('conflict', `Esta persona ya está enlazada con ${taken.displayName}`);
+        target.personId = personId;
+      } else {
+        delete target.personId;
+      }
+      commit();
+    },
+
     async removeMember(channelId, userId) {
       const admin = requireAdmin(channelId);
       if (userId === admin.userId) throw new RepositoryError('conflict', 'Para salir del canal usa «Salir del canal»');
@@ -629,6 +647,7 @@ export function createLocalRepository({
       for (const e of db.events) if (e.channelId === channelId) e.personIds = unlink(e.personIds);
       for (const p of db.people) if (p.channelId === channelId) p.parentIds = unlink(p.parentIds);
       db.partnerships = db.partnerships.filter((c) => !c.personIds.includes(personId));
+      for (const m of db.members) if (m.channelId === channelId && m.personId === personId) delete m.personId;
       // Their cromos stay in the album, under "Varios".
       for (const c of db.cards) if (c.channelId === channelId && c.personId === personId) delete c.personId;
       commit();

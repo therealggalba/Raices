@@ -105,3 +105,28 @@
   font-size: 0.7rem;
   color: $color-text-muted;
 }
+
+.relation {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: $color-accent;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.me {
+  border: 2px solid $color-accent;
+  background: linear-gradient(rgba($color-accent, 0.16), rgba($color-accent, 0.16)), $color-bg-panel;
+  box-shadow:
+    0 0 0 4px rgba(242, 180, 90, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.deceased {
+  border-color: rgba(164, 157, 171, 0.45);
+
+  .name {
+    color: $color-text-muted;
+  }
+}

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.13.0 — 2026-10-17
+
+- Acceso: casilla «Recordarme en este dispositivo» (recuerda el usuario, nunca la contraseña; el gestor de
+  contraseñas del móvil puede guardarla). La sesión se cierra sola tras 30 días sin usar la app. Fuera el texto
+  de presentación de la pantalla de entrada.
+- Demo del portfolio solo para mirar: no se puede crear, editar ni restaurar nada (sí ver vídeos, abrir sobres y
+  elegir quién eres en el árbol). Nueva página «Saber más» (solo en la demo) que explica qué es la app, para quién
+  es, qué se puede hacer y casos de uso.
+- Demo con fotos familiares reales incluidas en la app (Unsplash, licencia libre; créditos en
+  `public/demo/CREDITOS.md`): carátulas de todos los vídeos y fotos de los cromos.
+- Personas: género (hombre / mujer / sin indicar) y fecha de fallecimiento, mostrada con una cruz ✝ en la ficha,
+  la lista y el árbol; su cumpleaños pasa a «Cumpliría N».
+- Árbol: cada miembro puede decir «Esta persona soy yo» y entonces cada tarjeta muestra su parentesco con él
+  (padre, tía, primo segundo, cuñada, suegro, tío político…), con su tarjeta resaltada y centrada. Un admin
+  puede deshacer un enlace equivocado desde Canal › Miembros. Diseño más simétrico: los hermanos quedan juntos
+  en el centro y las parejas por fuera.
+- Base de datos: migración `0003_people_details.sql`.
+
 ## 0.12.0 — 2026-10-17
 
 - Cuentas reales con Supabase: registro con nombre de usuario, correo y contraseña. El correo se confirma una vez
