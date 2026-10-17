@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.ggalba.familymemories"
+    namespace = "com.ggalba.raices"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.ggalba.familymemories"
+        applicationId "com.ggalba.raices"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI passes the run number so every APK is an upgrade of the previous one.
@@ -27,7 +27,7 @@ android {
                 storeFile file(keystore)
                 storeType "pkcs12"
                 storePassword System.getenv("FM_KEYSTORE_PASSWORD")
-                keyAlias "familymemories"
+                keyAlias "raices"
                 keyPassword System.getenv("FM_KEYSTORE_PASSWORD")
             }
         }

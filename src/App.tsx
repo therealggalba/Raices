@@ -32,7 +32,7 @@ import { TreePage } from './pages/TreePage';
 import { VideoFormPage } from './pages/VideoFormPage';
 import { VideoPage } from './pages/VideoPage';
 
-// Must match the production mount path inside GalbaHUB (/family-memories),
+// Must match the production mount path inside GalbaHUB (/raices),
 // same as vite.config.ts `base` — see GalbaHub README, incident 2026-08-16.
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
 

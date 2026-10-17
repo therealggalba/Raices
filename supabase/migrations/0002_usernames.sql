@@ -1,5 +1,5 @@
 -- =============================================================================
--- FamilyMemories — accounts with username + email + password
+-- Raíces — accounts with username + email + password
 --
 -- Every account has a unique username (chosen at sign-up) besides its email.
 -- People sign in with "username or email" + password. Turning a username into

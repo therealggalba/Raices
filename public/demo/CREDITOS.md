@@ -3,7 +3,7 @@
 Fotografías de [Unsplash](https://unsplash.com), publicadas bajo la
 [Licencia de Unsplash](https://unsplash.com/license) (uso gratuito, también
 comercial, sin atribución obligatoria). Reducidas y convertidas a WebP para
-la demo de FamilyMemories. Las personas que aparecen no tienen relación con
+la demo de Raíces. Las personas que aparecen no tienen relación con
 la familia ficticia de la demo.
 
 | Archivo | Foto original |

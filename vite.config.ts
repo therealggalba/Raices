@@ -11,9 +11,9 @@ export default defineConfig(({ command, mode }) => ({
   // App version (package.json) shown in the options menu; the APK build number
   // comes from CI (VITE_BUILD_NUMBER = GitHub Actions run number).
   define: { __APP_VERSION__: JSON.stringify(version) },
-  // Web: se sirve bajo /family-memories/ dentro de GalbaHUB (mismo criterio
+  // Web: se sirve bajo /raices/ dentro de GalbaHUB (mismo criterio
   // que Galbateca/NTWE). APK (`--mode android`, Capacitor) y local: raíz.
-  base: command === 'build' && mode !== 'android' ? '/family-memories/' : '/',
+  base: command === 'build' && mode !== 'android' ? '/raices/' : '/',
   test: {
     environment: 'node',
     include: ['src/tests/**/*.test.ts'],

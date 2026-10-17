@@ -10,7 +10,7 @@ import styles from './TodayPopup.module.scss';
 
 // Per-browser memory of what was already shown today (a convenience: if
 // storage is unavailable the pop-up simply shows again).
-const SEEN_KEY = 'family-memories:hoy';
+const SEEN_KEY = 'raices:hoy';
 
 interface Seen {
   date: string;

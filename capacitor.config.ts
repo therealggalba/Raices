@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 // Android app (APK). The web build for the APK is `npm run build:android`
-// (Vite `--mode android`: base "/" instead of /family-memories/).
+// (Vite `--mode android`: base "/" instead of /raices/).
 const config: CapacitorConfig = {
-  appId: 'com.ggalba.familymemories',
+  appId: 'com.ggalba.raices',
   appName: 'Raíces',
   webDir: 'dist',
   android: {

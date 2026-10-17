@@ -1,5 +1,5 @@
 -- =============================================================================
--- FamilyMemories — people details and «Esta persona soy yo»
+-- Raíces — people details and «Esta persona soy yo»
 --
 -- People get an optional gender (for kinship words: tío / tía) and date of
 -- death. Each member can link themselves to the person of the channel they

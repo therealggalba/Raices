@@ -1,4 +1,4 @@
-package com.ggalba.familymemories;
+package com.ggalba.raices;
 
 import com.getcapacitor.BridgeActivity;
 

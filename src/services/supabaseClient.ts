@@ -13,7 +13,7 @@ export function getSupabase(): SupabaseClient | null {
       autoRefreshToken: true,
       // Login is a 6-digit code typed in the app: no magic links in URLs.
       detectSessionInUrl: false,
-      storageKey: 'family-memories:auth',
+      storageKey: 'raices:auth',
     },
   });
   return client;

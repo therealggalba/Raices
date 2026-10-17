@@ -15,7 +15,7 @@ export function useAction() {
     try {
       return await action();
     } catch (e) {
-      if (import.meta.env.DEV) console.warn('[family-memories]', e);
+      if (import.meta.env.DEV) console.warn('[raices]', e);
       setError(errorMessage(e));
       return undefined;
     } finally {

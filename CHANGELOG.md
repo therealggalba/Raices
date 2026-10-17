@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.0 — 2026-10-17
+
+- Cambio de nombre completo a **Raíces** antes de las pruebas con familia y amigos y de Google Play:
+  identificador Android definitivo `com.ggalba.raices` (es una app nueva: desinstalar la anterior
+  «FamilyMemories»), nueva clave de firma a nombre de Raíces, ruta web `/raices/`, paquete `raices`, ficha de
+  GalbaHub (`app.meta.json`) y claves internas del dispositivo (`raices:*`: hay que volver a iniciar sesión una vez).
+- README reescrito con el estado actual y el plan de lanzamiento.
+
 ## 0.15.0 — 2026-10-17
 
 - La app pasa a llamarse **Raíces** (nombre visible en Android, títulos y textos; el paquete sigue siendo

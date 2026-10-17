@@ -1,5 +1,5 @@
 -- =============================================================================
--- FamilyMemories — invitations for a specific person
+-- Raíces — invitations for a specific person
 --
 -- Every invitation is made by an admin FOR one person of the channel: whoever
 -- redeems it becomes that person (so the admin knows who came in and kinship

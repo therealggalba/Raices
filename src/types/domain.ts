@@ -1,4 +1,4 @@
-// FamilyMemories domain model (MVP phase 1).
+// Raíces domain model.
 //
 //   User ──< Member >── Channel ──< Video
 //                          ├──< Person

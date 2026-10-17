@@ -1,8 +1,8 @@
 // Small per-device preferences of the login (localStorage can throw in
 // private windows: then nothing is remembered).
 
-const REMEMBERED_LOGIN = 'family-memories:usuario';
-const LAST_USED = 'family-memories:ultimo-uso';
+const REMEMBERED_LOGIN = 'raices:usuario';
+const LAST_USED = 'raices:ultimo-uso';
 
 function read(key: string): string | null {
   try {

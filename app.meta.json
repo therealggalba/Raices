@@ -1,10 +1,10 @@
 {
-  "id": "family-memories",
-  "name": "FamilyMemories",
-  "description": "Plataforma de conservación y transmisión de recuerdos familiares: canales privados, catálogo de vídeos tipo VOD, cronología, personas y eventos importantes.",
+  "id": "raices",
+  "name": "Raíces",
+  "description": "Recuerdos familiares en privado: canales por familia o grupo, vídeos tipo plataforma, fechas importantes, árbol genealógico y álbum de cromos.",
   "class": "portafolio",
   "status": "development",
-  "route": "/family-memories/",
-  "visibility": "public (MVP de pruebas; privacidad pendiente)",
-  "version": "0.11.0"
+  "route": "/raices/",
+  "visibility": "privada con cuentas (usuario, correo y contraseña); demo pública solo de lectura",
+  "version": "0.16.0"
 }

@@ -66,12 +66,12 @@ jobs:
         run: |
           chmod +x gradlew
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/familymemories.p12"
-            export FM_KEYSTORE_PATH="$RUNNER_TEMP/familymemories.p12"
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/raices.p12"
+            export FM_KEYSTORE_PATH="$RUNNER_TEMP/raices.p12"
           fi
           export FM_VERSION_NAME="$(node -p "require('../package.json').version")"
           ./gradlew assembleDebug --no-daemon
-          rm -f "$RUNNER_TEMP/familymemories.p12"
+          rm -f "$RUNNER_TEMP/raices.p12"
           # Versioned file name: Raices-v0.14.0-build58.apk
           APK_NAME="Raices-v${FM_VERSION_NAME}-build${FM_VERSION_CODE}"
           cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/$APK_NAME.apk"

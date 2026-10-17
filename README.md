@@ -1,106 +1,75 @@
-# FamilyMemories
+# Raíces
 
-Plataforma de conservación y transmisión de recuerdos familiares (app de **Portfolio** del ecosistema GalbaHUB).
-Se sirve en producción bajo `/family-memories/`.
+App para conservar, ver y transmitir los recuerdos de una familia o un grupo: vídeos, fechas importantes,
+personas con su árbol genealógico y un álbum de cromos con sus fotos. App de **Portfolio** del ecosistema
+GalbaHUB, pensada sobre todo como **app de Android** (APK) y servida también en web bajo `/raices/`.
 
-> Especificación funcional: nota de Obsidian «Proyectos Web › GalbaHub › 01 Portfolio › 02 FamilyAlbum»
-> (documento *Idea Conservacion Transmisor Recuerdos*).
+> Especificación funcional original: nota de Obsidian «Proyectos Web › GalbaHub › 01 Portfolio › 02 FamilyAlbum».
+> Las mejoras de cada ronda de pruebas se dejan en esa misma carpeta («Mejoras DDMMAAAA»).
 
-## Estado: MVP Fase 1 (público, de pruebas)
+## Plan de lanzamiento
+
+1. Pruebas del autor.
+2. Pruebas con familia y amigos (perfiles muy distintos: gente mayor, jóvenes…).
+3. Publicación en **Google Play** (identificador definitivo `com.ggalba.raices`).
+
+## Qué hace
 
 | Módulo | Estado |
 | --- | --- |
-| Usuarios (perfil local) | ✅ |
-| Canales (crear, editar, salir) | ✅ |
-| Invitaciones (código único, un solo uso, caducidad, revocación, trazabilidad) | ✅ |
-| Gestión de miembros (roles admin/miembro, expulsar, mínimo un admin) | ✅ |
-| Vídeos por enlace externo (YouTube, Vimeo, Google Drive, .mp4 directo) | ✅ |
-| Inicio global (vídeos de todos los canales mezclados: recientes, Top 10, favoritos, mes actual, remix) | ✅ |
-| Catálogo completo con filtros (canal, tipo de evento, década, persona, favoritos) y orden | ✅ |
-| Continuar viendo (por usuario; archivos directos, YouTube y Drive con API key) | ✅ |
-| Cronología por años | ✅ |
-| Fechas importantes (aniversario anual numerado), vista anual global con filtros y aviso emergente del día | ✅ |
-| Personas (ficha, biografía, vídeos y fechas asociados) | ✅ |
-| Árbol genealógico en canales de tipo Familia (progenitores, parejas, vista de árbol) | ✅ |
-| Parentesco calculado respecto a quien mira (ver «Hoja de ruta») | ⏳ |
-| Fase 2 (base): álbumes globales por canal, categorías por persona, colección por usuario con cromos bloqueados (desenfoque) y % real | ✅ |
-| Fase 2: sobres diarios (3/día, 5 cromos, misma probabilidad), repetidos acumulados, apertura animada y diseño de sobre por canal | ✅ |
-| Fase 2 (pendiente): usos de los repetidos (intercambio…); subida de imágenes a Supabase | ⏳ |
+| Cuentas: registro con usuario, correo y contraseña; correo confirmado una vez con código de 6 dígitos; entrar con usuario o correo; recuperar contraseña; «Recordarme»; sesión de 30 días sin uso | ✅ |
+| Canales privados por familia o grupo, con roles (admin / miembro) | ✅ |
+| Invitaciones de un solo uso, con caducidad, **para una persona concreta** del canal | ✅ |
+| «¿Quién eres?» obligatorio al entrar en un canal; parentesco calculado respecto a quien mira | ✅ |
+| Vídeos por enlace (Google Drive con reproductor propio, YouTube, Vimeo, .mp4): inicio tipo plataforma, catálogo con filtros, favoritos, lo más visto, continuar viendo | ✅ |
+| Fechas importantes anuales (cumpleaños, aniversarios, fallecimientos), aviso del día y notificaciones en el móvil | ✅ |
+| Personas: ficha, género, nacimiento y fallecimiento (✝), árbol genealógico | ✅ |
+| Álbum de cromos por canal, 3 sobres diarios de 5 cromos, repetidos acumulados | ✅ |
+| Demo del portfolio (familia ficticia, solo lectura) y página «Saber más» | ✅ |
+| Subir fotos de cromos a Supabase Storage desde la app | ⏳ |
+| Usos de los cromos repetidos (intercambio…) | ⏳ |
 | Fase 3: audios, muro de recuerdos | ⏳ |
-| Privacidad real (Supabase Auth + RLS) | ⏳ |
-
-**Decisiones del MVP** (acordadas 2026-10-15):
-
-- **Público y sin login.** Los datos viven en el navegador (`localStorage`, clave `family-memories:v1`) y se siembran
-  con una familia ficticia de demostración. Cada visitante tiene su propia copia: nadie puede escribir en los datos de
-  otro. La autenticación y la privacidad se abordarán en una fase posterior.
-- **Vídeos por enlace externo**; nada de subidas. Las imágenes de los cromos (Fase 2) irán a Supabase Storage.
-- **Patrón repositorio** (`src/services/repository.ts`): la UI solo habla con `MemoriesRepository`. La implementación
-  local (`localRepository.ts`) se comporta como un servidor (comprueba roles y valida cada entrada), de modo que la
-  futura implementación Supabase se enchufa sin tocar las pantallas.
-
-## Hoja de ruta: árbol genealógico (decidido 2026-10-17; árbol hecho en 0.9.0, falta el parentesco relativo)
-
-En los canales de tipo **Familia**, sustituir el texto libre «Relación familiar» por un árbol real:
-
-- **Vínculos registrados**: padre/madre y pareja(s) de cada persona (con fecha de boda o separación
-  opcional). Abuelos, tíos, primos, cuñados, etc. se **calculan** a partir de ellos; cubre familias
-  reconstituidas y segundas parejas.
-- **Parentesco relativo a quien mira**: cada usuario se vincula a «su» persona del árbol y ve las relaciones
-  desde ella (tú ves «Abuelo», tu sobrino ve «Bisabuelo»). Sin vínculo, se usa una persona de referencia del canal.
-- Vista de árbol navegable en el canal; ficha de persona con padres, pareja(s), hijos y hermanos.
-- Las personas existentes se conservan; solo habrá que añadirles sus vínculos. Mientras tanto, la
-  «Relación familiar» se escribe tomando como referencia al propietario del canal.
 
 ## Arquitectura
 
 ```
 src/
   types/domain.ts        Modelo de dominio (tipos, enums, inputs, read models)
-  utils/                 Lógica de negocio pura y testeada
-    validation.ts        Validación/saneado de entradas (lado "servidor")
-    media.ts             Enlace externo -> embed seguro (solo https, ids validados)
-    events.ts            Fechas: ocurrencias anuales, número de aniversario, filtros, avisos del día
-    home.ts              Filas de Inicio global (recientes, Top 10, mes actual, remix…)
-    catalogFilters.ts    Filtros del catálogo completo <-> URL
-    catalog.ts           Filas por canal, cronología
-    invitations.ts       Códigos CSPRNG, normalización, estados
-    album.ts             Álbum de cromos: secciones por persona, numeración, progreso
-    packs.ts             Sobres: sorteo equiprobable, cupo diario
-    familyTree.ts        Árbol: generaciones, bloques por familia, líneas; ciclos; parientes directos
-    dates.ts, people.ts  Fechas parciales (AAAA / AAAA-MM / AAAA-MM-DD), edades
-  services/              Repositorio (contrato + implementación local + datos demo)
-  hooks/ components/ layouts/ pages/   UI (React + SCSS Modules)
+  utils/                 Lógica pura y testeada (validación, fechas, árbol, parentesco, sobres…)
+  services/              Repositorio: contrato (repository.ts), Supabase (cuentas reales),
+                         local de solo lectura para la demo, y datos demo (seed.ts)
+  auth/                  Sesión, pantalla de entrada, reglas de cuenta
+  native/                Puente con Android (botón Atrás, barra de estado, notificaciones, compartir)
+  components/ layouts/ pages/   UI (React + SCSS Modules, tema claro/oscuro)
   tests/                 Vitest
+supabase/
+  migrations/            Esquema, RLS y funciones (ejecutar en orden en el SQL Editor)
+  tests/                 Pruebas de seguridad de la base de datos (PGlite)
+brand/                   Logotipo (SVG) y script que genera iconos y pantalla de arranque de Android
 ```
+
+- La UI solo habla con `MemoriesRepository`; la seguridad real está en la base de datos (Row Level Security y
+  funciones `SECURITY DEFINER`), y la app valida además en el cliente para dar mensajes claros.
+- Secretos: solo en `.env.local` (ignorado por git) y en los *secrets* de GitHub. La clave publicable de
+  Supabase y la clave de Google (restringida) son públicas por diseño. Nunca se sube la clave secreta.
 
 ## App Android (APK)
 
-FamilyMemories está pensada para usarse como **app nativa de Android** (Capacitor, ver
-`Proyectos/Guia_WebToAPK.md`). La misma base de código sirve la web y el APK:
-
-- `npm run build:android` compila la web con base `/` (modo `android`); `npm run android:sync` además la copia
-  al proyecto nativo `android/`. `npm run android:open` lo abre en Android Studio.
-- **GitHub Actions** (`.github/workflows/build-apk.yml`) compila el APK de depuración en cada push a `main` y lo
-  deja como artefacto (*Actions › Build Android APK › Artifacts*). Requiere **JDK 21** (Capacitor 8; la guía
-  general menciona 17, que ya no basta).
-- Preparado para pantallas verticales: orientación fija en vertical, márgenes seguros arriba y abajo
-  (`$safe-top`/`$safe-bottom`, `$header-offset`), efectos *hover* solo con ratón (`@include can-hover`), sin
-  selección de texto ni menú de pulsación larga en la interfaz, fuentes incluidas en el paquete.
-- Integraciones nativas (`src/native/`): botón Atrás de Android, barra de estado, **notificaciones locales de las
-  fechas importantes** (programadas a las 9:00, funcionan con la app cerrada) y hoja de compartir nativa para
-  las invitaciones. En la web degradan a su equivalente del navegador.
-- Pendiente de probar en un móvil real: vídeos de YouTube incrustados (Android puede rechazarlos en WebView;
-  los `.mp4` y Drive con clave van bien). Pendiente: icono y pantalla de inicio propios.
-- Para Supabase: iniciar sesión con **código de 6 dígitos por correo** (no enlace mágico), que no necesita volver
-  a la app desde el navegador.
+- **GitHub Actions** (`.github/workflows/build-apk.yml`) pasa los tests y compila el APK en cada push a `main`:
+  artefacto `Raices-v<versión>-build<número>.apk` (*Actions › Build Android APK › Artifacts*, 30 días).
+  La versión sale de `package.json` (subirla en cada entrega) y el número de compilación crece solo.
+- Todos los APK se firman con la misma clave (guardada solo en los *secrets* de GitHub y con copia local
+  fuera del repo), así que cada versión se instala encima de la anterior.
+- `npm run build:android` compila la web con base `/`; `npm run android:sync` la copia a `android/`.
+- Iconos y pantalla de arranque: `bash brand/generate-android-assets.sh` tras cambiar el logo.
 
 ## Desarrollo
 
 ```bash
 npm install
 npm run dev      # http://localhost:5196
-npm test
+npm test         # tests de la app
+npm run test:db  # tests de seguridad de la base de datos
 npm run lint
-npm run build    # tsc -b && vite build (base /family-memories/)
+npm run build    # tsc -b && vite build (base /raices/)
 ```

@@ -55,7 +55,7 @@ import type { LegacyUnlock } from './seed';
 // roles on every call, validates every input and never hands out references
 // to its internal state.
 
-export const STORAGE_KEY = 'family-memories:v1';
+export const STORAGE_KEY = 'raices:v1';
 
 export interface Db {
   schemaVersion: number;

@@ -1,5 +1,5 @@
 -- =============================================================================
--- FamilyMemories — initial schema (Supabase / PostgreSQL)
+-- Raíces — initial schema (Supabase / PostgreSQL)
 --
 -- Multi-tenant by CHANNEL: every row belongs to a channel and Row Level
 -- Security only lets members read their channels; only channel admins write

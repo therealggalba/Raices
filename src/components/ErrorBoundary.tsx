@@ -10,7 +10,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    if (import.meta.env.DEV) console.error('[family-memories] unexpected error', error, info);
+    if (import.meta.env.DEV) console.error('[raices] unexpected error', error, info);
   }
 
   render() {
