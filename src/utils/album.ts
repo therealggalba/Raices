@@ -69,6 +69,11 @@ export function albumProgress(cards: readonly AlbumCard[], unlockedIds: Readonly
   return { unlocked, total, percent: total ? Math.floor((unlocked / total) * 100) : 0 };
 }
 
+/** Ids of the cromos owned (at least one copy). */
+export function ownedCardIds(copies: Readonly<Record<string, number>>): Set<string> {
+  return new Set(Object.entries(copies).filter(([, n]) => n > 0).map(([id]) => id));
+}
+
 /** "12 / 29 · 41 %". */
 export function formatProgress({ unlocked, total, percent }: AlbumProgress): string {
   return `${unlocked} / ${total} · ${percent} %`;

@@ -5,7 +5,15 @@ import { formatPartialDate } from '../utils/dates';
 import styles from './CardThumb.module.scss';
 
 /** Small cromo for the album grid; locked ones show a blurred photo. */
-export function CardThumb({ card, to, locked }: { card: AlbumCard; to: string; locked: boolean }) {
+interface Props {
+  card: AlbumCard;
+  to: string;
+  locked: boolean;
+  /** Copies owned; shown as ×N when repeated. */
+  copies?: number;
+}
+
+export function CardThumb({ card, to, locked, copies = 0 }: Props) {
   const [failed, setFailed] = useState(false);
   return (
     <Link
@@ -14,7 +22,14 @@ export function CardThumb({ card, to, locked }: { card: AlbumCard; to: string; l
       aria-label={`#${card.number} ${card.title}${locked ? ' (bloqueado)' : ''}`}
     >
       <span className={styles.inner}>
-        <span className={styles.number}>#{card.number}</span>
+        <span className={styles.top}>
+          <span className={styles.number}>#{card.number}</span>
+          {copies > 1 && (
+            <span className={styles.copies} title={`Tienes ${copies} copias`}>
+              ×{copies}
+            </span>
+          )}
+        </span>
         <span className={styles.photo}>
           {failed ? (
             <span className={styles.badge} aria-hidden>

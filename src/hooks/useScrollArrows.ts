@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 type Direction = -1 | 1;
 
 /**
+ * The scroll container must be `position: relative` (items' offsetLeft is
+ * measured from it).
+ *
  * Horizontal carousel helper: tells whether there is more content to either
  * side and scrolls exactly one item per step, aligning it with the start
  * edge (respecting scroll-padding). `deps` re-measures when items change.

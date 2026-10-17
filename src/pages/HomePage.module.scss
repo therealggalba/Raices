@@ -63,3 +63,68 @@
     text-decoration: underline;
   }
 }
+
+// «Sobres» notice inside «No te olvides».
+.packs {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  background: linear-gradient(100deg, rgba(232, 80, 91, 0.28), rgba(242, 180, 90, 0.18) 60%, $color-bg-raised);
+  border: 1px solid rgba(242, 180, 90, 0.5);
+  color: $color-text;
+  text-decoration: none;
+
+  &:hover {
+    border-color: $color-accent;
+  }
+}
+
+.packsDone {
+  background: $color-bg-raised;
+  border-color: $color-line;
+  color: $color-text-muted;
+
+  .packsIcon {
+    filter: grayscale(1);
+    animation: none;
+  }
+}
+
+.packsIcon {
+  font-size: 1.6rem;
+  animation: gift 2.4s ease-in-out infinite;
+}
+
+@keyframes gift {
+  0%,
+  85%,
+  100% {
+    transform: rotate(0);
+  }
+  90% {
+    transform: rotate(-12deg) scale(1.1);
+  }
+  95% {
+    transform: rotate(12deg) scale(1.1);
+  }
+}
+
+.packsText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+
+  span {
+    font-size: 0.78rem;
+    color: $color-text-muted;
+  }
+}
+
+.packsCta {
+  flex: 0 0 auto;
+  color: $color-accent-strong;
+  font-weight: 800;
+}

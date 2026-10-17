@@ -28,7 +28,8 @@ export function CardPage() {
     );
   }
 
-  const locked = !library.unlockedCardIds.includes(card.id);
+  const copies = library.cardCopies[card.id] ?? 0;
+  const locked = copies === 0;
   const person = card.personId ? personById(card.personId) : undefined;
   const sectionId = person ? person.id : NO_PERSON;
   const people = library.people.filter((p) => p.channelId === channelId);
@@ -58,7 +59,7 @@ export function CardPage() {
         ) : (
           <span />
         )}
-        <Cromo key={card.id} card={card} person={person} locked={locked} />
+        <Cromo key={card.id} card={card} person={person} locked={locked} copies={copies} />
         {next ? (
           <Link to={`${albumUrl}/${next.id}`} className={[styles.arrow, styles.next].join(' ')} aria-label={`Siguiente: ${next.title}`}>
             ›

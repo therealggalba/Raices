@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -18,6 +18,15 @@ export const SCHEMA_VERSION = 6;
  */
 export const CHANNEL_KINDS = ['familia', 'amigos', 'viajes', 'otros'] as const;
 export type ChannelKind = (typeof CHANNEL_KINDS)[number];
+
+/** Visual design of a channel's card packs (chosen in the channel settings). */
+export const PACK_THEMES = ['clasico', 'atardecer', 'oceano', 'bosque', 'vintage', 'galaxia'] as const;
+export type PackTheme = (typeof PACK_THEMES)[number];
+
+/** Daily packs per user, across all albums. */
+export const PACKS_PER_DAY = 3;
+/** Cromos per pack. */
+export const PACK_SIZE = 5;
 
 export const ROLES = ['admin', 'member'] as const;
 export type Role = (typeof ROLES)[number];
@@ -55,6 +64,8 @@ export interface Channel {
   name: string;
   description: string;
   kind: ChannelKind;
+  /** Design of the channel's card packs. */
+  packTheme: PackTheme;
   /** Optional https image used as the channel cover. */
   coverUrl?: string;
   createdAt: IsoDateTime;
@@ -143,12 +154,42 @@ export interface AlbumCard {
   authorId: string;
 }
 
-/** A cromo a member has unlocked: its photo and story become visible to them. */
-export interface CardUnlock {
+/**
+ * How many copies of a cromo a member owns. One copy unlocks it (photo and
+ * story visible); duplicates accumulate for future uses (trading…).
+ */
+export interface CardCopy {
   channelId: string;
   userId: string;
   cardId: string;
-  unlockedAt: IsoDateTime;
+  count: number;
+  firstObtainedAt: IsoDateTime;
+}
+
+/** One opened pack (also what limits the packs per day). */
+export interface PackOpening {
+  id: string;
+  channelId: string;
+  userId: string;
+  /** Local calendar day it was opened (daily allowance). */
+  date: IsoDate;
+  openedAt: IsoDateTime;
+  cardIds: string[];
+}
+
+export interface PackStatus {
+  perDay: number;
+  openedToday: number;
+  remaining: number;
+}
+
+/** A cromo just pulled from a pack. */
+export interface PackPull {
+  card: AlbumCard;
+  /** First copy ever: the cromo just got unlocked. */
+  isNew: boolean;
+  /** Copies owned after this pack. */
+  copies: number;
 }
 
 export interface Invitation {
@@ -197,6 +238,8 @@ export interface ChannelInput {
   name: string;
   description: string;
   kind: ChannelKind;
+  /** Defaults to 'clasico' when omitted. */
+  packTheme?: PackTheme;
   coverUrl?: string;
 }
 
@@ -298,6 +341,7 @@ export interface LibraryChannel {
   id: string;
   name: string;
   kind: ChannelKind;
+  packTheme: PackTheme;
   role: Role;
 }
 
@@ -315,8 +359,10 @@ export interface Library {
   favoriteVideoIds: string[];
   /** Every cromo of every album. */
   cards: AlbumCard[];
-  /** Cromos the current user has unlocked. */
-  unlockedCardIds: string[];
+  /** Card id -> copies the current user owns (absent = locked). */
+  cardCopies: Record<string, number>;
+  /** Today's pack allowance. */
+  packs: PackStatus;
   /** Video id -> where the current user left it (unfinished videos only). */
   progress: Record<string, { positionSeconds: number; durationSeconds: number }>;
 }

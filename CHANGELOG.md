@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0 — 2026-10-17
+
+- Sobres: 3 al día por usuario (entre todos los álbumes, se renuevan a medianoche, no se acumulan); el
+  usuario elige de qué álbum abrir cada uno. Cada sobre trae 5 cromos del canal, todos con la misma
+  probabilidad y sin repetir dentro del mismo sobre (si el álbum tiene al menos 5).
+- Repetidos: contador de copias por usuario y cromo (×N en el álbum y en el cromo), para futuros intercambios.
+- Apertura estilo Pokémon TCG Pocket: se corta el sobre deslizando el dedo por la parte de arriba (o con un
+  botón alternativo), sale volando la tira superior y aparecen los 5 cromos en un carrusel con la etiqueta
+  «¡NUEVA!» en los recién desbloqueados, hasta dar el visto bueno. El sobre se gasta al cortarlo.
+- Aviso en Inicio («No te olvides») con los sobres que quedan hoy y acceso directo; también desde Álbumes y
+  desde cada álbum. Nueva página `/sobres` y apertura en `/sobres/:canal`.
+- Diseño de los sobres por canal (Clásico, Atardecer, Océano, Bosque, Vintage, Galaxia), elegible en la
+  configuración del canal.
+- Corregidos: flechas de carrusel que no avanzaban (contenedor sin `position: relative`) y miniaturas de sobre
+  cuyo contenido desbordaba el marco.
+- Esquema de datos v7 (copias, aperturas de sobres, diseño de sobre) con migración.
+
 ## 0.7.0 — 2026-10-17
 
 - «Álbumes» pasa a la cabecera (junto a Fechas): listado de los canales con cromos, con contador y % real
@@ -23,7 +40,7 @@
 - Demo: cromos de ejemplo en los tres canales de prueba (y personas nuevas en Amigos y Primos). Al actualizar
   datos guardados, el álbum de ejemplo se añade solo a los canales demo que sigan existiendo.
 - Esquema de datos v5 (cromos + contador por canal) con migración.
-- Pendiente de definir: sobres y repetidos; subida directa a Supabase.
+- Pendiente: subida directa a Supabase; usos de los repetidos (intercambio…).
 
 ## 0.5.0 — 2026-10-16
 

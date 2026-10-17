@@ -6,8 +6,10 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import { CHANNEL_KINDS } from '../types/domain';
-import type { ChannelKind, Invitation, Member } from '../types/domain';
+import { CHANNEL_KINDS, PACK_THEMES } from '../types/domain';
+import type { ChannelKind, Invitation, Member, PackTheme } from '../types/domain';
+import { PackArt } from '../components/PackArt';
+import { PACK_LOOKS } from '../components/pack-looks';
 import { EXPIRY_OPTIONS_DAYS, STATUS_LABELS, invitationStatus } from '../utils/invitations';
 import { CHANNEL_KIND_LABELS, ROLE_LABELS } from '../utils/labels';
 import styles from './ChannelSettingsPage.module.scss';
@@ -38,6 +40,7 @@ function ChannelInfoForm() {
   const [name, setName] = useState(channel.name);
   const [description, setDescription] = useState(channel.description);
   const [kind, setKind] = useState<ChannelKind>(channel.kind);
+  const [packTheme, setPackTheme] = useState<PackTheme>(channel.packTheme);
   const [coverUrl, setCoverUrl] = useState(channel.coverUrl ?? '');
   const [saved, setSaved] = useState(false);
 
@@ -48,7 +51,7 @@ function ChannelInfoForm() {
         e.preventDefault();
         setSaved(false);
         const done = await run(async () => {
-          await repository.updateChannel(channel.id, { name, description, kind, ...(coverUrl.trim() ? { coverUrl } : {}) });
+          await repository.updateChannel(channel.id, { name, description, kind, packTheme, ...(coverUrl.trim() ? { coverUrl } : {}) });
           return true;
         });
         if (done) {
@@ -73,6 +76,18 @@ function ChannelInfoForm() {
       <Field label="Descripción" htmlFor="description">
         <textarea id="description" className={ui.input} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
       </Field>
+      <fieldset className={styles.packThemes}>
+        <legend>Diseño de los sobres</legend>
+        <div className={styles.packGrid}>
+          {PACK_THEMES.map((t) => (
+            <label key={t} className={[styles.packOption, packTheme === t ? styles.packOptionOn : ''].join(' ')}>
+              <input type="radio" name="packTheme" value={t} checked={packTheme === t} onChange={() => setPackTheme(t)} />
+              <PackArt theme={t} title={name || channel.name} />
+              <span>{PACK_LOOKS[t].label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <Field label="Portada (opcional)" htmlFor="coverUrl" hint="Enlace https a una imagen">
         <input id="coverUrl" className={ui.input} type="url" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://" />
       </Field>

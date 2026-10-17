@@ -7,6 +7,7 @@ import { VideoRow } from '../components/VideoRow';
 import { useLibrary } from '../hooks/library-context';
 import { featuredVideo } from '../utils/catalog';
 import { upcomingEvents } from '../utils/events';
+import { packStatusText } from '../utils/packs';
 import { buildHomeRows } from '../utils/home';
 import styles from './HomePage.module.scss';
 
@@ -41,6 +42,7 @@ export function HomePage() {
   const hero = featuredVideo(videos);
   const rows = buildHomeRows(library, today, remixSeed);
   const upcoming = upcomingEvents(events, people, today).slice(0, UPCOMING_SHOWN);
+  const hasAlbums = library.cards.length > 0;
 
   return (
     <div className={styles.home}>
@@ -52,7 +54,7 @@ export function HomePage() {
         </EmptyState>
       )}
 
-      {upcoming.length > 0 && (
+      {(upcoming.length > 0 || hasAlbums) && (
         <section className={styles.alerts} aria-label="No te olvides">
           <div className={styles.rowHead}>
             <h2 className={styles.rowTitle}>No te olvides</h2>
@@ -60,7 +62,22 @@ export function HomePage() {
               Todas las fechas ›
             </Link>
           </div>
-          <UpcomingStrip events={upcoming} />
+          {hasAlbums && (
+            <Link
+              to="/sobres"
+              className={[styles.packs, library.packs.remaining === 0 ? styles.packsDone : ''].join(' ')}
+            >
+              <span className={styles.packsIcon} aria-hidden>
+                🎁
+              </span>
+              <span className={styles.packsText}>
+                <strong>{packStatusText(library.packs)}</strong>
+                {library.packs.remaining > 0 && <span>Elige álbum y descubre nuevos cromos</span>}
+              </span>
+              {library.packs.remaining > 0 && <span className={styles.packsCta}>Abrir ›</span>}
+            </Link>
+          )}
+          {upcoming.length > 0 && <UpcomingStrip events={upcoming} />}
         </section>
       )}
 

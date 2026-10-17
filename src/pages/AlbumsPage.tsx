@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ProgressMeter } from '../components/ProgressMeter';
-import { EmptyState } from '../components/ui';
+import { EmptyState, LinkButton } from '../components/ui';
 import { useLibrary } from '../hooks/library-context';
-import { albumProgress, sortCards } from '../utils/album';
+import { albumProgress, ownedCardIds, sortCards } from '../utils/album';
 import { CHANNEL_KIND_LABELS } from '../utils/labels';
 import styles from './AlbumsPage.module.scss';
 
@@ -11,7 +11,7 @@ const COVER_CARDS = 3;
 /** «Álbumes»: one album per channel that has cromos, with its progress. */
 export function AlbumsPage() {
   const { library } = useLibrary();
-  const unlocked = new Set(library.unlockedCardIds);
+  const unlocked = ownedCardIds(library.cardCopies);
   const albums = library.channels
     .map((channel) => {
       const cards = library.cards.filter((c) => c.channelId === channel.id);
@@ -23,7 +23,14 @@ export function AlbumsPage() {
 
   return (
     <div className={styles.page}>
-      <h1>Álbumes</h1>
+      <div className={styles.head}>
+        <h1>Álbumes</h1>
+        {albums.length > 0 && (
+          <LinkButton to="/sobres" variant={library.packs.remaining ? 'primary' : 'secondary'} small>
+            🎁 Sobres ({library.packs.remaining}/{library.packs.perDay})
+          </LinkButton>
+        )}
+      </div>
       {albums.length === 0 ? (
         <EmptyState icon="🃏">
           <p>Ninguno de tus canales tiene cromos todavía.</p>

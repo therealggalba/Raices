@@ -4,13 +4,24 @@ import { formatPartialDate } from '../utils/dates';
 import styles from './Cromo.module.scss';
 
 /** Full-size cromo, styled after the original FamilyHub Android card. */
-export function Cromo({ card, person, locked }: { card: AlbumCard; person?: Person; locked: boolean }) {
+interface Props {
+  card: AlbumCard;
+  person?: Person;
+  locked: boolean;
+  /** Copies owned (×N badge when repeated). */
+  copies?: number;
+  /** Corner ribbon, e.g. «¡NUEVA!» when just pulled from a pack. */
+  ribbon?: string;
+}
+
+export function Cromo({ card, person, locked, copies = 0, ribbon }: Props) {
   const [failed, setFailed] = useState(false);
   return (
     <article
       className={[styles.cromo, locked ? styles.locked : ''].join(' ')}
       aria-label={`Cromo #${card.number}: ${card.title}${locked ? ' (bloqueado)' : ''}`}
     >
+      {ribbon && <span className={styles.ribbon}>{ribbon}</span>}
       <div className={styles.inner}>
         <header className={styles.header}>
           <span className={styles.number}>#&nbsp;{card.number}</span>
@@ -31,6 +42,7 @@ export function Cromo({ card, person, locked }: { card: AlbumCard; person?: Pers
         </div>
         <p className={styles.person}>{person ? person.firstName : 'Varios'}</p>
         <footer className={styles.footer}>
+          <span className={styles.copies}>{copies > 1 ? `×${copies} copias` : ''}</span>
           <span className={styles.date}>{formatPartialDate(card.takenAt)}</span>
         </footer>
       </div>

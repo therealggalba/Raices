@@ -47,6 +47,7 @@
 }
 
 .tabs {
+  position: relative; // tabs' offsetLeft is measured from here (arrows)
   display: flex;
   overflow-x: auto;
   padding: $space-1 $space-4;
@@ -160,4 +161,8 @@
   @include md-up {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+}
+
+.packButton {
+  justify-self: start;
 }

@@ -8,6 +8,7 @@ import type {
   FamilyEvent,
   Invitation,
   Library,
+  PackPull,
   Person,
   PersonInput,
   Role,
@@ -66,6 +67,12 @@ export interface MemoriesRepository {
   addEvent(channelId: string, input: EventInput): Promise<FamilyEvent>;
   updateEvent(channelId: string, eventId: string, input: EventInput): Promise<void>;
   deleteEvent(channelId: string, eventId: string): Promise<void>;
+
+  /**
+   * Opens one of today's packs of a channel's album: PACK_SIZE cromos, same
+   * odds for all, duplicates accumulate. Consumes the pack immediately.
+   */
+  openPack(channelId: string): Promise<PackPull[]>;
 
   addCard(channelId: string, input: CardInput): Promise<AlbumCard>;
   updateCard(channelId: string, cardId: string, input: CardInput): Promise<void>;

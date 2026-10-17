@@ -6,7 +6,7 @@ import { ProgressMeter } from '../components/ProgressMeter';
 import { EmptyState, LinkButton } from '../components/ui';
 import { useLibrary } from '../hooks/library-context';
 import { useScrollArrows } from '../hooks/useScrollArrows';
-import { albumProgress, albumSections } from '../utils/album';
+import { albumProgress, albumSections, ownedCardIds } from '../utils/album';
 import styles from './AlbumPage.module.scss';
 
 /**
@@ -21,7 +21,7 @@ export function AlbumPage() {
   const channel = channelById(channelId);
   const cards = library.cards.filter((c) => c.channelId === channelId);
   const people = library.people.filter((p) => p.channelId === channelId);
-  const unlocked = new Set(library.unlockedCardIds);
+  const unlocked = ownedCardIds(library.cardCopies);
   // People without cromos have nothing to show yet.
   const sections = albumSections(cards, people).filter((s) => s.cards.length > 0);
   const selectedId = params.get('persona');
@@ -64,6 +64,11 @@ export function AlbumPage() {
         </div>
         <h1>{channel.name}</h1>
         <ProgressMeter progress={progress} />
+        {library.packs.remaining > 0 && cards.length > 0 && (
+          <LinkButton to={`/sobres/${channel.id}`} variant="secondary" small className={styles.packButton}>
+            🎁 Abrir un sobre de este álbum ({library.packs.remaining} hoy)
+          </LinkButton>
+        )}
       </header>
 
       {sections.length === 0 ? (
@@ -117,6 +122,7 @@ export function AlbumPage() {
                     key={card.id}
                     card={card}
                     locked={!unlocked.has(card.id)}
+                    copies={library.cardCopies[card.id] ?? 0}
                     to={`/albumes/${channel.id}/${card.id}`}
                   />
                 ))}

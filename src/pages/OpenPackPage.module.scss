@@ -1,0 +1,289 @@
+@use '../styles/variables' as *;
+
+.page {
+  display: grid;
+  justify-items: center;
+  gap: $space-4;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: $space-3 $space-4 $space-8;
+  overflow-x: clip;
+}
+
+.back {
+  justify-self: start;
+  color: $color-accent;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.instructions {
+  min-height: 3em;
+  font-weight: 700;
+  text-align: center;
+}
+
+// ---- The pack and the cut -------------------------------------------------
+
+$cut-at: 13%; // height of the top band, where it is cut
+
+.stage {
+  position: relative;
+  width: min(68vw, 300px);
+  aspect-ratio: 9 / 16;
+}
+
+.half {
+  position: absolute;
+  inset: 0;
+}
+
+.top {
+  clip-path: inset(0 0 calc(100% - #{$cut-at}) 0);
+}
+
+.body {
+  clip-path: inset($cut-at 0 0 0);
+}
+
+.cutZone {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 0;
+  height: calc(#{$cut-at} + 8%);
+  z-index: 5;
+  touch-action: none; // the finger cuts, it doesn't scroll the page
+  cursor: crosshair;
+}
+
+.cutLine,
+.cutProgress {
+  position: absolute;
+  left: 8%;
+  top: calc(#{$cut-at} / (#{$cut-at} + 8%) * 100%);
+  height: 0;
+}
+
+.cutLine {
+  right: 8%;
+  border-top: 2px dashed rgba(255, 255, 255, 0.85);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.cutProgress {
+  max-width: 84%;
+  border-top: 3px solid #fff;
+  box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.9);
+}
+
+.scissors {
+  position: absolute;
+  top: calc(#{$cut-at} / (#{$cut-at} + 8%) * 100%);
+  left: 8%;
+  font-size: 1.6rem;
+  transform: translate(-50%, -55%);
+  animation: snip 2.2s ease-in-out infinite;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes snip {
+  0% {
+    left: 6%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    left: 92%;
+    opacity: 1;
+  }
+  100% {
+    left: 92%;
+    opacity: 0;
+  }
+}
+
+// Tear: the top flies away, the body drops, five cromos come out.
+.tearing {
+  .top {
+    animation: fly-off 0.6s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+  }
+
+  .body {
+    animation: drop 0.6s 0.45s ease-in forwards;
+  }
+
+  .cardsOut span {
+    animation: card-out 0.7s calc(0.35s + var(--i) * 0.08s) cubic-bezier(0.2, 1.3, 0.4, 1) forwards;
+  }
+}
+
+@keyframes fly-off {
+  to {
+    transform: translate(35%, -160%) rotate(28deg);
+    opacity: 0;
+  }
+}
+
+@keyframes drop {
+  to {
+    transform: translateY(70%);
+    opacity: 0;
+  }
+}
+
+.cardsOut {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    top: 20%;
+    aspect-ratio: 3 / 4;
+    border-radius: 10px;
+    border: 4px solid #e5e5ea;
+    background: linear-gradient(135deg, #2a2633, #4a4458);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateY(30%) scale(0.8);
+  }
+}
+
+@keyframes card-out {
+  to {
+    opacity: 1;
+    transform: translateY(calc(-18% - var(--i) * 3%)) rotate(calc((var(--i) - 2) * 6deg)) scale(1);
+  }
+}
+
+.allowance {
+  color: $color-text-muted;
+  font-size: 0.9rem;
+}
+
+.fallback {
+  border: 0;
+  background: transparent;
+  color: $color-text-dim;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+// ---- Preview of the pulled cromos -----------------------------------------
+
+.reveal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: $space-3;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: $space-4 0 $space-8;
+}
+
+.revealHeader {
+  display: grid;
+  gap: $space-1;
+  text-align: center;
+
+  h1 {
+    font-size: 1.7rem;
+  }
+
+  p {
+    color: $color-accent-strong;
+    font-weight: 700;
+  }
+}
+
+.carouselViewport {
+  position: relative;
+  width: 100%;
+}
+
+.carousel {
+  position: relative; // slides' offsetLeft is measured from here (arrows)
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  @include hide-scrollbar;
+}
+
+.slide {
+  flex: 0 0 100%;
+  padding: $space-3 12%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  animation: slide-in 0.5s ease-out both;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+.arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12%;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 2.6rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.prev {
+  left: 0;
+}
+
+.next {
+  right: 0;
+}
+
+.dots {
+  display: flex;
+  gap: $space-2;
+
+  span {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.dotNew {
+  box-shadow: 0 0 0 2px $color-play;
+}
+
+.dotOn {
+  background: $color-accent !important;
+  transform: scale(1.3);
+}
+
+.position {
+  color: $color-text-dim;
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: grid;
+  justify-items: center;
+  gap: $space-2;
+}
+
+.albumLink {
+  font-size: 0.9rem;
+}

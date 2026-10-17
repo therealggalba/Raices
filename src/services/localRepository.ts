@@ -1,7 +1,7 @@
 import { CHANNEL_KINDS, ROLES, SCHEMA_VERSION } from '../types/domain';
 import type {
   AlbumCard,
-  CardUnlock,
+  CardCopy,
   Channel,
   ChannelSnapshot,
   ChannelSummary,
@@ -9,6 +9,8 @@ import type {
   Favorite,
   Invitation,
   Library,
+  PackOpening,
+  PackPull,
   Member,
   Person,
   User,
@@ -19,6 +21,9 @@ import type {
 } from '../types/domain';
 import { nextCardNumber } from '../utils/album';
 import { newId } from '../utils/ids';
+import { drawPack, packStatus, cryptoRandom } from '../utils/packs';
+import type { RandomFn } from '../utils/packs';
+import { toIsoDate } from '../utils/dates';
 import { decideProgress } from '../utils/progress';
 import {
   MAX_EXPIRY_DAYS,
@@ -39,7 +44,8 @@ import {
 } from '../utils/validation';
 import type { MemoriesRepository } from './repository';
 import { RepositoryError } from './repository';
-import { addDemoAlbum, buildDemoDb, demoUnlocks } from './seed';
+import { DEMO_PACK_THEMES, addDemoAlbum, buildDemoDb, demoUnlocks, extraDemoCopies } from './seed';
+import type { LegacyUnlock } from './seed';
 
 // Local backend for the public phase-1 MVP: the whole dataset lives in one
 // JSON document in the browser. It still behaves like a server: it checks
@@ -64,7 +70,8 @@ export interface Db {
   cards: AlbumCard[];
   /** Channel id -> last album number issued (never goes back). */
   cardSequence: Record<string, number>;
-  unlocks: CardUnlock[];
+  copies: CardCopy[];
+  packs: PackOpening[];
 }
 
 export interface KeyValueStore {
@@ -110,7 +117,8 @@ const COLLECTIONS = [
   'views',
   'progress',
   'cards',
-  'unlocks',
+  'copies',
+  'packs',
 ] as const;
 
 /** Kinds given to channels created before kinds existed (schema v1). */
@@ -165,6 +173,24 @@ export function migrateDb(data: Record<string, unknown>, now: Date = new Date())
       : [];
     data.schemaVersion = 6;
   }
+  if (data.schemaVersion === 6) {
+    // Unlocks become copy counters (duplicates accumulate); daily packs and
+    // a pack design per channel appear.
+    if (!Array.isArray(data.unlocks) || !Array.isArray(data.channels)) return null;
+    data.copies = (data.unlocks as LegacyUnlock[]).filter(isRecord).map((u) => ({
+      channelId: u.channelId,
+      userId: u.userId,
+      cardId: u.cardId,
+      count: 1 + extraDemoCopies(u.cardId),
+      firstObtainedAt: u.unlockedAt,
+    }));
+    delete data.unlocks;
+    data.packs = [];
+    data.channels = data.channels.map((c: unknown) =>
+      isRecord(c) ? { ...c, packTheme: (typeof c.id === 'string' && DEMO_PACK_THEMES[c.id]) || 'clasico' } : c,
+    );
+    data.schemaVersion = 7;
+  }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
 
@@ -200,11 +226,14 @@ function ensure<T>(result: ValidationResult<T>): T {
 export interface LocalRepositoryOptions {
   store?: KeyValueStore;
   now?: () => Date;
+  /** Pack draws (tests inject a deterministic one). */
+  random?: RandomFn;
 }
 
 export function createLocalRepository({
   store = browserStore(),
   now = () => new Date(),
+  random = cryptoRandom,
 }: LocalRepositoryOptions = {}): MemoriesRepository {
   let db: Db = load();
 
@@ -274,7 +303,8 @@ export function createLocalRepository({
     db.progress = inChannel(db.progress);
     db.cards = inChannel(db.cards);
     delete db.cardSequence[channelId];
-    db.unlocks = inChannel(db.unlocks);
+    db.copies = inChannel(db.copies);
+    db.packs = inChannel(db.packs);
   }
 
   const repo: MemoriesRepository = {
@@ -313,7 +343,7 @@ export function createLocalRepository({
         channels: mine
           .map((m) => {
             const c = findChannel(m.channelId);
-            return { id: c.id, name: c.name, kind: c.kind, role: m.role };
+            return { id: c.id, name: c.name, kind: c.kind, packTheme: c.packTheme, role: m.role };
           })
           .sort((a, b) => a.name.localeCompare(b.name, 'es')),
         videos: inMine(db.videos),
@@ -324,9 +354,12 @@ export function createLocalRepository({
           .filter((f) => f.userId === db.currentUserId)
           .map((f) => f.videoId),
         cards: inMine(db.cards),
-        unlockedCardIds: inMine(db.unlocks)
-          .filter((u) => u.userId === db.currentUserId)
-          .map((u) => u.cardId),
+        cardCopies: Object.fromEntries(
+          inMine(db.copies)
+            .filter((c) => c.userId === db.currentUserId && c.count > 0)
+            .map((c) => [c.cardId, c.count]),
+        ),
+        packs: packStatus(db.packs, db.currentUserId, toIsoDate(now())),
         progress: Object.fromEntries(
           inMine(db.progress)
             .filter((p) => p.userId === db.currentUserId)
@@ -369,7 +402,7 @@ export function createLocalRepository({
       const value = ensure(validateChannelInput(input));
       const id = newId();
       const createdAt = nowIso();
-      db.channels.push({ id, ...value, createdAt, createdBy: db.currentUserId });
+      db.channels.push({ id, ...value, packTheme: value.packTheme ?? 'clasico', createdAt, createdBy: db.currentUserId });
       db.members.push({ channelId: id, userId: db.currentUserId, displayName: me().name, role: 'admin', joinedAt: createdAt });
       commit();
       return id;
@@ -401,6 +434,7 @@ export function createLocalRepository({
       channel.name = value.name;
       channel.description = value.description;
       channel.kind = value.kind;
+      channel.packTheme = value.packTheme ?? 'clasico';
       if (value.coverUrl) channel.coverUrl = value.coverUrl;
       else delete channel.coverUrl;
       commit();
@@ -418,7 +452,7 @@ export function createLocalRepository({
         db.members = db.members.filter((m) => m !== member);
         db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === member.userId));
         db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === member.userId));
-        db.unlocks = db.unlocks.filter((u) => !(u.channelId === channelId && u.userId === member.userId));
+        db.copies = db.copies.filter((c) => !(c.channelId === channelId && c.userId === member.userId));
       }
       commit();
     },
@@ -498,7 +532,7 @@ export function createLocalRepository({
       db.members = db.members.filter((m) => !(m.channelId === channelId && m.userId === userId));
       db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === userId));
       db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === userId));
-      db.unlocks = db.unlocks.filter((u) => !(u.channelId === channelId && u.userId === userId));
+      db.copies = db.copies.filter((c) => !(c.channelId === channelId && c.userId === userId));
       commit();
     },
 
@@ -599,6 +633,31 @@ export function createLocalRepository({
       commit();
     },
 
+    async openPack(channelId) {
+      requireMember(channelId);
+      const today = toIsoDate(now());
+      if (packStatus(db.packs, db.currentUserId, today).remaining === 0) {
+        throw new RepositoryError('conflict', 'Ya has abierto todos los sobres de hoy. ¡Vuelve mañana!');
+      }
+      const pool = db.cards.filter((c) => c.channelId === channelId);
+      if (pool.length === 0) throw new RepositoryError('conflict', 'Este álbum todavía no tiene cromos');
+      const drawn = drawPack(pool, random);
+      const at = nowIso();
+      const pulls: PackPull[] = drawn.map((card) => {
+        let copy = db.copies.find((c) => c.cardId === card.id && c.userId === db.currentUserId);
+        const isNew = !copy || copy.count === 0;
+        if (!copy) {
+          copy = { channelId, userId: db.currentUserId, cardId: card.id, count: 0, firstObtainedAt: at };
+          db.copies.push(copy);
+        }
+        copy.count += 1;
+        return { card, isNew, copies: copy.count };
+      });
+      db.packs.push({ id: newId(), channelId, userId: db.currentUserId, date: today, openedAt: at, cardIds: drawn.map((c) => c.id) });
+      commit();
+      return clone(pulls);
+    },
+
     async addCard(channelId, input) {
       requireAdmin(channelId);
       const value = ensure(validateCardInput(input));
@@ -634,7 +693,7 @@ export function createLocalRepository({
       requireAdmin(channelId);
       findIn(db.cards, channelId, cardId, 'El cromo');
       db.cards = db.cards.filter((c) => c.id !== cardId);
-      db.unlocks = db.unlocks.filter((u) => u.cardId !== cardId);
+      db.copies = db.copies.filter((c) => c.cardId !== cardId);
       commit();
     },
 

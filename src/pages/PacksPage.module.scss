@@ -1,0 +1,102 @@
+@use '../styles/variables' as *;
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-5;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: $space-4 $space-4 $space-8;
+
+  @include md-up {
+    padding: $space-6 $space-8 $space-8;
+  }
+}
+
+.header {
+  display: grid;
+  justify-items: center;
+  gap: $space-2;
+  text-align: center;
+
+  h1 {
+    font-size: 1.8rem;
+  }
+}
+
+.allowance {
+  display: flex;
+  gap: $space-2;
+  font-size: 2rem;
+}
+
+.full {
+  animation: wiggle 2.4s ease-in-out infinite;
+}
+
+.used {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+
+@keyframes wiggle {
+  0%,
+  85%,
+  100% {
+    transform: rotate(0);
+  }
+  90% {
+    transform: rotate(-10deg);
+  }
+  95% {
+    transform: rotate(10deg);
+  }
+}
+
+.status {
+  font-weight: 700;
+}
+
+.hint {
+  color: $color-text-muted;
+  font-size: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  gap: $space-5 $space-4;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @include md-up {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+}
+
+.option {
+  display: grid;
+  gap: $space-2;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s;
+
+  &:hover:not(.disabled),
+  &:focus-visible {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+}
+
+.pack {
+  width: 100%;
+}
+
+.name {
+  font-weight: 700;
+  text-align: center;
+}
+
+.disabled {
+  filter: grayscale(0.85);
+  opacity: 0.55;
+  cursor: not-allowed;
+}

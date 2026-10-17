@@ -3,6 +3,7 @@
 
 .cromo {
   position: relative;
+  overflow: hidden;
   width: min(100%, 420px);
   margin: 0 auto;
   padding: 10px;
@@ -100,7 +101,31 @@
 
 .footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copies {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #6b4b00;
+}
+
+.ribbon {
+  position: absolute;
+  top: 18px;
+  right: -38px;
+  z-index: 3;
+  width: 150px;
+  padding: 4px 0;
+  background: linear-gradient(90deg, #e8505b, #ff7a59);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  transform: rotate(35deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .date {

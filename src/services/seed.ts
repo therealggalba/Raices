@@ -1,7 +1,7 @@
 import { SCHEMA_VERSION } from '../types/domain';
 import type {
   AlbumCard,
-  CardUnlock,
+  CardCopy,
   FamilyEvent,
   Invitation,
   Member,
@@ -9,6 +9,7 @@ import type {
   User,
   Video,
   VideoCategory,
+  PackTheme,
   ViewRecord,
 } from '../types/domain';
 import { addDays, sameDayInYear, toIsoDate } from '../utils/dates';
@@ -428,6 +429,7 @@ export function buildDemoDb(now: Date): Db {
         name: 'Familia Montero',
         description: 'Los recuerdos de tres generaciones: de las películas en Super 8 de los abuelos a los vídeos del móvil de Natalia.',
         kind: 'familia',
+        packTheme: 'clasico',
         createdAt: iso(120),
         createdBy: userId,
       },
@@ -436,6 +438,7 @@ export function buildDemoDb(now: Date): Db {
         name: 'Amigos de la Universidad',
         description: 'Promoción 2000-2004. Viajes, cenas y reencuentros.',
         kind: 'amigos',
+        packTheme: 'atardecer',
         createdAt: iso(300),
         createdBy: 'u-marta',
       },
@@ -444,6 +447,7 @@ export function buildDemoDb(now: Date): Db {
         name: 'Primos Sanz',
         description: 'La rama de la familia de Elena: veranos en Asturias y Nocheviejas en el pueblo.',
         kind: 'familia',
+        packTheme: 'oceano',
         createdAt: iso(400),
         createdBy: 'u-rosa',
       },
@@ -461,7 +465,8 @@ export function buildDemoDb(now: Date): Db {
     views,
     cards,
     cardSequence: Object.fromEntries(numbers),
-    unlocks: demoUnlocks(cards, userId, now),
+    copies: demoCopies(cards, userId, now),
+    packs: [],
     // Demo: a half-watched video so «continuar» can be seen straight away.
     progress: [
       {
@@ -513,13 +518,23 @@ export function addDemoAlbum(db: Db, now: Date): void {
   }
 }
 
-/**
- * Demo collection: about two thirds of the example cromos already unlocked,
- * so the album shows both blurred and visible photos and a real percentage.
- */
-export function demoUnlocks(cards: readonly AlbumCard[], userId: string, now: Date): CardUnlock[] {
+/** Shape of the per-user unlock records of schema v6 (migration only). */
+export interface LegacyUnlock {
+  channelId: string;
+  userId: string;
+  cardId: string;
+  unlockedAt: string;
+}
+
+/** Demo cromos the user already has: about two thirds of them. */
+function isDemoOwned(cardId: string): boolean {
+  return cardId.startsWith('c-demo-') && Number(cardId.slice(7)) % 3 !== 0;
+}
+
+/** Schema v6 demo collection (kept for the v5 -> v6 migration step). */
+export function demoUnlocks(cards: readonly AlbumCard[], userId: string, now: Date): LegacyUnlock[] {
   return cards
-    .filter((c) => c.id.startsWith('c-demo-') && Number(c.id.slice(7)) % 3 !== 0)
+    .filter((c) => isDemoOwned(c.id))
     .map((c, i) => ({
       channelId: c.channelId,
       userId,
@@ -527,3 +542,30 @@ export function demoUnlocks(cards: readonly AlbumCard[], userId: string, now: Da
       unlockedAt: new Date(now.getTime() - (i + 1) * 86_400_000).toISOString(),
     }));
 }
+
+/**
+ * Demo collection: about two thirds of the example cromos owned, some of
+ * them repeated (×2, ×3) so the copy counter can be seen.
+ */
+export function demoCopies(cards: readonly AlbumCard[], userId: string, now: Date): CardCopy[] {
+  return demoUnlocks(cards, userId, now).map((u) => ({
+    channelId: u.channelId,
+    userId: u.userId,
+    cardId: u.cardId,
+    count: extraDemoCopies(u.cardId) + 1,
+    firstObtainedAt: u.unlockedAt,
+  }));
+}
+
+/** Deterministic demo duplicates: every 4th owned cromo has 1-2 extra copies. */
+export function extraDemoCopies(cardId: string): number {
+  if (!isDemoOwned(cardId)) return 0;
+  const n = Number(cardId.slice(7));
+  return n % 4 === 1 ? 1 + (n % 2) : 0;
+}
+
+export const DEMO_PACK_THEMES: Record<string, PackTheme> = {
+  [DEMO_FAMILY_ID]: 'clasico',
+  [DEMO_FRIENDS_ID]: 'atardecer',
+  [DEMO_COUSINS_ID]: 'oceano',
+};

@@ -89,3 +89,62 @@
 .revoked {
   color: $color-text-dim;
 }
+
+.packThemes {
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: $space-2;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-text-muted;
+  }
+}
+
+.packGrid {
+  display: grid;
+  gap: $space-3;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @include md-up {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.packOption {
+  // Plain block (not a nested grid): the pack preview sizes itself from the
+  // column width (container queries), so its parent must not size to content.
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: $space-2;
+  border-radius: $radius-md;
+  border: 2px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+
+  > span {
+    display: block;
+    margin-top: $space-1;
+  }
+
+  input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:focus-within {
+    outline: 2px solid $color-accent;
+    outline-offset: 2px;
+  }
+}
+
+.packOptionOn {
+  border-color: $color-accent;
+  background: rgba(242, 180, 90, 0.12);
+}

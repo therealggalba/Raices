@@ -23,7 +23,8 @@ Se sirve en producción bajo `/family-memories/`.
 | Personas (ficha, biografía, vídeos y fechas asociados) | ✅ |
 | Árbol genealógico en canales de tipo Familia (ver «Hoja de ruta») | ⏳ |
 | Fase 2 (base): álbumes globales por canal, categorías por persona, colección por usuario con cromos bloqueados (desenfoque) y % real | ✅ |
-| Fase 2 (detalle): sobres (misma probabilidad para todos los cromos), repetidos; subida a Supabase | ⏳ |
+| Fase 2: sobres diarios (3/día, 5 cromos, misma probabilidad), repetidos acumulados, apertura animada y diseño de sobre por canal | ✅ |
+| Fase 2 (pendiente): usos de los repetidos (intercambio…); subida de imágenes a Supabase | ⏳ |
 | Fase 3: audios, muro de recuerdos | ⏳ |
 | Privacidad real (Supabase Auth + RLS) | ⏳ |
 
@@ -64,6 +65,7 @@ src/
     catalog.ts           Filas por canal, cronología
     invitations.ts       Códigos CSPRNG, normalización, estados
     album.ts             Álbum de cromos: secciones por persona, numeración, progreso
+    packs.ts             Sobres: sorteo equiprobable, cupo diario
     dates.ts, people.ts  Fechas parciales (AAAA / AAAA-MM / AAAA-MM-DD), edades
   services/              Repositorio (contrato + implementación local + datos demo)
   hooks/ components/ layouts/ pages/   UI (React + SCSS Modules)

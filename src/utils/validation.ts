@@ -1,8 +1,9 @@
-import { CHANNEL_KINDS, EVENT_TYPES, VIDEO_CATEGORIES } from '../types/domain';
+import { CHANNEL_KINDS, EVENT_TYPES, PACK_THEMES, VIDEO_CATEGORIES } from '../types/domain';
 import type {
   CardInput,
   ChannelInput,
   ChannelKind,
+  PackTheme,
   EventInput,
   EventType,
   PersonInput,
@@ -47,6 +48,10 @@ export function isVideoCategory(value: unknown): value is VideoCategory {
 
 export function isChannelKind(value: unknown): value is ChannelKind {
   return typeof value === 'string' && (CHANNEL_KINDS as readonly string[]).includes(value);
+}
+
+export function isPackTheme(value: unknown): value is PackTheme {
+  return typeof value === 'string' && (PACK_THEMES as readonly string[]).includes(value);
 }
 
 export function isEventType(value: unknown): value is EventType {
@@ -129,11 +134,18 @@ export function validateChannelInput(input: unknown): ValidationResult<ChannelIn
     multiline: true,
   });
   if (!isChannelKind(input.kind)) errors.push('Tipo de canal: inválido');
+  if (input.packTheme !== undefined && !isPackTheme(input.packTheme)) errors.push('Diseño de sobre: inválido');
   const coverUrl = readOptionalUrl(input, 'coverUrl', 'Portada', errors);
   if (errors.length) return { ok: false, errors };
   return {
     ok: true,
-    value: { name, description, kind: input.kind as ChannelKind, ...(coverUrl ? { coverUrl } : {}) },
+    value: {
+      name,
+      description,
+      kind: input.kind as ChannelKind,
+      packTheme: (input.packTheme as PackTheme | undefined) ?? 'clasico',
+      ...(coverUrl ? { coverUrl } : {}),
+    },
   };
 }
 

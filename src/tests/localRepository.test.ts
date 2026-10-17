@@ -132,9 +132,10 @@ describe('local repository', () => {
     delete v1.progress;
     delete v1.cards;
     delete v1.cardSequence;
-    delete v1.unlocks;
+    delete v1.copies;
+    delete v1.packs;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(6);
+    expect(migrated?.schemaVersion).toBe(7);
     // Demo channels receive the example album on the way up to v5.
     expect(migrated?.cards.length).toBeGreaterThan(0);
     expect(migrated?.cards.every((c) => c.channelId.startsWith('demo-'))).toBe(true);
@@ -185,14 +186,15 @@ describe('local repository', () => {
     v4.schemaVersion = 4;
     delete (v4 as Partial<Db>).cards;
     delete (v4 as Partial<Db>).cardSequence;
-    delete (v4 as Partial<Db>).unlocks;
+    delete (v4 as Partial<Db>).copies;
+    delete (v4 as Partial<Db>).packs;
     v4.people = v4.people.filter((p) => !['p-marta', 'p-javi', 'p-rosa', 'p-andres', 'p-lucia', 'p-carlos'].includes(p.id));
     v4.events = v4.events.map((e) => (e.id === 'e-cumple-marta' ? { ...e, personIds: [] } : e));
     // The user left (and so deleted) the cousins channel, and has a real channel.
     v4.channels = v4.channels.filter((c) => c.id !== DEMO_COUSINS_ID);
-    v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
+    v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', packTheme: 'clasico', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
     const db = parseDb(JSON.stringify(v4))!;
-    expect(db.schemaVersion).toBe(6);
+    expect(db.schemaVersion).toBe(7);
     expect(db.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
     expect(db.cards.some((c) => c.channelId === 'mi-familia')).toBe(false);
     // Cromos of a person the user deleted (Carlos) are skipped.
@@ -203,30 +205,36 @@ describe('local repository', () => {
     expect(db.cardSequence[DEMO_FAMILY_ID]).toBe(18);
   });
 
-  it('exposes the user\'s unlocked cromos and forgets them with the cromo or the membership', async () => {
+  it('exposes the user\'s copies and forgets them with the cromo or the membership', async () => {
     let library = await repo.loadLibrary();
-    const unlocked = new Set(library.unlockedCardIds);
-    expect(unlocked.size).toBeGreaterThan(0);
-    expect(unlocked.size).toBeLessThan(library.cards.length);
-    const familyCard = library.cards.find((c) => c.channelId === DEMO_FAMILY_ID && unlocked.has(c.id))!;
+    const owned = Object.keys(library.cardCopies);
+    expect(owned.length).toBeGreaterThan(0);
+    expect(owned.length).toBeLessThan(library.cards.length);
+    expect(Object.values(library.cardCopies).some((n) => n > 1)).toBe(true);
+    const familyCard = library.cards.find((c) => c.channelId === DEMO_FAMILY_ID && library.cardCopies[c.id])!;
     await repo.deleteCard(DEMO_FAMILY_ID, familyCard.id);
     library = await repo.loadLibrary();
-    expect(library.unlockedCardIds).not.toContain(familyCard.id);
+    expect(library.cardCopies[familyCard.id]).toBeUndefined();
     await repo.leaveChannel(DEMO_COUSINS_ID);
     library = await repo.loadLibrary();
     expect(library.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
   });
 
-  it('migrates v5 cromos: drops rarities and adds the demo collection', () => {
+  it('migrates v5 cromos: drops rarities and arrives at v7 with the demo collection', () => {
     const v5 = buildDemoDb(NOW) as unknown as Record<string, unknown> & Db;
     v5.schemaVersion = 5;
-    delete (v5 as Partial<Db>).unlocks;
+    delete (v5 as Partial<Db>).copies;
+    delete (v5 as Partial<Db>).packs;
     for (const c of v5.cards as unknown as Record<string, unknown>[]) c.rarity = 'raro';
+    for (const c of v5.channels as unknown as Record<string, unknown>[]) delete c.packTheme;
     const db = parseDb(JSON.stringify(v5))!;
-    expect(db.schemaVersion).toBe(6);
+    expect(db.schemaVersion).toBe(7);
     expect(db.cards.every((c) => !('rarity' in c))).toBe(true);
-    expect(db.unlocks.length).toBeGreaterThan(0);
-    expect(db.unlocks.every((u) => u.userId === db.currentUserId)).toBe(true);
+    expect(db.copies.length).toBeGreaterThan(0);
+    expect(db.copies.every((c) => c.userId === db.currentUserId && c.count >= 1)).toBe(true);
+    expect(db.packs).toEqual([]);
+    expect(db.channels.find((c) => c.id === DEMO_FRIENDS_ID)?.packTheme).toBe('atardecer');
+    expect('unlocks' in db).toBe(false);
   });
 
   it('treats unknown channels and channels you do not belong to the same way', async () => {
@@ -351,5 +359,51 @@ describe('invitations', () => {
     expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 365))).code).toBe('invalid');
     await repo.revokeInvitation(DEMO_FAMILY_ID, invitation.id);
     expect((await rejection(repo.revokeInvitation(DEMO_FAMILY_ID, invitation.id))).code).toBe('conflict');
+  });
+});
+
+describe('packs', () => {
+  // Deterministic draws: always the first remaining cromo.
+  const first = () => 0;
+  let clock: Date;
+  let repo: MemoriesRepository;
+
+  beforeEach(() => {
+    clock = new Date('2026-10-17T09:00:00');
+    repo = createLocalRepository({ store: memoryStore(), now: () => clock, random: first });
+  });
+
+  it('gives 5 cromos of the chosen album, marking new ones and counting copies', async () => {
+    const before = await repo.loadLibrary();
+    const pulls = await repo.openPack(DEMO_FAMILY_ID);
+    expect(pulls).toHaveLength(5);
+    expect(pulls.every((p) => p.card.channelId === DEMO_FAMILY_ID)).toBe(true);
+    expect(new Set(pulls.map((p) => p.card.id)).size).toBe(5);
+    for (const pull of pulls) {
+      const had = before.cardCopies[pull.card.id] ?? 0;
+      expect(pull.isNew).toBe(had === 0);
+      expect(pull.copies).toBe(had + 1);
+    }
+    const after = await repo.loadLibrary();
+    expect(after.packs).toEqual({ perDay: 3, openedToday: 1, remaining: 2 });
+    expect(after.cardCopies[pulls[0].card.id]).toBe(pulls[0].copies);
+  });
+
+  it('allows 3 packs per day across all albums, and 3 more the next day', async () => {
+    await repo.openPack(DEMO_FAMILY_ID);
+    await repo.openPack(DEMO_FRIENDS_ID);
+    await repo.openPack(DEMO_COUSINS_ID);
+    expect((await repo.loadLibrary()).packs.remaining).toBe(0);
+    expect((await rejection(repo.openPack(DEMO_FAMILY_ID))).code).toBe('conflict');
+    clock = new Date('2026-10-18T00:01:00');
+    expect((await repo.loadLibrary()).packs.remaining).toBe(3);
+    expect(await repo.openPack(DEMO_FAMILY_ID)).toHaveLength(5);
+  });
+
+  it('only opens packs of albums you belong to and that have cromos', async () => {
+    expect((await rejection(repo.openPack('nope'))).code).toBe('not-found');
+    const empty = await repo.createChannel({ name: 'Vacío', description: '', kind: 'otros' });
+    expect((await rejection(repo.openPack(empty))).code).toBe('conflict');
+    expect((await repo.loadLibrary()).packs.remaining).toBe(3);
   });
 });

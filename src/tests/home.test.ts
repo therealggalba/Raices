@@ -9,8 +9,8 @@ const SEED = 42;
 function library(overrides: Partial<Library> = {}): Library {
   return {
     channels: [
-      { id: 'fam', name: 'Familia', kind: 'familia', role: 'admin' },
-      { id: 'uni', name: 'Uni', kind: 'amigos', role: 'member' },
+      { id: 'fam', name: 'Familia', kind: 'familia', packTheme: 'clasico', role: 'admin' },
+      { id: 'uni', name: 'Uni', kind: 'amigos', packTheme: 'clasico', role: 'member' },
     ],
     videos: [
       makeVideo({ id: 'f1', channelId: 'fam', category: 'navidad', eventDate: '1999-12', uploadedAt: '2026-01-03T00:00:00Z' }),
@@ -24,7 +24,8 @@ function library(overrides: Partial<Library> = {}): Library {
     favoriteVideoIds: ['f2'],
     progress: {},
     cards: [],
-    unlockedCardIds: [],
+    cardCopies: {},
+    packs: { perDay: 3, openedToday: 0, remaining: 3 },
     ...overrides,
   };
 }

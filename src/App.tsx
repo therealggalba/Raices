@@ -17,6 +17,8 @@ import { EventsPage } from './pages/EventsPage';
 import { HomePage } from './pages/HomePage';
 import { JoinPage } from './pages/JoinPage';
 import { NewChannelPage } from './pages/NewChannelPage';
+import { OpenPackPage } from './pages/OpenPackPage';
+import { PacksPage } from './pages/PacksPage';
 import { PeoplePage } from './pages/PeoplePage';
 import { PersonFormPage } from './pages/PersonFormPage';
 import { PersonPage } from './pages/PersonPage';
@@ -54,6 +56,12 @@ function ChannelVideoRedirect() {
   return <Navigate to={`/v/${videoId}`} replace />;
 }
 
+/** A fresh opening screen per album (no state carried over between packs). */
+function OpenPackRoute() {
+  const { channelId } = useParams();
+  return <OpenPackPage key={channelId} />;
+}
+
 /** Albums are browsed from the global «Álbumes» section. */
 function ChannelAlbumRedirect() {
   const { channelId, cardId } = useParams();
@@ -71,6 +79,8 @@ export default function App() {
             <Route path="catalogo" element={<CatalogPage />} />
             <Route path="fechas" element={<DatesPage />} />
             <Route path="albumes" element={<AlbumsPage />} />
+            <Route path="sobres" element={<PacksPage />} />
+            <Route path="sobres/:channelId" element={<OpenPackRoute />} />
             <Route path="albumes/:channelId" element={<AlbumPage />} />
             <Route path="albumes/:channelId/:cardId" element={<CardPage />} />
             <Route path="v/:videoId" element={<VideoPage />} />

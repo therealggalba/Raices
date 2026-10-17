@@ -25,6 +25,21 @@
   background: $cromo-paper;
 }
 
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copies {
+  padding: 0 5px;
+  border-radius: $radius-pill;
+  background: #1b1408;
+  color: $color-accent-strong;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
 .number {
   font-size: 0.7rem;
   font-weight: 800;

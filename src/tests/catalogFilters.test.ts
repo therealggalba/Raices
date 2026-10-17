@@ -12,8 +12,8 @@ import { makePerson, makeVideo } from './fixtures';
 
 const lib: Library = {
   channels: [
-    { id: 'fam', name: 'Familia Montero', kind: 'familia', role: 'admin' },
-    { id: 'uni', name: 'Amigos Uni', kind: 'amigos', role: 'member' },
+    { id: 'fam', name: 'Familia Montero', kind: 'familia', packTheme: 'clasico', role: 'admin' },
+    { id: 'uni', name: 'Amigos Uni', kind: 'amigos', packTheme: 'clasico', role: 'member' },
   ],
   videos: [
     makeVideo({ id: 'a', channelId: 'fam', title: 'Navidad 1999', category: 'navidad', eventDate: '1999-12', uploadedAt: '2026-01-01T00:00:00Z', personIds: ['p1'] }),
@@ -26,7 +26,8 @@ const lib: Library = {
   favoriteVideoIds: ['b'],
   progress: {},
   cards: [],
-  unlockedCardIds: [],
+  cardCopies: {},
+  packs: { perDay: 3, openedToday: 0, remaining: 3 },
 };
 
 const ids = (filters: Partial<typeof DEFAULT_FILTERS>) => filterCatalog(lib, { ...DEFAULT_FILTERS, ...filters }).map((v) => v.id);
