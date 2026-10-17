@@ -42,6 +42,9 @@ jobs:
       - name: Tests
         run: npm test
 
+      - name: Database security tests (RLS, server functions)
+        run: npm run test:db
+
       - name: Build web app for Android (base "/") and sync Capacitor
         run: npm run android:sync
         # Public-by-design values (publishable key, referrer-restricted API key),
