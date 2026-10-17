@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { AuthProvider } from './auth/AuthProvider';
+import { useAuth } from './auth/auth-context';
+import { LoginScreen } from './auth/LoginScreen';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NativeBridge } from './native/NativeBridge';
-import { EmptyState, LinkButton } from './components/ui';
+import { EmptyState, LinkButton, Spinner } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
 import { AlbumPage } from './pages/AlbumPage';
@@ -73,46 +76,64 @@ function ChannelAlbumRedirect() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter basename={basename}>
-        <ScrollToTop />
-        <NativeBridge />
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="catalogo" element={<CatalogPage />} />
-            <Route path="fechas" element={<DatesPage />} />
-            <Route path="albumes" element={<AlbumsPage />} />
-            <Route path="sobres" element={<PacksPage />} />
-            <Route path="sobres/:channelId" element={<OpenPackRoute />} />
-            <Route path="albumes/:channelId" element={<AlbumPage />} />
-            <Route path="albumes/:channelId/:cardId" element={<CardPage />} />
-            <Route path="v/:videoId" element={<VideoPage />} />
-            <Route path="canales" element={<ChannelsPage />} />
-            <Route path="unirse" element={<JoinPage />} />
-            <Route path="nuevo" element={<NewChannelPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-          <Route path="c/:channelId" element={<ChannelLayout />}>
-            <Route index element={<ChannelHomePage />} />
-            <Route path="subir" element={<VideoFormPage />} />
-            <Route path="v/:videoId" element={<ChannelVideoRedirect />} />
-            <Route path="v/:videoId/editar" element={<VideoFormPage />} />
-            <Route path="cronologia" element={<TimelinePage />} />
-            <Route path="eventos" element={<EventsPage />} />
-            <Route path="personas" element={<PeoplePage />} />
-            <Route path="arbol" element={<TreePage />} />
-            <Route path="personas/nueva" element={<PersonFormPage />} />
-            <Route path="personas/:personId" element={<PersonPage />} />
-            <Route path="personas/:personId/editar" element={<PersonFormPage />} />
-            <Route path="album" element={<ChannelAlbumRedirect />} />
-            <Route path="album/nuevo" element={<CardFormPage />} />
-            <Route path="album/:cardId" element={<ChannelAlbumRedirect />} />
-            <Route path="album/:cardId/editar" element={<CardFormPage />} />
-            <Route path="canal" element={<ChannelSettingsPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
     </ErrorBoundary>
+  );
+}
+
+/** Login screen until there is an account or the visitor chose the demo. */
+function AuthGate() {
+  const { status, userId } = useAuth();
+  if (status === 'loading') return <Spinner label="Abriendo FamilyMemories…" />;
+  if (status === 'signed-out') return <LoginScreen />;
+  // A different account (or the demo) starts from a clean tree: no data of
+  // the previous one survives in any screen's state.
+  return <AppRoutes key={status === 'signed-in' ? userId : 'demo'} />;
+}
+
+function AppRoutes() {
+  return (
+    <BrowserRouter basename={basename}>
+      <ScrollToTop />
+      <NativeBridge />
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="catalogo" element={<CatalogPage />} />
+          <Route path="fechas" element={<DatesPage />} />
+          <Route path="albumes" element={<AlbumsPage />} />
+          <Route path="sobres" element={<PacksPage />} />
+          <Route path="sobres/:channelId" element={<OpenPackRoute />} />
+          <Route path="albumes/:channelId" element={<AlbumPage />} />
+          <Route path="albumes/:channelId/:cardId" element={<CardPage />} />
+          <Route path="v/:videoId" element={<VideoPage />} />
+          <Route path="canales" element={<ChannelsPage />} />
+          <Route path="unirse" element={<JoinPage />} />
+          <Route path="nuevo" element={<NewChannelPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+        <Route path="c/:channelId" element={<ChannelLayout />}>
+          <Route index element={<ChannelHomePage />} />
+          <Route path="subir" element={<VideoFormPage />} />
+          <Route path="v/:videoId" element={<ChannelVideoRedirect />} />
+          <Route path="v/:videoId/editar" element={<VideoFormPage />} />
+          <Route path="cronologia" element={<TimelinePage />} />
+          <Route path="eventos" element={<EventsPage />} />
+          <Route path="personas" element={<PeoplePage />} />
+          <Route path="arbol" element={<TreePage />} />
+          <Route path="personas/nueva" element={<PersonFormPage />} />
+          <Route path="personas/:personId" element={<PersonPage />} />
+          <Route path="personas/:personId/editar" element={<PersonFormPage />} />
+          <Route path="album" element={<ChannelAlbumRedirect />} />
+          <Route path="album/nuevo" element={<CardFormPage />} />
+          <Route path="album/:cardId" element={<ChannelAlbumRedirect />} />
+          <Route path="album/:cardId/editar" element={<CardFormPage />} />
+          <Route path="canal" element={<ChannelSettingsPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }

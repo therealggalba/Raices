@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0 — 2026-10-17
+
+- Cuentas reales con Supabase: registro con nombre de usuario, correo y contraseña. El correo se confirma una vez
+  con un código de 6 dígitos (escrito en la app, sin enlaces: igual en el navegador y en Android).
+- Entrada con usuario o correo y contraseña; «¿Has olvidado la contraseña?» envía un código para crear una nueva.
+  Los intentos fallidos por usuario se frenan (10 cada 15 minutos) y el usuario nunca revela el correo.
+- Cada cuenta nueva empieza vacía. Todas las pantallas trabajan con los datos del servidor: canales,
+  invitaciones (de un solo uso y con caducidad), vídeos, personas, árbol, fechas, álbum, sobres, favoritos,
+  «continuar viendo» y vistas. Los errores se muestran en español, sin detalles internos.
+- La demo ficticia queda como muestra del portfolio: enlace discreto en la pantalla de entrada, en memoria (se
+  pierde al cerrar) y sin recordarse entre visitas.
+- Base de datos: migración `0002_usernames.sql` (usuarios únicos, entrada por usuario, freno de intentos).
+
 ## 0.11.0 — 2026-10-17
 
 - Vídeos: al reproducir en el móvil pasan a pantalla completa y, en la app, se pueden girar a horizontal; al

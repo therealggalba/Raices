@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
@@ -25,6 +26,8 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
+  const auth = useAuth();
+  const isDemo = auth.status !== 'signed-in';
 
   // Profile initial in the button, refreshed whenever the menu opens.
   useEffect(() => {
@@ -32,11 +35,14 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
     const load = open
       ? Promise.all([repository.getCurrentUser(), repository.listChannels()])
       : repository.getCurrentUser().then((u) => [u, null] as const);
-    load.then(([u, list]) => {
-      if (cancelled) return;
-      setUser(u);
-      if (list) setChannels(list);
-    }, () => {});
+    load.then(
+      ([u, list]) => {
+        if (cancelled) return;
+        setUser(u);
+        if (list) setChannels(list);
+      },
+      () => {},
+    );
     return () => {
       cancelled = true;
     };
@@ -170,32 +176,68 @@ export function OptionsMenu({ onChanged }: { onChanged(): Promise<void> }) {
               </span>
               Unirme con código
             </Link>
-            <button
-              type="button"
-              className={styles.item}
-              disabled={pending}
-              onClick={async () => {
-                if (!confirmAction('Se borrarán todos los cambios hechos en este navegador y se restaurará la demo. ¿Continuar?')) return;
-                const done = await run(async () => {
-                  await repository.resetDemo();
-                  return true;
-                });
-                if (done) {
-                  await onChanged();
-                  setOpen(false);
-                  navigate('/');
-                }
-              }}
-            >
-              <span className={styles.icon} aria-hidden>
-                ↺
-              </span>
-              Restaurar datos de demostración
-            </button>
+            {isDemo && (
+              <button
+                type="button"
+                className={styles.item}
+                disabled={pending}
+                onClick={async () => {
+                  if (
+                    !confirmAction(
+                      'Se borrarán todos los cambios hechos en este navegador y se restaurará la demo. ¿Continuar?',
+                    )
+                  )
+                    return;
+                  const done = await run(async () => {
+                    await repository.resetDemo();
+                    return true;
+                  });
+                  if (done) {
+                    await onChanged();
+                    setOpen(false);
+                    navigate('/');
+                  }
+                }}
+              >
+                <span className={styles.icon} aria-hidden>
+                  ↺
+                </span>
+                Restaurar datos de demostración
+              </button>
+            )}
+            {auth.status === 'signed-in' && (
+              <button
+                type="button"
+                className={styles.item}
+                disabled={pending}
+                onClick={async () => {
+                  if (!confirmAction('¿Cerrar la sesión en este dispositivo?')) return;
+                  await run(async () => {
+                    await auth.signOut();
+                    return true;
+                  });
+                }}
+              >
+                <span className={styles.icon} aria-hidden>
+                  ⏻
+                </span>
+                Cerrar sesión
+              </button>
+            )}
+            {isDemo && auth.configured && (
+              <button type="button" className={styles.item} onClick={auth.leaveDemo}>
+                <span className={styles.icon} aria-hidden>
+                  ✉
+                </span>
+                Entrar con mi cuenta
+              </button>
+            )}
           </section>
           <ErrorBanner message={error} />
           <p className={styles.footnote}>
-            Versión de demostración: los datos se guardan solo en este navegador y los canales de ejemplo son ficticios.
+            {isDemo
+              ? 'Demo del portfolio: familia ficticia; los cambios se pierden al cerrar la app.'
+              : `Sesión iniciada como ${auth.email ?? 'usuario'}. Solo los miembros de cada canal ven su contenido.`}
           </p>
         </div>
       )}

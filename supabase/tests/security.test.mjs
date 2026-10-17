@@ -21,7 +21,7 @@ await db.exec(`
   create schema extensions; create extension pgcrypto schema extensions;
   create role anon nologin; create role authenticated nologin;
   create schema auth;
-  create table auth.users (id uuid primary key, email text);
+  create table auth.users (id uuid primary key, email text, encrypted_password text, raw_user_meta_data jsonb default '{}');
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
@@ -42,7 +42,15 @@ console.log('✓ migración aplicada sin errores');
 const A = '00000000-0000-0000-0000-00000000000a';
 const B = '00000000-0000-0000-0000-00000000000b';
 const C = '00000000-0000-0000-0000-00000000000c';
-await db.exec(`insert into auth.users values ('${A}','ana@example.com'),('${B}','beto@example.com'),('${C}','carla@example.com')`);
+// Test-only passwords (fake accounts in a throwaway in-memory database).
+const PASS = 'TEST-ONLY_password_1';
+await db.query(
+  `insert into auth.users (id, email, encrypted_password, raw_user_meta_data) values
+     ($1, 'ana@example.com', extensions.crypt($4, extensions.gen_salt('bf', 4)), '{"username":"Ana.Montero","display_name":"Ana"}'),
+     ($2, 'beto@example.com', extensions.crypt($4, extensions.gen_salt('bf', 4)), '{"username":"beto"}'),
+     ($3, 'carla@example.com', null, '{}')`,
+  [A, B, C, PASS],
+);
 
 let failures = 0;
 const ok = (cond, msg) => { if (cond) console.log('✓', msg); else { failures++; console.log('✗', msg); } };
@@ -125,7 +133,7 @@ ok(!!(await fails(B, `insert into storage.objects (bucket_id, name) values ('cro
 
 // D opens a single pack (5 of 6): exactly one cromo stays locked for D.
 const Dusr = '00000000-0000-0000-0000-00000000000d';
-await db.exec(`insert into auth.users values ('${Dusr}','dani@example.com')`);
+await db.exec(`insert into auth.users (id, email) values ('${Dusr}','dani@example.com')`);
 const inv2 = (await as(A, `select * from public.create_invitation($1, 1)`, [ch]))[0];
 await as(Dusr, `select public.redeem_invitation($1, 'Dani')`, [inv2.code]);
 await as(Dusr, `select * from public.open_pack($1, 'America/Mexico_City')`, [ch]);
@@ -150,6 +158,27 @@ ok(n7 === 7, 'tras borrar el #6, el siguiente es el #7 (no se reutiliza)');
 // Leaving cleans the member's data
 await as(B, `select public.leave_channel($1)`, [ch]);
 ok((await as(B, `select * from public.channels`)).length === 0 && (await db.query(`select count(*)::int n from public.card_copies where user_id='${B}'`)).rows[0].n === 0, 'B sale: deja de ver el canal y se borran sus copias');
+
+// Accounts: usernames and sign-in by username
+const profiles = await db.query(`select id, username, display_name from public.profiles order by id`);
+const byId = Object.fromEntries(profiles.rows.map((r) => [r.id, r]));
+ok(byId[A].username === 'ana.montero' && byId[A].display_name === 'Ana', 'el usuario se guarda en minúsculas con su nombre visible');
+ok(byId[B].display_name === 'beto', 'sin nombre visible se usa el usuario');
+ok(/^usuario_[0-9a-f]{10}$/.test(byId[C].username), 'una cuenta creada sin usuario recibe uno provisional');
+const dupe = await db.query(`insert into auth.users (id, email, raw_user_meta_data) values (gen_random_uuid(), 'otra@example.com', '{"username":"BETO"}')`).then(() => null, (e) => e.message);
+ok(dupe?.includes('ya está cogido'), 'no se puede registrar un usuario ya cogido (sin distinguir mayúsculas)');
+const bad = await db.query(`insert into auth.users (id, email, raw_user_meta_data) values (gen_random_uuid(), 'mala@example.com', '{"username":"a b"}')`).then(() => null, (e) => e.message);
+ok(bad?.includes('no válido'), 'se rechaza un usuario con caracteres no permitidos');
+ok((await as(null, `select public.username_available('beto') a`))[0].a === false, 'sin sesión: «beto» aparece como no disponible');
+ok((await as(null, `select public.username_available('nuevo_user') a`))[0].a === true, 'sin sesión: un usuario libre aparece disponible');
+ok((await as(null, `select public.login_email('Ana.Montero', $1) e`, [PASS]))[0].e === 'ana@example.com', 'con la contraseña correcta, el usuario da su correo para entrar');
+ok((await as(null, `select public.login_email('ana.montero', 'mala') e`))[0].e === null, 'con una contraseña incorrecta no se revela el correo');
+ok((await as(null, `select public.login_email('no_existe', 'x') e`))[0].e === null, 'un usuario inexistente responde igual que una contraseña mala');
+for (let i = 0; i < 10; i++) await as(null, `select public.login_email('beto', 'mala')`);
+ok((await fails(null, `select public.login_email('beto', $1)`, [PASS]))?.includes('Demasiados intentos'), 'tras 10 fallos seguidos el usuario queda frenado 15 minutos');
+ok(!!(await fails(null, `select * from public.login_attempts`)), 'nadie puede leer los intentos de acceso');
+ok(!!(await fails(A, `update public.profiles set username = 'otro' where id = $1`, [A])), 'el nombre de usuario no se puede cambiar');
+ok((await as(A, `update public.profiles set display_name = 'Ana M.' where id = $1 returning id`, [A])).length === 1, 'el nombre visible sí');
 
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);

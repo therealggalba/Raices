@@ -1,0 +1,147 @@
+@use '../styles/variables' as *;
+
+.screen {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  align-items: center;
+  gap: $space-6;
+  padding: calc(#{$space-6} + #{$safe-top}) $space-4 calc(#{$space-6} + #{$safe-bottom});
+  background:
+    radial-gradient(circle at 50% 0%, rgba($color-accent, 0.14), transparent 60%),
+    $color-bg;
+}
+
+.box {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-4;
+  text-align: center;
+}
+
+.brand {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+.title {
+  @include display-title;
+  margin: 0;
+  font-size: 2rem;
+}
+
+.lead {
+  margin: 0;
+  color: $color-text-muted;
+}
+
+.form {
+  text-align: left;
+  background: $color-bg-raised;
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+  padding: $space-5;
+}
+
+.formTitle {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.field {
+  display: grid;
+  gap: $space-1;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+}
+
+.password {
+  position: relative;
+
+  input {
+    width: 100%;
+    padding-right: $touch;
+  }
+}
+
+.eye {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: $touch;
+  height: $touch;
+  border: 0;
+  background: none;
+  color: $color-text-muted;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.link {
+  justify-self: center;
+  min-height: $touch;
+  padding: 0 $space-2;
+  border: 0;
+  background: none;
+  color: $color-accent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  @include can-hover {
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.switch {
+  margin: 0;
+  color: $color-text-muted;
+}
+
+.code {
+  font-size: 1.5rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-2;
+  flex-wrap: wrap;
+}
+
+.notice {
+  margin: 0;
+  color: $color-success;
+  font-size: 0.9rem;
+}
+
+.hint {
+  margin: 0;
+  color: $color-text-dim;
+  font-size: 0.85rem;
+}
+
+.demo {
+  // Deliberately discreet: the fictional demo is only a portfolio sample.
+  min-height: $touch;
+  padding: 0 $space-3;
+  border: 0;
+  background: none;
+  color: $color-text-dim;
+  font: inherit;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  cursor: pointer;
+}

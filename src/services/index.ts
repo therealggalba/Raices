@@ -1,6 +1,36 @@
-import { createLocalRepository } from './localRepository';
+import { createLocalRepository, memoryStore } from './localRepository';
 import type { MemoriesRepository } from './repository';
+import { getSupabase } from './supabaseClient';
+import { createSupabaseRepository } from './supabaseRepository';
 
-// Phase 1 (public MVP): local backend only. The privacy phase will pick the
-// Supabase implementation here when its credentials are configured.
-export const repository: MemoriesRepository = createLocalRepository();
+// Two backends behind the same contract: the portfolio demo (fictional data,
+// in memory only: it starts over on every launch and is not meant to be used
+// for real) and Supabase (real accounts and shared channels). The auth layer picks one before any screen is rendered; screens
+// just import `repository`.
+
+let local: MemoriesRepository | null = null;
+let remote: MemoriesRepository | null = null;
+let current: MemoriesRepository | null = null;
+
+export type Backend = MemoriesRepository['mode'];
+
+export function selectBackend(mode: Backend): void {
+  if (mode === 'supabase') {
+    const client = getSupabase();
+    if (!client) throw new Error('Supabase is not configured');
+    remote ??= createSupabaseRepository(client);
+    current = remote;
+  } else {
+    local ??= createLocalRepository({ store: memoryStore() });
+    current = local;
+  }
+}
+
+function active(): MemoriesRepository {
+  if (!current) selectBackend('local');
+  return current!;
+}
+
+export const repository: MemoriesRepository = new Proxy({} as MemoriesRepository, {
+  get: (_target, key) => Reflect.get(active(), key),
+});
