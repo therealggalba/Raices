@@ -21,6 +21,7 @@ Se sirve en producción bajo `/family-memories/`.
 | Cronología por años | ✅ |
 | Fechas importantes (aniversario anual numerado), vista anual global con filtros y aviso emergente del día | ✅ |
 | Personas (ficha, biografía, vídeos y fechas asociados) | ✅ |
+| Árbol genealógico en canales de tipo Familia (ver «Hoja de ruta») | ⏳ |
 | Fase 2: álbumes, cromos, sobres, rarezas | ⏳ |
 | Fase 3: audios, muro de recuerdos | ⏳ |
 | Privacidad real (Supabase Auth + RLS) | ⏳ |
@@ -34,6 +35,19 @@ Se sirve en producción bajo `/family-memories/`.
 - **Patrón repositorio** (`src/services/repository.ts`): la UI solo habla con `MemoriesRepository`. La implementación
   local (`localRepository.ts`) se comporta como un servidor (comprueba roles y valida cada entrada), de modo que la
   futura implementación Supabase se enchufa sin tocar las pantallas.
+
+## Hoja de ruta: árbol genealógico (decidido 2026-10-17, pendiente)
+
+En los canales de tipo **Familia**, sustituir el texto libre «Relación familiar» por un árbol real:
+
+- **Vínculos registrados**: padre/madre y pareja(s) de cada persona (con fecha de boda o separación
+  opcional). Abuelos, tíos, primos, cuñados, etc. se **calculan** a partir de ellos; cubre familias
+  reconstituidas y segundas parejas.
+- **Parentesco relativo a quien mira**: cada usuario se vincula a «su» persona del árbol y ve las relaciones
+  desde ella (tú ves «Abuelo», tu sobrino ve «Bisabuelo»). Sin vínculo, se usa una persona de referencia del canal.
+- Vista de árbol navegable en el canal; ficha de persona con padres, pareja(s), hijos y hermanos.
+- Las personas existentes se conservan; solo habrá que añadirles sus vínculos. Mientras tanto, la
+  «Relación familiar» se escribe tomando como referencia al propietario del canal.
 
 ## Arquitectura
 
