@@ -75,6 +75,11 @@ export function AlbumPage() {
       {sections.length === 0 ? (
         <EmptyState>
           <p>Este álbum todavía no tiene cromos.</p>
+          {isAdmin && (
+            <LinkButton to={`/c/${channel.id}/album/nuevo`} variant="primary">
+              Crear el primer cromo
+            </LinkButton>
+          )}
         </EmptyState>
       ) : (
         <>

@@ -21,13 +21,14 @@ export function AlbumsPage() {
       const cover = sortCards(cards.filter((c) => unlocked.has(c.id))).slice(-COVER_CARDS).reverse();
       return { channel, cards, cover, progress: albumProgress(cards, unlocked) };
     })
-    .filter((a) => a.cards.length > 0);
+    // Admins also see their empty albums: that's where the first cromo is added.
+    .filter((a) => a.cards.length > 0 || a.channel.role === 'admin');
 
   return (
     <div className={styles.page}>
       <div className={styles.head}>
         <h1>Álbumes</h1>
-        {albums.length > 0 && (
+        {albums.some((a) => a.cards.length > 0) && (
           <LinkButton to="/sobres" variant={library.packs.remaining ? 'primary' : 'secondary'} small>
             Sobres ({library.packs.remaining}/{library.packs.perDay})
           </LinkButton>
@@ -50,14 +51,16 @@ export function AlbumsPage() {
                   ))
                 ) : (
                   <span className={styles.coverEmpty}>
-                    <Icon name="lock" size={28} />
+                    {cards.length === 0 ? 'Vacío' : <Icon name="lock" size={28} />}
                   </span>
                 )}
               </span>
               <span className={styles.body}>
                 <span className={styles.name}>{channel.name}</span>
                 <span className={styles.meta}>
-                  {CHANNEL_KIND_LABELS[channel.kind]} · {cards.length} {cards.length === 1 ? 'cromo' : 'cromos'}
+                  {cards.length === 0
+                    ? 'Sin cromos · añade el primero'
+                    : `${CHANNEL_KIND_LABELS[channel.kind]} · ${cards.length} ${cards.length === 1 ? 'cromo' : 'cromos'}`}
                 </span>
                 <ProgressMeter progress={progress} compact />
               </span>

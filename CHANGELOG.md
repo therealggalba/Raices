@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.1 — 2026-10-18
+
+- Álbumes: los administradores ven también los álbumes vacíos de sus canales («Sin cromos · añade el primero»)
+  y, dentro, el botón «Crear el primer cromo». Antes un canal sin cromos no aparecía y no había forma de crear
+  el primero.
+
 ## 0.19.0 — 2026-10-18
 
 - Fotos: botones «Cámara» y «Galería» (en la app de Android, con el plugin de cámara, que pide permiso al
