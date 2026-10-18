@@ -182,7 +182,14 @@ export function DatesPage() {
                       key={o.key}
                       event={o}
                       people={library.people}
-                      channelName={multiChannel ? channel?.name : undefined}
+                      channelName={
+                        multiChannel
+                          ? o.channelIds
+                              .map((id) => channelById(id)?.name)
+                              .filter(Boolean)
+                              .join(', ')
+                          : undefined
+                      }
                       actions={
                         o.eventId && channel?.role === 'admin' ? (
                           <Link className={styles.edit} to={`/c/${o.channelId}/eventos?editar=${o.eventId}`}>

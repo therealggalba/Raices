@@ -1,4 +1,4 @@
-import type { Partnership, Person } from '../types/domain';
+import type { Partnership, PartnershipInput, Person } from '../types/domain';
 import { sortPeople } from './people';
 
 // Family tree of a channel. Only parents (up to two) and partnerships are
@@ -304,4 +304,38 @@ export function relativesOf(person: Person, people: readonly Person[], partnersh
     people.filter((p) => p.id !== person.id && p.parentIds.some((id) => person.parentIds.includes(id))),
   );
   return { parents, partners, children, siblings };
+}
+
+/** One couple as edited in the person form. */
+export interface PartnerRow {
+  /** Existing partnership, if any. */
+  id?: string;
+  partnerId: string;
+  since: string;
+  until: string;
+}
+
+/** What to save after editing a person's couples (new, changed and removed ones). */
+export function partnerChanges(
+  personId: string,
+  original: readonly Partnership[],
+  rows: readonly PartnerRow[],
+): { add: PartnershipInput[]; update: { id: string; input: PartnershipInput }[]; remove: string[] } {
+  const input = (row: PartnerRow): PartnershipInput => ({
+    personIds: [personId, row.partnerId],
+    ...(row.since ? { since: row.since } : {}),
+    ...(row.until ? { until: row.until } : {}),
+  });
+  const kept = new Set(rows.map((r) => r.id).filter(Boolean));
+  return {
+    add: rows.filter((r) => !r.id && r.partnerId).map(input),
+    update: rows
+      .filter((r) => r.id)
+      .filter((r) => {
+        const before = original.find((p) => p.id === r.id);
+        return !!before && ((before.since ?? '') !== r.since || (before.until ?? '') !== r.until);
+      })
+      .map((r) => ({ id: r.id!, input: input(r) })),
+    remove: original.filter((p) => !kept.has(p.id)).map((p) => p.id),
+  };
 }

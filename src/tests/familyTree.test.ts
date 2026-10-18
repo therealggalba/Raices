@@ -140,3 +140,17 @@ describe('children centred under their parents', () => {
     for (const xs of rows.values()) xs.slice(1).forEach((v, i) => expect(v - xs[i]).toBeGreaterThanOrEqual(100));
   });
 });
+
+describe('partnerChanges', () => {
+  it('works out what to add, change and remove', async () => {
+    const { partnerChanges } = await import('../utils/familyTree');
+    const original = [couple('A', 'B'), { ...couple('A', 'C'), since: '1990-01-01' }];
+    const result = partnerChanges('A', original, [
+      { id: 'A+C', partnerId: 'C', since: '1990-01-01', until: '2000-05-05' },
+      { partnerId: 'D', since: '', until: '' },
+    ]);
+    expect(result.remove).toEqual(['A+B']);
+    expect(result.update).toEqual([{ id: 'A+C', input: { personIds: ['A', 'C'], since: '1990-01-01', until: '2000-05-05' } }]);
+    expect(result.add).toEqual([{ personIds: ['A', 'D'] }]);
+  });
+});

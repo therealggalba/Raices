@@ -1,0 +1,44 @@
+@use '../styles/variables' as *;
+
+.box {
+  display: grid;
+  gap: $space-3;
+  margin: 0;
+  padding: $space-3;
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+
+  legend {
+    padding: 0 $space-1;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: $space-2;
+  padding-bottom: $space-3;
+  border-bottom: 1px solid $color-line;
+
+  > select,
+  > strong {
+    width: 100%;
+  }
+}
+
+.dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-2;
+  width: 100%;
+
+  label {
+    display: grid;
+    gap: 2px;
+    font-size: 0.8rem;
+    color: $color-text-muted;
+  }
+}

@@ -16,6 +16,9 @@ export const ALERT_WINDOW_DAYS = 7;
 interface DateSource {
   key: string;
   channelId: string;
+  channelIds: string[];
+  /** Ways to recognise the same date in another channel. */
+  identities: string[];
   type: EventType;
   title: string;
   originDate: IsoDate;
@@ -23,11 +26,14 @@ interface DateSource {
   eventId?: string;
 }
 
-function sources(events: readonly FamilyEvent[], people: readonly Person[]): DateSource[] {
+function rawSources(events: readonly FamilyEvent[], people: readonly Person[]): DateSource[] {
   const covered = new Set(events.filter((e) => e.type === 'cumpleanos').flatMap((e) => e.personIds));
+  const same = (type: EventType, date: string, text: string) => `${type}|${date}|${foldText(text).trim()}`;
   const list: DateSource[] = events.map((e) => ({
     key: `event:${e.id}`,
     channelId: e.channelId,
+    channelIds: [e.channelId],
+    identities: [same(e.type, e.date, e.title)],
     type: e.type,
     title: e.title,
     originDate: e.date,
@@ -42,6 +48,11 @@ function sources(events: readonly FamilyEvent[], people: readonly Person[]): Dat
       list.push({
         key: `death:${person.id}`,
         channelId: person.channelId,
+        channelIds: [person.channelId],
+        identities: [
+          same('fallecimiento', person.deathDate, fullName(person)),
+          same('fallecimiento', person.deathDate, `En memoria de ${person.firstName}`),
+        ],
         type: 'fallecimiento',
         title: `En memoria de ${person.firstName}`,
         originDate: person.deathDate,
@@ -53,6 +64,12 @@ function sources(events: readonly FamilyEvent[], people: readonly Person[]): Dat
     list.push({
       key: `birthday:${person.id}`,
       channelId: person.channelId,
+      channelIds: [person.channelId],
+      // The same person in several channels: same full name and birth date.
+      identities: [
+        same('cumpleanos', person.birthDate, fullName(person)),
+        same('cumpleanos', person.birthDate, `Cumpleaños de ${person.firstName}`),
+      ],
       type: 'cumpleanos',
       title: `Cumpleaños de ${person.firstName}`,
       originDate: person.birthDate,
@@ -60,6 +77,28 @@ function sources(events: readonly FamilyEvent[], people: readonly Person[]): Dat
     });
   }
   return list;
+}
+
+/**
+ * Every date once: when several channels have the same one (the same person's
+ * birthday, the same wedding…), it is shown a single time, listing all of
+ * them in channelIds.
+ */
+function sources(events: readonly FamilyEvent[], people: readonly Person[]): DateSource[] {
+  const merged: DateSource[] = [];
+  const byIdentity = new Map<string, DateSource>();
+  for (const source of rawSources(events, people)) {
+    const twin = source.identities.map((id) => byIdentity.get(id)).find(Boolean);
+    if (twin) {
+      if (!twin.channelIds.includes(source.channelId)) twin.channelIds.push(source.channelId);
+      for (const id of source.identities) if (!byIdentity.has(id)) byIdentity.set(id, twin);
+      continue;
+    }
+    const copy = { ...source, channelIds: [...source.channelIds] };
+    merged.push(copy);
+    for (const id of source.identities) byIdentity.set(id, copy);
+  }
+  return merged;
 }
 
 /** The occurrence of a date in `year`; null before the year it first happened. */
@@ -74,7 +113,8 @@ function toOccurrence(source: DateSource, year: number, today: IsoDate): DateOcc
   if (!occ) return null;
   // Saints' days and the like don't count years.
   const years = DAY_ONLY_EVENT_TYPES.includes(source.type) ? 0 : occ.years;
-  return { ...source, date: occ.date, years, daysUntil: daysBetween(today, occ.date) };
+  const { identities: _identities, ...rest } = source;
+  return { ...rest, date: occ.date, years, daysUntil: daysBetween(today, occ.date) };
 }
 
 function byDate(a: DateOccurrence, b: DateOccurrence): number {
@@ -141,7 +181,7 @@ export function filterDates(
   const types = new Set(filters.types);
   const terms = foldText(filters.query).split(/\s+/).filter(Boolean);
   return occurrences.filter((o) => {
-    if (channels.size && !channels.has(o.channelId)) return false;
+    if (channels.size && !o.channelIds.some((id) => channels.has(id))) return false;
     if (months.size && !months.has(Number(o.date.slice(5, 7)))) return false;
     if (types.size && !types.has(o.type)) return false;
     if (terms.length) {

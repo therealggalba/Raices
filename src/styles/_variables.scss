@@ -38,8 +38,11 @@ $touch: 44px;
 $topbar-height: 3.5rem;
 // Android edge-to-edge / iOS notch: the system bars overlap the page, so
 // fixed bars reserve that space (0 on a normal desktop browser).
-$safe-top: env(safe-area-inset-top, 0px);
-$safe-bottom: env(safe-area-inset-bottom, 0px);
+// Android's WebView often reports env(safe-area-inset-*) as 0 even when the
+// app is drawn under the bars; Capacitor (SystemBars, insetsHandling: css)
+// gives the real values as --safe-area-inset-*. The larger of both wins.
+$safe-top: max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px));
+$safe-bottom: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
 /** Real height of the fixed header, status bar included. */
 $header-offset: calc(#{$topbar-height} + #{$safe-top});
 $bottomnav-height: 4rem;

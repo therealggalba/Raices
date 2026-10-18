@@ -5,6 +5,7 @@ import { MAX_SCHEDULED, notificationId, planDateNotifications } from '../native/
 const occ = (key: string, date: string, years = 31): DateOccurrence => ({
   key,
   channelId: 'fam',
+  channelIds: ['fam'],
   type: 'cumpleanos',
   title: `Cumpleaños de ${key}`,
   date,

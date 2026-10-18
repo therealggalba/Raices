@@ -8,11 +8,13 @@ import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
 import { SPECIES } from '../types/domain';
 import type { Gender, PersonInput, Species, UploadedPhoto } from '../types/domain';
-import { descendantsOf } from '../utils/familyTree';
+import { descendantsOf, partnerChanges } from '../utils/familyTree';
 import { fullName, humansOnly, sortPeople } from '../utils/people';
 import { guessGender } from '../utils/genderNames';
 import { PhotoField } from '../components/PhotoField';
 import { SPECIES_LABELS } from '../utils/labels';
+import { PartnersEditor } from '../components/PartnersEditor';
+import type { PartnerRow } from '../utils/familyTree';
 import styles from './PersonFormPage.module.scss';
 
 /** Add (/personas/nueva) or edit (/personas/:personId/editar) a person. Admins only. */
@@ -49,6 +51,25 @@ export function PersonFormPage() {
   const [biography, setBiography] = useState(existing?.biography ?? '');
   const [parent1, setParent1] = useState(existing?.parentIds[0] ?? '');
   const [parent2, setParent2] = useState(existing?.parentIds[1] ?? '');
+  // Couples, edited here (the profile only shows them).
+  const originalPartners = existing ? snapshot.partnerships.filter((c) => c.personIds.includes(existing.id)) : [];
+  const [partners, setPartners] = useState<PartnerRow[]>(() =>
+    originalPartners.map((c) => ({
+      id: c.id,
+      partnerId: c.personIds.find((pid) => pid !== existing?.id)!,
+      since: c.since ?? '',
+      until: c.until ?? '',
+    })),
+  );
+  const withCouples = isFamily && !pet;
+  /** Saves the couples once the person exists. */
+  const saveCouples = async (personId: string) => {
+    if (!withCouples) return;
+    const { add, update, remove } = partnerChanges(personId, originalPartners, partners);
+    for (const id of remove) await repository.deletePartnership(channelId, id);
+    for (const { id, input } of update) await repository.updatePartnership(channelId, id, input);
+    for (const input of add) await repository.addPartnership(channelId, input);
+  };
 
   // Members may correct their own card (the tree links stay with the admins).
   const selfMode = !isAdmin && !!existing && existing.id === snapshot.me.personId;
@@ -129,6 +150,7 @@ export function PersonFormPage() {
             }
             if (existing) {
               await repository.updatePerson(channelId, existing.id, input);
+              await saveCouples(existing.id);
               return existing.id;
             }
             const added = await repository.addPerson(channelId, input);
@@ -136,6 +158,7 @@ export function PersonFormPage() {
               const photo = await repository.uploadPhoto(channelId, 'persona', pendingPhoto, { personId: added.id });
               await repository.updatePerson(channelId, added.id, { ...input, photoUrl: undefined, photoPath: photo.path });
             }
+            await saveCouples(added.id);
             if (isSelf) await repository.linkMemberPerson(channelId, snapshot.me.userId, added.id);
             return added.id;
           });
@@ -225,6 +248,13 @@ export function PersonFormPage() {
               </select>
             ))}
           </fieldset>
+        )}
+        {withCouples && !selfMode && (
+          <PartnersEditor
+            candidates={sortPeople(humansOnly(snapshot.people)).filter((p) => p.id !== existing?.id)}
+            rows={partners}
+            onChange={setPartners}
+          />
         )}
         <Field label="Fecha de nacimiento" htmlFor="birthDate">
           <input

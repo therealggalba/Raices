@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   anniversaryLabel,
+  DEFAULT_DATE_FILTERS,
   dateParams,
   filterDates,
   occurrenceIn,
@@ -137,5 +138,22 @@ describe('day-only dates (saints, family traditions)', () => {
     const [next] = upcomingEvents([santo], [], '2026-06-01', 30);
     expect(next).toMatchObject({ date: '2026-06-13', years: 0 });
     expect(anniversaryLabel(next)).toBeNull();
+  });
+});
+
+describe('the same date in several channels', () => {
+  it('shows once, listing every channel', () => {
+    const inFamily = makePerson({ id: 'g1', channelId: 'familia', firstName: 'Gonzalo', lastName: 'Galba', birthDate: '1995-03-30' });
+    const inFriends = makePerson({ id: 'g2', channelId: 'amigos', firstName: 'Gonzalo', lastName: 'Galba', birthDate: '1995-03-30' });
+    const other = makePerson({ id: 'g3', channelId: 'amigos', firstName: 'Gonzalo', lastName: 'Pérez', birthDate: '1990-03-30' });
+    const wedding = (id: string, channelId: string) =>
+      makeEvent({ id, channelId, type: 'boda', title: 'Boda de Luis y Elena', date: '1996-06-15' });
+    const list = upcomingEvents([wedding('w1', 'familia'), wedding('w2', 'primos')], [inFamily, inFriends, other], '2026-03-01', 120);
+    const birthdays = list.filter((o) => o.type === 'cumpleanos');
+    expect(birthdays).toHaveLength(2);
+    expect(birthdays.find((o) => o.personIds[0] === 'g1')?.channelIds).toEqual(['familia', 'amigos']);
+    expect(list.filter((o) => o.type === 'boda').map((o) => o.channelIds)).toEqual([['familia', 'primos']]);
+    // Filtering by any of its channels still finds it.
+    expect(filterDates(list, { ...DEFAULT_DATE_FILTERS, channelIds: ['primos'] }, []).map((o) => o.type)).toEqual(['boda']);
   });
 });

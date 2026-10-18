@@ -7,7 +7,7 @@ import { VideoRow } from '../components/VideoRow';
 import { useChannel } from '../hooks/channel-context';
 import { buildCatalogRows, featuredVideo } from '../utils/catalog';
 import { ALERT_WINDOW_DAYS, upcomingEvents } from '../utils/events';
-import { sortPeople } from '../utils/people';
+import { isPet, sortPeople } from '../utils/people';
 import styles from './ChannelHomePage.module.scss';
 
 /** One channel's videos: hero, upcoming-event alerts, rows by category, people. */
@@ -17,6 +17,10 @@ export function ChannelHomePage() {
   const hero = featuredVideo(videos);
   const rows = buildCatalogRows(videos, favoriteVideoIds);
   const alerts = upcomingEvents(events, people, today, ALERT_WINDOW_DAYS);
+  // Living people (oldest first), then living pets; those who passed away
+  // only appear in the full list of people.
+  const living = sortPeople(people).filter((p) => !p.deathDate);
+  const shown = [...living.filter((p) => !isPet(p)), ...living.filter(isPet)];
 
   return (
     <div className={styles.home}>
@@ -54,11 +58,11 @@ export function ChannelHomePage() {
         />
       ))}
 
-      {people.length > 0 && (
+      {shown.length > 0 && (
         <section className={styles.people} aria-label="Personas">
           <h2 className={styles.rowTitle}>Las personas del canal</h2>
           <div className={styles.peopleScroller}>
-            {sortPeople(people).map((person) => (
+            {shown.map((person) => (
               <Link key={person.id} to={`/c/${channel.id}/personas/${person.id}`} className={styles.person}>
                 <PersonAvatar person={person} size={72} />
                 <span>{person.firstName}</span>

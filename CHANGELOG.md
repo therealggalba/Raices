@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.20.0 — 2026-10-18
+
+- Parejas: se gestionan en «Editar» de cada persona (apartado «Pareja», con fecha de boda o inicio y de
+  separación); la ficha solo las muestra.
+- Márgenes del móvil: la app usa los tamaños reales de la barra de estado y de la barra de navegación de
+  Android (Capacitor SystemBars), para que la barra inferior no choque con los botones del teléfono.
+- Fechas: la misma fecha presente en varios canales (la misma persona, la misma boda…) aparece una sola vez,
+  indicando todos sus canales.
+- Inicio del canal: personas vivas por edad, después mascotas vivas; las fallecidas solo en la lista de personas.
+
 ## 0.19.1 — 2026-10-18
 
 - Álbumes: los administradores ven también los álbumes vacíos de sus canales («Sin cromos · añade el primero»)

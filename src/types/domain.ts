@@ -445,7 +445,9 @@ export interface ChannelSnapshot {
  */
 export interface DateOccurrence {
   key: string;
+  /** First channel where it is; channelIds has all of them (the same date in several channels shows once). */
   channelId: string;
+  channelIds: string[];
   type: EventType;
   title: string;
   /** Day of this occurrence. */
