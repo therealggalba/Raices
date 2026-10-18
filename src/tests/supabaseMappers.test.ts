@@ -49,7 +49,6 @@ describe('row mappers', () => {
       photo_url: null,
       relationship: 'Abuela',
       biography: '',
-      notes: '',
       parent_ids: [],
     });
     expect(person.birthDate).toBe('1950-02-01');

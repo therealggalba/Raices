@@ -1,4 +1,4 @@
-import type { IsoDate, Partnership, Person } from '../types/domain';
+import type { FieldChange, IsoDate, Partnership, Person, SelfPersonInput } from '../types/domain';
 import { capitalize, kinship } from './kinship';
 import { parsePartialDate } from './dates';
 
@@ -52,5 +52,16 @@ export function sortPeople(people: readonly Person[]): Person[] {
     if (a.birthDate) return -1;
     if (b.birthDate) return 1;
     return fullName(a).localeCompare(fullName(b), 'es');
+  });
+}
+
+const SELF_FIELDS = ['firstName', 'lastName', 'birthDate', 'gender', 'photoUrl', 'biography'] as const;
+
+/** What a member changed on their own card (for the admins' inbox). */
+export function selfChanges(before: Person, after: SelfPersonInput): FieldChange[] {
+  return SELF_FIELDS.flatMap((field) => {
+    const old = before[field] ?? '';
+    const now = after[field] ?? '';
+    return old === now ? [] : [{ field, before: old, after: now }];
   });
 }

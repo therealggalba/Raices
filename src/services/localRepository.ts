@@ -3,6 +3,8 @@ import type {
   AlbumCard,
   CardCopy,
   Channel,
+  ChannelNotification,
+  FieldChange,
   ChannelSnapshot,
   ChannelSummary,
   FamilyEvent,
@@ -21,6 +23,7 @@ import type {
   WatchProgress,
 } from '../types/domain';
 import { nextCardNumber } from '../utils/album';
+import { selfChanges } from '../utils/people';
 import { partnershipKey, wouldCreateCycle } from '../utils/familyTree';
 import { newId } from '../utils/ids';
 import { drawPack, packStatus, cryptoRandom } from '../utils/packs';
@@ -43,6 +46,7 @@ import {
   validateDisplayName,
   validateEventInput,
   validatePersonInput,
+  validateSelfPersonInput,
   validateVideoInput,
 } from '../utils/validation';
 import type { MemoriesRepository } from './repository';
@@ -76,6 +80,7 @@ export interface Db {
   copies: CardCopy[];
   packs: PackOpening[];
   partnerships: Partnership[];
+  notifications: ChannelNotification[];
 }
 
 export interface KeyValueStore {
@@ -124,6 +129,7 @@ const COLLECTIONS = [
   'copies',
   'packs',
   'partnerships',
+  'notifications',
 ] as const;
 
 /** Kinds given to channels created before kinds existed (schema v1). */
@@ -203,6 +209,11 @@ export function migrateDb(data: Record<string, unknown>, now: Date = new Date())
     data.partnerships = [];
     addDemoFamilyTree(data as unknown as Db);
     data.schemaVersion = 8;
+  }
+  if (data.schemaVersion === 8) {
+    // Admins' inbox.
+    data.notifications = [];
+    data.schemaVersion = 9;
   }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
@@ -319,6 +330,21 @@ export function createLocalRepository({
     db.copies = inChannel(db.copies);
     db.packs = inChannel(db.packs);
     db.partnerships = inChannel(db.partnerships);
+    db.notifications = inChannel(db.notifications);
+  }
+
+  /** Tells the channel's admins (inbox). */
+  function notify(channelId: string, kind: ChannelNotification['kind'], member: Member, changes: FieldChange[] = []) {
+    db.notifications.push({
+      id: newId(),
+      channelId,
+      kind,
+      actorId: member.userId,
+      actorName: member.displayName,
+      ...(member.personId ? { personId: member.personId } : {}),
+      changes,
+      createdAt: nowIso(),
+    });
   }
 
   const repo: MemoriesRepository = {
@@ -435,6 +461,7 @@ export function createLocalRepository({
         cards: of(db.cards),
         partnerships: of(db.partnerships),
         invitations: member.role === 'admin' ? of(db.invitations) : [],
+        unreadNotifications: member.role === 'admin' ? of(db.notifications).filter((n) => !n.readAt).length : 0,
         favoriteVideoIds: of(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
           .map((f) => f.videoId),
@@ -465,6 +492,7 @@ export function createLocalRepository({
           throw new RepositoryError('conflict', 'Nombra a otro administrador antes de salir del canal');
         }
         db.members = db.members.filter((m) => m !== member);
+        notify(channelId, 'member_left', member);
         db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === member.userId));
         db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === member.userId));
         db.copies = db.copies.filter((c) => !(c.channelId === channelId && c.userId === member.userId));
@@ -498,6 +526,7 @@ export function createLocalRepository({
         invitationId: invitation.id,
         ...(personFree ? { personId } : {}),
       });
+      notify(invitation.channelId, 'member_joined', db.members[db.members.length - 1]);
       commit();
       return invitation.channelId;
     },
@@ -573,8 +602,9 @@ export function createLocalRepository({
     async removeMember(channelId, userId) {
       const admin = requireAdmin(channelId);
       if (userId === admin.userId) throw new RepositoryError('conflict', 'Para salir del canal usa «Salir del canal»');
-      const exists = db.members.some((m) => m.channelId === channelId && m.userId === userId);
-      if (!exists) throw new RepositoryError('not-found', 'Ese miembro no existe');
+      const removed = db.members.find((m) => m.channelId === channelId && m.userId === userId);
+      if (!removed) throw new RepositoryError('not-found', 'Ese miembro no existe');
+      notify(channelId, 'member_removed', removed);
       db.members = db.members.filter((m) => !(m.channelId === channelId && m.userId === userId));
       db.favorites = db.favorites.filter((f) => !(f.channelId === channelId && f.userId === userId));
       db.progress = db.progress.filter((p) => !(p.channelId === channelId && p.userId === userId));
@@ -663,6 +693,39 @@ export function createLocalRepository({
       for (const m of db.members) if (m.channelId === channelId && m.personId === personId) delete m.personId;
       // Their cromos stay in the album, under "Varios".
       for (const c of db.cards) if (c.channelId === channelId && c.personId === personId) delete c.personId;
+      commit();
+    },
+
+    async updateMyPerson(channelId, input) {
+      const me = requireMember(channelId);
+      if (!me.personId) throw new RepositoryError('forbidden', 'Primero elige quién eres en este canal');
+      const person = findIn(db.people, channelId, me.personId, 'Tu ficha');
+      const value = ensure(validateSelfPersonInput(input));
+      const changes = selfChanges(person, value);
+      if (changes.length === 0) return;
+      const index = db.people.indexOf(person);
+      const updated: Person = { ...person, firstName: value.firstName, lastName: value.lastName, biography: value.biography };
+      for (const key of ['birthDate', 'gender', 'photoUrl'] as const) {
+        if (value[key]) (updated as unknown as Record<string, unknown>)[key] = value[key];
+        else delete updated[key];
+      }
+      db.people[index] = updated;
+      // Admins edit cards anyway: only members' corrections are reported.
+      if (me.role !== 'admin') notify(channelId, 'person_edited', me, changes);
+      commit();
+    },
+
+    async listNotifications(channelId) {
+      requireAdmin(channelId);
+      return clone(
+        db.notifications.filter((n) => n.channelId === channelId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      );
+    },
+
+    async markNotificationsRead(channelId) {
+      requireAdmin(channelId);
+      const at = nowIso();
+      for (const n of db.notifications) if (n.channelId === channelId && !n.readAt) n.readAt = at;
       commit();
     },
 

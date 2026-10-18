@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -101,7 +101,6 @@ export interface Person {
   /** Free text: "Abuelo materno", "Prima", "Amigo de la familia"… */
   relationship: string;
   biography: string;
-  notes: string;
   /** Up to two parents, people of the same channel (family tree). */
   parentIds: string[];
 }
@@ -231,6 +230,32 @@ export interface Invitation {
 
 export type InvitationStatus = 'active' | 'used' | 'expired' | 'revoked';
 
+/** What a channel's admins are told about in their inbox. */
+export const NOTIFICATION_KINDS = ['person_edited', 'member_joined', 'member_left', 'member_removed'] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+/** One field changed by a member on their own card. */
+export interface FieldChange {
+  field: keyof SelfPersonInput;
+  before: string;
+  after: string;
+}
+
+export interface ChannelNotification {
+  id: string;
+  channelId: string;
+  kind: NotificationKind;
+  /** The member concerned (who edited, joined, left or was removed). */
+  actorId?: string;
+  actorName: string;
+  /** Their person in the channel, when there is one. */
+  personId?: string;
+  /** Only for person_edited. */
+  changes: FieldChange[];
+  createdAt: IsoDateTime;
+  readAt?: IsoDateTime;
+}
+
 /** One playback of a video by a member ("Lo más visto"). */
 export interface ViewRecord {
   channelId: string;
@@ -277,9 +302,18 @@ export interface PersonInput {
   photoUrl?: string;
   relationship: string;
   biography: string;
-  notes: string;
   /** Up to two parents (omitted = none). */
   parentIds?: string[];
+}
+
+/** What a member may correct on their own card (the tree links stay with the admins). */
+export interface SelfPersonInput {
+  firstName: string;
+  lastName: string;
+  birthDate?: IsoDate;
+  gender?: Gender;
+  photoUrl?: string;
+  biography: string;
 }
 
 export interface PartnershipInput {
@@ -338,6 +372,8 @@ export interface ChannelSnapshot {
   partnerships: Partnership[];
   /** Only filled for admins. */
   invitations: Invitation[];
+  /** Admins: notifications not read yet (0 for members). */
+  unreadNotifications: number;
   favoriteVideoIds: string[];
 }
 

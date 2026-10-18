@@ -28,7 +28,7 @@ export function PersonPage() {
   }
 
   const age = lifeAge(person, today);
-  const relation = relationTo(person, me.personId, people, partnerships);
+  const relation = channel.kind === 'familia' ? relationTo(person, me.personId, people, partnerships) : '';
   const isMe = me.personId === person.id;
   const linkedMember = members.find((m) => m.personId === person.id);
   const theirVideos = videosOfPerson(videos, person.id);
@@ -62,6 +62,11 @@ export function PersonPage() {
             </p>
           )}
           {isMe && <p className={styles.me}>Eres tú</p>}
+          {isMe && !isAdmin && (
+            <LinkButton to={`/c/${channel.id}/personas/${person.id}/editar`} small>
+              Editar mis datos
+            </LinkButton>
+          )}
           {!isMe && linkedMember && <p className={ui.muted}>En el canal: {linkedMember.displayName}</p>}
           {isAdmin && (
             <LinkButton to={`/c/${channel.id}/personas/${person.id}/editar`} small>
@@ -77,12 +82,6 @@ export function PersonPage() {
           <section className={ui.section}>
             <h2>Biografía</h2>
             <p className={styles.text}>{person.biography}</p>
-          </section>
-        )}
-        {person.notes && (
-          <section className={ui.section}>
-            <h2>Notas</h2>
-            <p className={styles.text}>{person.notes}</p>
           </section>
         )}
         {theirEvents.length > 0 && (

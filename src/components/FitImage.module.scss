@@ -1,10 +1,12 @@
+@use '../styles/variables' as *;
+
 .fit {
   position: relative;
   display: block;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #111;
+  background: $color-bg-panel;
 
   img {
     position: absolute;
@@ -12,16 +14,6 @@
     display: block;
     width: 100%;
     height: 100%;
+    object-fit: cover;
   }
-}
-
-// Same photo, zoomed to fill and blurred: fills the bands around the photo.
-.backdrop {
-  object-fit: cover;
-  filter: blur(18px) brightness(0.65) saturate(1.1);
-  transform: scale(1.2);
-}
-
-.main {
-  object-fit: contain;
 }

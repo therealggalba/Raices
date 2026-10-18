@@ -200,5 +200,31 @@ ok((await as(A, `select person_id from public.channel_members where channel_id =
 ok((await as(A, `insert into public.events (channel_id, type, title, date) values ($1, 'fallecimiento', 'En memoria', '1990-01-01') returning id`, [ch])).length === 1, 'existe el tipo de fecha «fallecimiento»');
 ok(!!(await fails(C, `select public.set_member_person($1, $2, $3)`, [ch, C, abuelo.id])), 'quien no es del canal no puede enlazarse');
 
+// Inbox and members correcting their own card (0005)
+const inbox = async () => as(A, `select kind, actor_name, changes from public.channel_notifications where channel_id = $1 order by created_at`, [ch]);
+const kinds = (await inbox()).map((n) => n.kind);
+ok(kinds.filter((k) => k === 'member_joined').length === 2, 'el buzón registra a quienes entran con invitación (B y D)');
+ok(kinds.includes('member_left'), 'y a quien sale del canal (B)');
+ok(!kinds.includes('member_removed'), 'nadie ha sido expulsado todavía');
+ok((await as(Dusr, `select * from public.channel_notifications`)).length === 0, 'un miembro no ve el buzón');
+ok(!!(await fails(A, `insert into public.channel_notifications (channel_id, kind) values ($1, 'member_left')`, [ch])), 'nadie escribe en el buzón a mano');
+ok((await fails(Dusr, `select public.update_my_person($1, 'X', '', null, null, null, '')`, [ch]))?.includes('elige quién eres'), 'sin ficha asignada no se puede editar nada');
+await as(A, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id]);
+await as(Dusr, `select public.update_my_person($1, 'Abuelo Pepe', 'García', '1940-02-03', 'hombre', null, 'Corregido por mí')`, [ch]);
+const edited = (await inbox()).find((n) => n.kind === 'person_edited');
+ok(edited && edited.changes.some((c) => c.field === 'firstName' && c.before === 'Abuelo' && c.after === 'Abuelo Pepe'), 'un miembro corrige su ficha y el admin ve qué cambió');
+ok((await as(A, `select first_name, biography from public.people where id = $1`, [abuelo.id]))[0].biography === 'Corregido por mí', 'el cambio se guarda');
+ok(!!(await fails(Dusr, `select public.update_my_person($1, '', '', null, null, null, '')`, [ch])), 'los datos se siguen validando (nombre obligatorio)');
+ok(!!(await fails(Dusr, `update public.people set parent_ids = '{}' where id = $1 returning id`, [abuelo.id])) || (await as(Dusr, `update public.people set first_name = 'Hack' where id = $1 returning id`, [abuelo.id])).length === 0, 'fuera de esa función, un miembro no puede editar fichas');
+const before = (await inbox()).length;
+await as(A, `select public.update_my_person($1, 'Hijo', '', null, null, null, 'Lo edita el admin')`, [ch]);
+ok((await inbox()).length === before, 'las ediciones de un admin no generan aviso');
+await as(A, `select public.remove_member($1, $2)`, [ch, Dusr]);
+ok((await inbox()).some((n) => n.kind === 'member_removed' && n.actor_name === 'Dani'), 'el buzón registra las expulsiones');
+ok((await as(A, `select count(*)::int n from public.channel_notifications where channel_id = $1 and read_at is null`, [ch]))[0].n > 0, 'hay avisos sin leer');
+await as(A, `select public.mark_notifications_read($1)`, [ch]);
+ok((await as(A, `select count(*)::int n from public.channel_notifications where channel_id = $1 and read_at is null`, [ch]))[0].n === 0, 'el admin los marca como leídos');
+ok(!!(await fails(Dusr, `select public.mark_notifications_read($1)`, [ch])), 'un no-admin no puede marcarlos');
+
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);

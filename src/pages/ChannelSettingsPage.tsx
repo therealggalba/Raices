@@ -14,6 +14,7 @@ import { PackArt } from '../components/PackArt';
 import { PACK_LOOKS } from '../components/pack-looks';
 import { EXPIRY_OPTIONS_DAYS, STATUS_LABELS, invitationStatus } from '../utils/invitations';
 import { CHANNEL_KIND_LABELS, ROLE_LABELS } from '../utils/labels';
+import { InboxSection } from './InboxSection';
 import styles from './ChannelSettingsPage.module.scss';
 
 const dateTime = (iso: string) =>
@@ -27,6 +28,7 @@ export function ChannelSettingsPage() {
   return (
     <div className={ui.page}>
       <h1>{channel.name}</h1>
+      {isAdmin && <InboxSection />}
       {isAdmin ? <ChannelInfoForm /> : channel.description && <p className={styles.text}>{channel.description}</p>}
       <MembersSection />
       {isAdmin && <InvitationsSection />}

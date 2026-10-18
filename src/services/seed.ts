@@ -114,11 +114,10 @@ export function buildDemoDb(now: Date): Db {
 
   const person = (
     id: string,
-    p: Omit<Person, 'id' | 'channelId' | 'notes' | 'parentIds'> & { notes?: string },
+    p: Omit<Person, 'id' | 'channelId' | 'parentIds'>,
   ): Person => ({
     id,
     channelId: DEMO_FAMILY_ID,
-    notes: '',
     parentIds: [],
     ...p,
   });
@@ -169,15 +168,15 @@ export function buildDemoDb(now: Date): Db {
     }),
     // Other channels (so their albums have categories too).
     { id: 'p-marta', channelId: DEMO_FRIENDS_ID, firstName: 'Marta', lastName: 'Ibáñez', birthDate: sameDayInYear(today, 1982),
-      relationship: 'Amiga', biography: 'Delegada de clase y organizadora oficial de todas las cenas.', notes: '', parentIds: [] },
+      relationship: 'Amiga', biography: 'Delegada de clase y organizadora oficial de todas las cenas.', parentIds: [] },
     { id: 'p-javi', channelId: DEMO_FRIENDS_ID, firstName: 'Javi', lastName: 'Ortega', birthDate: '1982-04-02',
-      relationship: 'Amigo', biography: 'El de la fuente. Ahora es serio (a ratos).', notes: '', parentIds: [] },
+      relationship: 'Amigo', biography: 'El de la fuente. Ahora es serio (a ratos).', parentIds: [] },
     { id: 'p-rosa', channelId: DEMO_COUSINS_ID, firstName: 'Rosa', lastName: 'Sanz Pardo', birthDate: '1975-05-12',
-      relationship: 'Prima', biography: 'Hermana pequeña de Elena. Guardiana de las fotos del pueblo.', notes: '', parentIds: [] },
+      relationship: 'Prima', biography: 'Hermana pequeña de Elena. Guardiana de las fotos del pueblo.', parentIds: [] },
     { id: 'p-andres', channelId: DEMO_COUSINS_ID, firstName: 'Andrés', lastName: 'Vidal', birthDate: '1973-02-08',
-      relationship: 'Primo político', biography: 'Pescador de río y cocinero de fabada.', notes: '', parentIds: [] },
+      relationship: 'Primo político', biography: 'Pescador de río y cocinero de fabada.', parentIds: [] },
     { id: 'p-lucia', channelId: DEMO_COUSINS_ID, firstName: 'Lucía', lastName: 'Vidal Sanz', birthDate: '2001-01-15',
-      relationship: 'Prima', biography: 'Hija de Rosa y Andrés.', notes: '', parentIds: [] },
+      relationship: 'Prima', biography: 'Hija de Rosa y Andrés.', parentIds: [] },
   ];
 
   let n = 0;
@@ -516,6 +515,7 @@ export function buildDemoDb(now: Date): Db {
     copies: demoCopies(cards, userId, now),
     packs: [],
     partnerships: [],
+    notifications: [],
     // Demo: a half-watched video so «continuar» can be seen straight away.
     progress: [
       {
@@ -627,20 +627,20 @@ export const DEMO_PACK_THEMES: Record<string, PackTheme> = {
 /** People who only exist to make the demo tree richer (Luis's sister's family). */
 const DEMO_TREE_PEOPLE: Person[] = [
   { id: 'p-pilar', channelId: DEMO_FAMILY_ID, firstName: 'Pilar', lastName: 'Montero Lozano', birthDate: '1973-08-09',
-    relationship: 'Tía', biography: 'Hermana de Luis. La de los Reyes en su casa.', notes: '', parentIds: [] },
+    relationship: 'Tía', biography: 'Hermana de Luis. La de los Reyes en su casa.', parentIds: [] },
   { id: 'p-jorge', channelId: DEMO_FAMILY_ID, firstName: 'Jorge', lastName: 'Ruiz Toledo', birthDate: '1970-01-22',
-    relationship: 'Tío político', biography: 'Marido de Pilar. Experto en barbacoas.', notes: '', parentIds: [] },
+    relationship: 'Tío político', biography: 'Marido de Pilar. Experto en barbacoas.', parentIds: [] },
   { id: 'p-sofia', channelId: DEMO_FAMILY_ID, firstName: 'Sofía', lastName: 'Ruiz Montero', birthDate: '2003-04-11',
-    relationship: 'Prima', biography: 'Hija de Pilar y Jorge. Estudia Bellas Artes.', notes: '', parentIds: [] },
+    relationship: 'Prima', biography: 'Hija de Pilar y Jorge. Estudia Bellas Artes.', parentIds: [] },
 ];
 
 /** Antonio's parents, who passed away (the tree shows them with a cross). */
 const DEMO_ANCESTORS: Person[] = [
   { id: 'p-manuel', channelId: DEMO_FAMILY_ID, firstName: 'Manuel', lastName: 'Montero Vidal', birthDate: '1912-06-03',
-    deathDate: '1989-01-27', relationship: 'Bisabuelo', notes: '', parentIds: [],
+    deathDate: '1989-01-27', relationship: 'Bisabuelo', parentIds: [],
     biography: 'Agricultor en Úbeda. De él heredó Antonio la paciencia y las manos de carpintero.' },
   { id: 'p-dolores', channelId: DEMO_FAMILY_ID, firstName: 'Dolores', lastName: 'Ruiz Cano', birthDate: '1916-12-08',
-    deathDate: '2004-04-15', relationship: 'Bisabuela', notes: '', parentIds: [],
+    deathDate: '2004-04-15', relationship: 'Bisabuela', parentIds: [],
     biography: 'Costurera. Hizo a mano el vestido de novia de Carmen.' },
 ];
 
@@ -653,9 +653,9 @@ const DEMO_GENDERS: Record<string, Gender> = {
 /** The visitor's own card in the channels where Carlos isn't a person yet. */
 const DEMO_VISITOR_PEOPLE: Person[] = [
   { id: 'p-alex', channelId: DEMO_FRIENDS_ID, firstName: 'Álex', lastName: 'Prieto', birthDate: '1982-09-19', gender: 'hombre',
-    relationship: 'Amigo', biography: 'El que siempre lleva la cámara.', notes: '', parentIds: [] },
+    relationship: 'Amigo', biography: 'El que siempre lleva la cámara.', parentIds: [] },
   { id: 'p-carlos-primos', channelId: DEMO_COUSINS_ID, firstName: 'Carlos', lastName: 'Montero Sanz', birthDate: '1998-10-20',
-    gender: 'hombre', relationship: 'Sobrino de Rosa', biography: 'Hijo de Elena, la hermana de Rosa.', notes: '', parentIds: [] },
+    gender: 'hombre', relationship: 'Sobrino de Rosa', biography: 'Hijo de Elena, la hermana de Rosa.', parentIds: [] },
 ];
 
 /** Who each demo member is in the tree (the visitor sees the family as Carlos). */

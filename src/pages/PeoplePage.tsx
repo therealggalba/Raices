@@ -32,7 +32,7 @@ export function PeoplePage() {
         <div className={styles.grid}>
           {sortPeople(people).map((person) => {
             const age = lifeAge(person, today);
-            const relation = relationTo(person, me.personId, people, partnerships);
+            const relation = channel.kind === 'familia' ? relationTo(person, me.personId, people, partnerships) : '';
             const count = videos.filter((v) => v.personIds.includes(person.id)).length;
             return (
               <Link key={person.id} to={`/c/${channel.id}/personas/${person.id}`} className={styles.card}>

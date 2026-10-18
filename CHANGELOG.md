@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.17.0 — 2026-10-18
+
+- Tarjetas de vídeo: la imagen ocupa siempre la tarjeta entera (sin franjas laterales; también en cromos y
+  portadas) y el título completo del vídeo aparece debajo de cada tarjeta, sin cortes.
+- Personas: fuera el campo «Notas» (queda «Biografía»); «Relación familiar» solo en canales de familia.
+- Cada miembro puede corregir su propia ficha («Editar mis datos»: nombre, apellidos, género, nacimiento, foto y
+  biografía); los vínculos del árbol y el fallecimiento siguen siendo cosa de los administradores.
+- Buzón del canal para administradores (Canal › Buzón, con aviso en la pestaña): quién entra con invitación,
+  quién sale o es expulsado y qué datos ha corregido cada miembro en su ficha (antes → después).
+- Base de datos: migración `0005_inbox_self_edit.sql`.
+
 ## 0.16.0 — 2026-10-17
 
 - Cambio de nombre completo a **Raíces** antes de las pruebas con familia y amigos y de Google Play:

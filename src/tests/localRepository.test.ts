@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { SCHEMA_VERSION } from '../types/domain';
 import type { EventInput, VideoInput } from '../types/domain';
 import { STORAGE_KEY, createLocalRepository, memoryStore, parseDb } from '../services/localRepository';
 import type { Db, KeyValueStore } from '../services/localRepository';
@@ -136,7 +137,7 @@ describe('local repository', () => {
     delete v1.packs;
     delete v1.partnerships;
     const migrated = parseDb(JSON.stringify(v1));
-    expect(migrated?.schemaVersion).toBe(8);
+    expect(migrated?.schemaVersion).toBe(SCHEMA_VERSION);
     // Demo channels receive the example album on the way up to v5.
     expect(migrated?.cards.length).toBeGreaterThan(0);
     expect(migrated?.cards.every((c) => c.channelId.startsWith('demo-'))).toBe(true);
@@ -149,7 +150,7 @@ describe('local repository', () => {
   it('does not overwrite changes written by another tab', async () => {
     const otherTab = createLocalRepository({ store, now: () => clock });
     await repo.loadLibrary();
-    await otherTab.addPerson(DEMO_FAMILY_ID, { firstName: 'Hugo', lastName: '', relationship: '', biography: '', notes: '' });
+    await otherTab.addPerson(DEMO_FAMILY_ID, { firstName: 'Hugo', lastName: '', relationship: '', biography: '' });
     await repo.toggleFavorite(DEMO_FAMILY_ID, 'v-demo-2');
     const snapshot = await repo.loadChannel(DEMO_FAMILY_ID);
     expect(snapshot.people.some((p) => p.firstName === 'Hugo')).toBe(true);
@@ -196,7 +197,7 @@ describe('local repository', () => {
     v4.channels = v4.channels.filter((c) => c.id !== DEMO_COUSINS_ID);
     v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', packTheme: 'clasico', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
     const db = parseDb(JSON.stringify(v4))!;
-    expect(db.schemaVersion).toBe(8);
+    expect(db.schemaVersion).toBe(SCHEMA_VERSION);
     expect(db.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
     expect(db.cards.some((c) => c.channelId === 'mi-familia')).toBe(false);
     // Cromos of a person the user deleted (Carlos) are skipped.
@@ -231,7 +232,7 @@ describe('local repository', () => {
     for (const c of v5.cards as unknown as Record<string, unknown>[]) c.rarity = 'raro';
     for (const c of v5.channels as unknown as Record<string, unknown>[]) delete c.packTheme;
     const db = parseDb(JSON.stringify(v5))!;
-    expect(db.schemaVersion).toBe(8);
+    expect(db.schemaVersion).toBe(SCHEMA_VERSION);
     expect(db.cards.every((c) => !('rarity' in c))).toBe(true);
     expect(db.copies.length).toBeGreaterThan(0);
     expect(db.copies.every((c) => c.userId === db.currentUserId && c.count >= 1)).toBe(true);
@@ -371,7 +372,7 @@ describe('invitations', () => {
 
 describe('family tree', () => {
   let repo: MemoriesRepository;
-  const base = { lastName: '', relationship: '', biography: '', notes: '' };
+  const base = { lastName: '', relationship: '', biography: '' };
 
   beforeEach(() => {
     repo = createLocalRepository({ store: memoryStore(), now: () => NOW });
@@ -413,6 +414,31 @@ describe('family tree', () => {
     // In the friends channel the visitor is a plain member.
     const me = (await repo.loadChannel(DEMO_FRIENDS_ID)).me;
     expect((await rejection(repo.linkMemberPerson(DEMO_FRIENDS_ID, me.userId, 'p-javi'))).code).toBe('forbidden');
+  });
+
+  it('lets members correct their own card and tells the admins', async () => {
+    // In the friends channel the visitor is a plain member (Álex); Marta is admin.
+    await repo.updateMyPerson(DEMO_FRIENDS_ID, { firstName: 'Alejandro', lastName: 'Prieto', biography: 'Ahora sin cámara.', gender: 'hombre', birthDate: '1982-09-19' });
+    const snap = await repo.loadChannel(DEMO_FRIENDS_ID);
+    expect(snap.people.find((p) => p.id === 'p-alex')).toMatchObject({ firstName: 'Alejandro', biography: 'Ahora sin cámara.' });
+    // Members can't read the inbox…
+    expect((await rejection(repo.listNotifications(DEMO_FRIENDS_ID))).code).toBe('forbidden');
+    // …and the tree links stay with the admins (parents aren't part of the input).
+    expect(snap.people.find((p) => p.id === 'p-alex')?.parentIds).toEqual([]);
+    expect((await rejection(repo.updateMyPerson(DEMO_FRIENDS_ID, { firstName: '', lastName: '', biography: '' }))).code).toBe('invalid');
+  });
+
+  it('keeps an inbox for admins: joins, departures, removals and corrections', async () => {
+    // The visitor is admin of the family channel.
+    await repo.removeMember(DEMO_FAMILY_ID, 'u-carlos');
+    const inbox = await repo.listNotifications(DEMO_FAMILY_ID);
+    expect(inbox[0]).toMatchObject({ kind: 'member_removed', actorName: 'Carlos' });
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).unreadNotifications).toBe(1);
+    await repo.markNotificationsRead(DEMO_FAMILY_ID);
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).unreadNotifications).toBe(0);
+    // An admin's own corrections don't notify anybody.
+    await repo.updateMyPerson(DEMO_FAMILY_ID, { firstName: 'Carlos', lastName: 'Montero', biography: '' });
+    expect((await repo.listNotifications(DEMO_FAMILY_ID)).length).toBe(1);
   });
 
   it('stores gender and date of death (not before birth)', async () => {
@@ -469,7 +495,7 @@ describe('family tree', () => {
         return rest as typeof p;
       });
     const db = parseDb(JSON.stringify(v7))!;
-    expect(db.schemaVersion).toBe(8);
+    expect(db.schemaVersion).toBe(SCHEMA_VERSION);
     expect(db.people.every((p) => Array.isArray(p.parentIds))).toBe(true);
     expect(db.people.some((p) => p.id === 'p-sofia')).toBe(true);
     // Natalia was deleted by the user: she stays deleted.

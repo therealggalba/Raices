@@ -24,7 +24,7 @@ describe('read-only demo', () => {
     const attempts = [
       demo.createChannel({ name: 'X', description: '', kind: 'familia' }),
       demo.renameCurrentUser('Hacker'),
-      demo.addPerson(DEMO_FAMILY_ID, { firstName: 'X', lastName: '', relationship: '', biography: '', notes: '' }),
+      demo.addPerson(DEMO_FAMILY_ID, { firstName: 'X', lastName: '', relationship: '', biography: '' }),
       demo.deleteVideo(DEMO_FAMILY_ID, 'v-1'),
       demo.createInvitation(DEMO_FAMILY_ID, 7, 'p-natalia'),
       demo.resetDemo(),

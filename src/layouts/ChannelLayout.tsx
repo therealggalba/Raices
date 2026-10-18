@@ -128,7 +128,14 @@ export function ChannelLayout() {
                 end={item.end}
                 className={({ isActive }) => [styles.navItem, isActive ? styles.active : ''].join(' ')}
               >
-                <Icon name={item.icon} size={22} className={styles.navIcon} />
+                <span className={styles.navIconWrap}>
+                  <Icon name={item.icon} size={22} className={styles.navIcon} />
+                  {item.to === 'canal' && value.snapshot.unreadNotifications > 0 && (
+                    <span className={styles.badge} aria-label={`${value.snapshot.unreadNotifications} avisos sin leer`}>
+                      {Math.min(value.snapshot.unreadNotifications, 99)}
+                    </span>
+                  )}
+                </span>
                 {item.label}
               </NavLink>
             ))}

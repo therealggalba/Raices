@@ -119,6 +119,27 @@
   }
 }
 
+.navIconWrap {
+  position: relative;
+  display: grid;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: $radius-pill;
+  background: $color-accent;
+  color: $color-on-accent;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+
 .navIcon {
   font-size: 1.25rem;
   line-height: 1;

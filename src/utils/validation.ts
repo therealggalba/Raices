@@ -9,6 +9,7 @@ import type {
   EventType,
   PartnershipInput,
   PersonInput,
+  SelfPersonInput,
   ValidationResult,
   VideoCategory,
   VideoInput,
@@ -163,7 +164,6 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
     required: false,
     multiline: true,
   });
-  const notes = readString(input, 'notes', 'Notas', LIMITS.notes, errors, { required: false, multiline: true });
   let birthDate: string | undefined;
   if (input.birthDate !== undefined && input.birthDate !== null && input.birthDate !== '') {
     if (isIsoDate(input.birthDate)) birthDate = input.birthDate;
@@ -191,10 +191,28 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
       lastName,
       relationship,
       biography,
-      notes,
       parentIds,
       ...(birthDate ? { birthDate } : {}),
       ...(deathDate ? { deathDate } : {}),
+      ...(gender ? { gender } : {}),
+      ...(photoUrl ? { photoUrl } : {}),
+    },
+  };
+}
+
+/** A member correcting their own card: the person fields without the tree links or the death date. */
+export function validateSelfPersonInput(input: unknown): ValidationResult<SelfPersonInput> {
+  if (!isRecord(input)) return { ok: false, errors: ['Datos de la persona inválidos'] };
+  const result = validatePersonInput({ ...input, relationship: '', parentIds: [], deathDate: undefined });
+  if (!result.ok) return result;
+  const { firstName, lastName, birthDate, gender, photoUrl, biography } = result.value;
+  return {
+    ok: true,
+    value: {
+      firstName,
+      lastName,
+      biography,
+      ...(birthDate ? { birthDate } : {}),
       ...(gender ? { gender } : {}),
       ...(photoUrl ? { photoUrl } : {}),
     },

@@ -1,0 +1,57 @@
+@use '../styles/variables' as *;
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: $space-2;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.item {
+  display: grid;
+  gap: $space-1;
+  padding: $space-3;
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+  font-size: 0.9rem;
+}
+
+.unread {
+  border-left: 3px solid $color-accent;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-3;
+  flex-wrap: wrap;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.when {
+  color: $color-text-dim;
+  font-size: 0.8rem;
+}
+
+.changes {
+  margin: 0;
+  padding-left: $space-4;
+  color: $color-text-muted;
+  overflow-wrap: anywhere;
+
+  b {
+    color: $color-text;
+    font-weight: 600;
+  }
+}
+
+.field {
+  color: $color-text-dim;
+}

@@ -8,7 +8,6 @@ export function makePerson(overrides: Partial<Person> = {}): Person {
     lastName: 'Montero',
     relationship: 'Hijo',
     biography: '',
-    notes: '',
     parentIds: [],
     ...overrides,
   };

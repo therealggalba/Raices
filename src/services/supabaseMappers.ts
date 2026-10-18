@@ -2,6 +2,9 @@ import type {
   AlbumCard,
   Channel,
   ChannelKind,
+  ChannelNotification,
+  FieldChange,
+  NotificationKind,
   EventType,
   FamilyEvent,
   Gender,
@@ -61,7 +64,6 @@ export interface PersonRow {
   photo_url: string | null;
   relationship: string;
   biography: string;
-  notes: string;
   parent_ids: string[];
 }
 export interface PartnershipRow {
@@ -111,18 +113,31 @@ export interface CardRow {
   author_id: string;
 }
 
+export interface NotificationRow {
+  id: string;
+  channel_id: string;
+  kind: NotificationKind;
+  actor_id: string | null;
+  actor_name: string;
+  person_id: string | null;
+  changes: FieldChange[] | null;
+  created_at: string;
+  read_at: string | null;
+}
+
 /** Columns to select for each table (album_cards cannot be read with `*`). */
 export const COLUMNS = {
   channels: 'id,name,description,kind,pack_theme,cover_url,created_at,created_by',
   members: 'channel_id,user_id,display_name,role,joined_at,invitation_id,person_id',
   invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at,person_id',
   people:
-    'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,relationship,biography,notes,parent_ids',
+    'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,relationship,biography,parent_ids',
   partnerships: 'id,channel_id,person_a,person_b,since,until',
   videos:
     'id,channel_id,title,description,media_url,thumbnail_url,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id',
   events: 'id,channel_id,type,title,date,person_ids,notes',
   cards: 'id,channel_id,number,person_id,title,image_url,image_path,blurred_path,taken_at,created_at,author_id',
+  notifications: 'id,channel_id,kind,actor_id,actor_name,person_id,changes,created_at,read_at',
 } as const;
 
 const opt = <T>(value: T | null | undefined): T | undefined => (value === null ? undefined : value);
@@ -179,7 +194,6 @@ export function toPerson(r: PersonRow): Person {
     ...(r.photo_url ? { photoUrl: r.photo_url } : {}),
     relationship: r.relationship,
     biography: r.biography,
-    notes: r.notes,
     parentIds: r.parent_ids ?? [],
   };
 }
@@ -241,6 +255,20 @@ export function toCard(r: CardRow, imageUrl: string, description: string): Album
     takenAt: r.taken_at,
     createdAt: r.created_at,
     authorId: r.author_id,
+  };
+}
+
+export function toNotification(r: NotificationRow): ChannelNotification {
+  return {
+    id: r.id,
+    channelId: r.channel_id,
+    kind: r.kind,
+    ...(r.actor_id ? { actorId: r.actor_id } : {}),
+    actorName: r.actor_name,
+    ...(r.person_id ? { personId: r.person_id } : {}),
+    changes: Array.isArray(r.changes) ? r.changes : [],
+    createdAt: r.created_at,
+    ...(r.read_at ? { readAt: r.read_at } : {}),
   };
 }
 

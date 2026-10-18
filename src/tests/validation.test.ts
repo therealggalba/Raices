@@ -97,3 +97,14 @@ describe('other inputs', () => {
     expect(validateDisplayName('   ').ok).toBe(false);
   });
 });
+
+describe('selfChanges', () => {
+  it('lists only the fields that changed', async () => {
+    const { selfChanges } = await import('../utils/people');
+    const person = { id: 'p', channelId: 'c', firstName: 'Ana', lastName: 'Ruiz', relationship: '', biography: '', parentIds: [] };
+    expect(selfChanges(person, { firstName: 'Anabel', lastName: 'Ruiz', biography: '', birthDate: '1990-01-02' })).toEqual([
+      { field: 'firstName', before: 'Ana', after: 'Anabel' },
+      { field: 'birthDate', before: '', after: '1990-01-02' },
+    ]);
+  });
+});

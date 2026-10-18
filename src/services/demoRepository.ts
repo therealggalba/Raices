@@ -46,6 +46,7 @@ export function readOnlyDemo(inner: MemoriesRepository): MemoriesRepository {
       me,
       members: snapshot.members.map((m) => (m.userId === me.userId ? me : m)),
       invitations: [],
+      unreadNotifications: 0,
     };
   };
   return repo;

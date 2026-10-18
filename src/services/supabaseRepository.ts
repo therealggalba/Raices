@@ -21,6 +21,7 @@ import {
   validateEventInput,
   validatePartnershipInput,
   validatePersonInput,
+  validateSelfPersonInput,
   validateVideoInput,
 } from '../utils/validation';
 import type { MemoriesRepository } from './repository';
@@ -31,6 +32,7 @@ import type {
   EventRow,
   InvitationRow,
   MemberRow,
+  NotificationRow,
   PartnershipRow,
   PersonRow,
   PostgrestLikeError,
@@ -44,6 +46,7 @@ import {
   toEvent,
   toInvitation,
   toMember,
+  toNotification,
   toPartnership,
   toPerson,
   toRepositoryError,
@@ -281,6 +284,16 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       const memberList = (must(members) as MemberRow[]).map(toMember);
       const mine = memberList.find((m) => m.userId === me);
       if (!channelRow || !mine) throw new RepositoryError('not-found', 'Este canal no existe');
+      const unread =
+        mine.role === 'admin'
+          ? ((
+              await client
+                .from('channel_notifications')
+                .select('id', { count: 'exact', head: true })
+                .eq('channel_id', channelId)
+                .is('read_at', null)
+            ).count ?? 0)
+          : 0;
       const invitations =
         mine.role === 'admin'
           ? (must(await of('invitations', COLUMNS.invitations).order('created_at', { ascending: false })) as InvitationRow[]).map(
@@ -297,6 +310,7 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
         cards: await hydrateCards(must(cards) as CardRow[]),
         partnerships: (must(partnerships) as PartnershipRow[]).map(toPartnership),
         invitations,
+        unreadNotifications: unread,
         favoriteVideoIds: (must(favorites) as { video_id: string }[]).map((f) => f.video_id),
       };
       return snapshot;
@@ -433,6 +447,40 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
         must(await client.from('people').delete().eq('id', personId).eq('channel_id', channelId).select('id')),
         'La persona',
       );
+    },
+
+    async updateMyPerson(channelId, input) {
+      requireId(channelId, 'El canal');
+      const value = ensure(validateSelfPersonInput(input));
+      must(
+        await client.rpc('update_my_person', {
+          p_channel: channelId,
+          p_first_name: value.firstName,
+          p_last_name: value.lastName,
+          p_birth_date: value.birthDate ?? null,
+          p_gender: value.gender ?? null,
+          p_photo_url: value.photoUrl ?? null,
+          p_biography: value.biography,
+        }),
+      );
+    },
+
+    async listNotifications(channelId) {
+      requireId(channelId, 'El canal');
+      const rows = must(
+        await client
+          .from('channel_notifications')
+          .select(COLUMNS.notifications)
+          .eq('channel_id', channelId)
+          .order('created_at', { ascending: false })
+          .limit(200),
+      ) as NotificationRow[];
+      return rows.map(toNotification);
+    },
+
+    async markNotificationsRead(channelId) {
+      requireId(channelId, 'El canal');
+      must(await client.rpc('mark_notifications_read', { p_channel: channelId }));
     },
 
     async addPartnership(channelId, input) {
@@ -603,7 +651,6 @@ function personColumns(value: PersonInput) {
     photo_url: value.photoUrl ?? null,
     relationship: value.relationship,
     biography: value.biography,
-    notes: value.notes,
     parent_ids: value.parentIds ?? [],
   };
 }

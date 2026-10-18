@@ -9,7 +9,6 @@ const p = (id: string, gender: Gender | undefined, parentIds: string[] = []): Pe
   lastName: '',
   relationship: '',
   biography: '',
-  notes: '',
   parentIds,
   ...(gender ? { gender } : {}),
 });

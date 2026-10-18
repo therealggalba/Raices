@@ -1,5 +1,6 @@
 import type {
   AlbumCard,
+  ChannelNotification,
   CardInput,
   ChannelInput,
   ChannelSnapshot,
@@ -14,6 +15,7 @@ import type {
   Person,
   PersonInput,
   Role,
+  SelfPersonInput,
   User,
   Video,
   VideoInput,
@@ -75,6 +77,17 @@ export interface MemoriesRepository {
   deletePerson(channelId: string, personId: string): Promise<void>;
 
   /** Family tree: a couple (wedding / separation dates optional). */
+  /**
+   * A member corrects their own card (the person they are in the channel).
+   * The channel's admins get a notification with what changed.
+   */
+  updateMyPerson(channelId: string, input: SelfPersonInput): Promise<void>;
+
+  /** Admins: the channel's inbox, newest first. */
+  listNotifications(channelId: string): Promise<ChannelNotification[]>;
+  /** Admins: marks every notification of the channel as read. */
+  markNotificationsRead(channelId: string): Promise<void>;
+
   addPartnership(channelId: string, input: PartnershipInput): Promise<Partnership>;
   updatePartnership(channelId: string, partnershipId: string, input: PartnershipInput): Promise<void>;
   deletePartnership(channelId: string, partnershipId: string): Promise<void>;

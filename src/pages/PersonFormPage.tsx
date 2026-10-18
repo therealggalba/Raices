@@ -22,6 +22,7 @@ export function PersonFormPage() {
   const { run, pending, error } = useAction();
   const existing = personId ? personById(personId) : undefined;
   const channelId = snapshot.channel.id;
+  const isFamily = snapshot.channel.kind === 'familia';
 
   const [firstName, setFirstName] = useState(existing?.firstName ?? '');
   const [lastName, setLastName] = useState(existing?.lastName ?? '');
@@ -31,11 +32,12 @@ export function PersonFormPage() {
   const [relationship, setRelationship] = useState(existing?.relationship ?? '');
   const [photoUrl, setPhotoUrl] = useState(existing?.photoUrl ?? '');
   const [biography, setBiography] = useState(existing?.biography ?? '');
-  const [notes, setNotes] = useState(existing?.notes ?? '');
   const [parent1, setParent1] = useState(existing?.parentIds[0] ?? '');
   const [parent2, setParent2] = useState(existing?.parentIds[1] ?? '');
 
-  if (!isAdmin) {
+  // Members may correct their own card (the tree links stay with the admins).
+  const selfMode = !isAdmin && !!existing && existing.id === snapshot.me.personId;
+  if (!isAdmin && !selfMode) {
     return (
       <EmptyState>
         <p>Solo los administradores pueden gestionar personas.</p>
@@ -58,7 +60,15 @@ export function PersonFormPage() {
   return (
     <div className={ui.page}>
       <div className={ui.pageHeader}>
-        <h1>{existing ? `Editar a ${existing.firstName}` : isSelf ? 'Tu ficha' : 'Añadir persona'}</h1>
+        <h1>
+          {selfMode
+            ? 'Mis datos'
+            : existing
+              ? `Editar a ${existing.firstName}`
+              : isSelf
+                ? 'Tu ficha'
+                : 'Añadir persona'}
+        </h1>
         <LinkButton to={back} variant="ghost" small>
           Cancelar
         </LinkButton>
@@ -70,9 +80,9 @@ export function PersonFormPage() {
           const input: PersonInput = {
             firstName,
             lastName,
-            relationship,
+            // Only family channels use it.
+            relationship: isFamily ? relationship : '',
             biography,
-            notes,
             ...(birthDate ? { birthDate } : {}),
             ...(deathDate ? { deathDate } : {}),
             ...(gender ? { gender } : {}),
@@ -80,6 +90,18 @@ export function PersonFormPage() {
             parentIds: [parent1, parent2].filter(Boolean),
           };
           const id = await run(async () => {
+            if (selfMode && existing) {
+              const { firstName: f, lastName: l, biography: b, birthDate: d, gender: g, photoUrl: u } = input;
+              await repository.updateMyPerson(channelId, {
+                firstName: f,
+                lastName: l,
+                biography: b,
+                ...(d ? { birthDate: d } : {}),
+                ...(g ? { gender: g } : {}),
+                ...(u ? { photoUrl: u } : {}),
+              });
+              return existing.id;
+            }
             if (existing) {
               await repository.updatePerson(channelId, existing.id, input);
               return existing.id;
@@ -95,22 +117,52 @@ export function PersonFormPage() {
         }}
       >
         <Field label="Nombre" htmlFor="firstName">
-          <input id="firstName" className={ui.input} value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={80} required />
+          <input
+            id="firstName"
+            className={ui.input}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            maxLength={80}
+            required
+          />
         </Field>
         <Field label="Apellidos" htmlFor="lastName">
-          <input id="lastName" className={ui.input} value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={80} />
+          <input
+            id="lastName"
+            className={ui.input}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            maxLength={80}
+          />
         </Field>
         <Field label="Género" htmlFor="gender">
-          <select id="gender" className={ui.input} value={gender} onChange={(e) => setGender(e.target.value as Gender | '')}>
+          <select
+            id="gender"
+            className={ui.input}
+            value={gender}
+            onChange={(e) => setGender(e.target.value as Gender | '')}
+          >
             <option value="">Sin indicar</option>
             <option value="hombre">Hombre</option>
             <option value="mujer">Mujer</option>
           </select>
         </Field>
-        <Field label="Relación familiar" htmlFor="relationship" hint="Si no está en el árbol: amiga de la familia, vecino…">
-          <input id="relationship" className={ui.input} value={relationship} onChange={(e) => setRelationship(e.target.value)} maxLength={60} />
-        </Field>
-        {snapshot.channel.kind === 'familia' && (
+        {isFamily && !selfMode && (
+          <Field
+            label="Relación familiar"
+            htmlFor="relationship"
+            hint="Si no está en el árbol: amiga de la familia, vecino…"
+          >
+            <input
+              id="relationship"
+              className={ui.input}
+              value={relationship}
+              onChange={(e) => setRelationship(e.target.value)}
+              maxLength={60}
+            />
+          </Field>
+        )}
+        {isFamily && !selfMode && (
           <fieldset className={styles.parents}>
             <legend>Progenitores (árbol familiar)</legend>
             {[
@@ -138,35 +190,54 @@ export function PersonFormPage() {
           </fieldset>
         )}
         <Field label="Fecha de nacimiento" htmlFor="birthDate">
-          <input id="birthDate" className={ui.input} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-        </Field>
-        <Field label="Fecha de fallecimiento" htmlFor="deathDate">
           <input
-            id="deathDate"
+            id="birthDate"
             className={ui.input}
             type="date"
-            value={deathDate}
-            min={birthDate || undefined}
-            onChange={(e) => setDeathDate(e.target.value)}
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
           />
         </Field>
+        {!selfMode && (
+          <Field label="Fecha de fallecimiento" htmlFor="deathDate">
+            <input
+              id="deathDate"
+              className={ui.input}
+              type="date"
+              value={deathDate}
+              min={birthDate || undefined}
+              onChange={(e) => setDeathDate(e.target.value)}
+            />
+          </Field>
+        )}
         <Field label="Fotografía (opcional)" htmlFor="photoUrl">
-          <input id="photoUrl" className={ui.input} type="url" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} placeholder="https://" />
+          <input
+            id="photoUrl"
+            className={ui.input}
+            type="url"
+            value={photoUrl}
+            onChange={(e) => setPhotoUrl(e.target.value)}
+            placeholder="https://"
+          />
         </Field>
         <Field label="Biografía" htmlFor="biography">
-          <textarea id="biography" className={ui.input} value={biography} onChange={(e) => setBiography(e.target.value)} maxLength={4000} />
-        </Field>
-        <Field label="Notas" htmlFor="notes">
-          <textarea id="notes" className={ui.input} value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />
+          <textarea
+            id="biography"
+            className={ui.input}
+            value={biography}
+            onChange={(e) => setBiography(e.target.value)}
+            maxLength={4000}
+          />
         </Field>
         <ErrorBanner message={error} />
         <div className={ui.formActions}>
-          {existing && (
+          {existing && !selfMode && (
             <Button
               variant="danger"
               disabled={pending}
               onClick={async () => {
-                if (!confirmAction(`¿Eliminar a ${fullName(existing)}? Se quitará también de los vídeos y eventos.`)) return;
+                if (!confirmAction(`¿Eliminar a ${fullName(existing)}? Se quitará también de los vídeos y eventos.`))
+                  return;
                 const done = await run(async () => {
                   await repository.deletePerson(channelId, existing.id);
                   return true;
