@@ -208,16 +208,16 @@ ok(kinds.includes('member_left'), 'y a quien sale del canal (B)');
 ok(!kinds.includes('member_removed'), 'nadie ha sido expulsado todavía');
 ok((await as(Dusr, `select * from public.channel_notifications`)).length === 0, 'un miembro no ve el buzón');
 ok(!!(await fails(A, `insert into public.channel_notifications (channel_id, kind) values ($1, 'member_left')`, [ch])), 'nadie escribe en el buzón a mano');
-ok((await fails(Dusr, `select public.update_my_person($1, 'X', '', null, null, null, '')`, [ch]))?.includes('elige quién eres'), 'sin ficha asignada no se puede editar nada');
+ok((await fails(Dusr, `select public.update_my_person($1, 'X', '', null, null, null, null, '')`, [ch]))?.includes('elige quién eres'), 'sin ficha asignada no se puede editar nada');
 await as(A, `select public.set_member_person($1, $2, $3)`, [ch, Dusr, abuelo.id]);
-await as(Dusr, `select public.update_my_person($1, 'Abuelo Pepe', 'García', '1940-02-03', 'hombre', null, 'Corregido por mí')`, [ch]);
+await as(Dusr, `select public.update_my_person($1, 'Abuelo Pepe', 'García', '1940-02-03', 'hombre', null, null, 'Corregido por mí')`, [ch]);
 const edited = (await inbox()).find((n) => n.kind === 'person_edited');
 ok(edited && edited.changes.some((c) => c.field === 'firstName' && c.before === 'Abuelo' && c.after === 'Abuelo Pepe'), 'un miembro corrige su ficha y el admin ve qué cambió');
 ok((await as(A, `select first_name, biography from public.people where id = $1`, [abuelo.id]))[0].biography === 'Corregido por mí', 'el cambio se guarda');
-ok(!!(await fails(Dusr, `select public.update_my_person($1, '', '', null, null, null, '')`, [ch])), 'los datos se siguen validando (nombre obligatorio)');
+ok(!!(await fails(Dusr, `select public.update_my_person($1, '', '', null, null, null, null, '')`, [ch])), 'los datos se siguen validando (nombre obligatorio)');
 ok(!!(await fails(Dusr, `update public.people set parent_ids = '{}' where id = $1 returning id`, [abuelo.id])) || (await as(Dusr, `update public.people set first_name = 'Hack' where id = $1 returning id`, [abuelo.id])).length === 0, 'fuera de esa función, un miembro no puede editar fichas');
 const before = (await inbox()).length;
-await as(A, `select public.update_my_person($1, 'Hijo', '', null, null, null, 'Lo edita el admin')`, [ch]);
+await as(A, `select public.update_my_person($1, 'Hijo', '', null, null, null, null, 'Lo edita el admin')`, [ch]);
 ok((await inbox()).length === before, 'las ediciones de un admin no generan aviso');
 await as(A, `select public.remove_member($1, $2)`, [ch, Dusr]);
 ok((await inbox()).some((n) => n.kind === 'member_removed' && n.actor_name === 'Dani'), 'el buzón registra las expulsiones');
@@ -225,6 +225,26 @@ ok((await as(A, `select count(*)::int n from public.channel_notifications where 
 await as(A, `select public.mark_notifications_read($1)`, [ch]);
 ok((await as(A, `select count(*)::int n from public.channel_notifications where channel_id = $1 and read_at is null`, [ch]))[0].n === 0, 'el admin los marca como leídos');
 ok(!!(await fails(Dusr, `select public.mark_notifications_read($1)`, [ch])), 'un no-admin no puede marcarlos');
+
+// Photos, day-only dates and invitations (0006)
+ok((await as(A, `insert into public.events (channel_id, type, title, date) values ($1, 'santo', 'Santo de Antonio', '2000-06-13') returning id`, [ch])).length === 1, 'existe el tipo de fecha «santo»');
+const [muerto] = await as(A, `insert into public.people (channel_id, first_name, death_date) values ($1, 'Bisabuelo', '1990-01-01') returning id`, [ch]);
+ok((await fails(A, `select * from public.create_invitation($1, 7, $2)`, [ch, muerto.id]))?.includes('fallecida'), 'no se invita a una persona fallecida');
+ok((await as(A, `update public.people set photo_path = $1 || '/' || $2 || '/foto.webp' where id = $2 returning id`, [ch, abuelo.id])).length === 1, 'una foto subida se guarda en la ficha');
+ok(!!(await fails(A, `update public.people set photo_path = $1 || '/' || $2 || '/foto.webp' where id = $3`, [ch, hijo.id, abuelo.id])), 'la foto tiene que estar en la carpeta de esa persona');
+ok(!!(await fails(A, `update public.videos set thumbnail_path = '00000000-0000-0000-0000-000000000000/x.webp' where channel_id = $1`, [ch])), 'la miniatura tiene que ser del mismo canal');
+ok((await as(A, `update public.videos set thumbnail_path = $1 || '/portada.webp' where channel_id = $1 returning id`, [ch])).length > 0, 'una miniatura subida se guarda');
+// Storage: members upload their own profile photo; admins upload covers
+await as(A, `select public.set_member_person($1, $2, null)`, [ch, A]);
+const inv3 = (await as(A, `select * from public.create_invitation($1, 3, $2)`, [ch, hijo.id]))[0];
+await as(C, `select public.redeem_invitation($1, 'Carla')`, [inv3.code]);
+ok((await as(C, `insert into storage.objects (bucket_id, name) values ('personas', $1 || '/' || $2 || '/yo.webp') returning name`, [ch, hijo.id])).length === 1, 'un miembro sube la foto de su propia ficha');
+ok(!!(await fails(C, `insert into storage.objects (bucket_id, name) values ('personas', $1 || '/' || $2 || '/otro.webp')`, [ch, abuelo.id])), 'pero no la de otra persona');
+ok(!!(await fails(C, `insert into storage.objects (bucket_id, name) values ('miniaturas', $1 || '/x.webp')`, [ch])), 'un miembro no sube miniaturas');
+ok((await as(A, `insert into storage.objects (bucket_id, name) values ('miniaturas', $1 || '/portada.webp') returning name`, [ch])).length === 1, 'un admin sí');
+ok((await as(C, `select name from storage.objects where bucket_id = 'miniaturas'`)).length === 1, 'y los miembros ven las miniaturas de su canal');
+await as(C, `select public.update_my_person($1, 'Hijo', '', null, null, null, $2, '')`, [ch, `${ch}/${hijo.id}/yo.webp`]);
+ok((await as(A, `select photo_path from public.people where id = $1`, [hijo.id]))[0].photo_path.endsWith('/yo.webp'), 'el miembro pone su foto subida en su ficha');
 
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);

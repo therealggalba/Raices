@@ -108,3 +108,12 @@ describe('selfChanges', () => {
     ]);
   });
 });
+
+describe('photo sizes', () => {
+  it('fits photos inside the limit without upscaling', async () => {
+    const { fitSize } = await import('../utils/imageCompress');
+    expect(fitSize(4000, 3000, 1280)).toEqual({ width: 1280, height: 960 });
+    expect(fitSize(3000, 4000, 512)).toEqual({ width: 384, height: 512 });
+    expect(fitSize(300, 200, 1280)).toEqual({ width: 300, height: 200 });
+  });
+});

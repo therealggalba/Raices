@@ -107,7 +107,7 @@ export function ChannelLayout() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar en el canal"
+              placeholder="Buscar"
               aria-label="Buscar en este canal"
               maxLength={80}
             />

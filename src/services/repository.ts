@@ -12,10 +12,12 @@ import type {
   PackPull,
   Partnership,
   PartnershipInput,
+  PhotoKind,
   Person,
   PersonInput,
   Role,
   SelfPersonInput,
+  UploadedPhoto,
   User,
   Video,
   VideoInput,
@@ -105,6 +107,19 @@ export interface MemoriesRepository {
   addCard(channelId: string, input: CardInput): Promise<AlbumCard>;
   updateCard(channelId: string, cardId: string, input: CardInput): Promise<void>;
   deleteCard(channelId: string, cardId: string): Promise<void>;
+
+  /**
+   * Stores a photo already compressed by the app (WebP). Cromos also need
+   * their tiny blurred copy; a person's photo goes in that person's folder
+   * (members may only upload their own). Returns where it is and a preview URL;
+   * the caller then saves the path in the card, person or video.
+   */
+  uploadPhoto(
+    channelId: string,
+    kind: PhotoKind,
+    image: Blob,
+    options?: { personId?: string; blurred?: Blob },
+  ): Promise<UploadedPhoto>;
 
   /** Local mode only: wipes everything and restores the demo data. */
   resetDemo(): Promise<void>;

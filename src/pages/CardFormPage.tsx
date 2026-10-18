@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FitImage } from '../components/FitImage';
+import { PhotoField } from '../components/PhotoField';
 import { Button, EmptyState, ErrorBanner, Field, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { repository } from '../services';
-import type { CardInput } from '../types/domain';
-import { isHttpsUrl } from '../utils/media';
+import type { CardInput, UploadedPhoto } from '../types/domain';
 import { fullName, sortPeople } from '../utils/people';
-import styles from './CardFormPage.module.scss';
 
 /** Add (/album/nuevo[?persona=]) or edit (/album/:cardId/editar) a cromo. Admins only. */
 export function CardFormPage() {
@@ -22,14 +20,19 @@ export function CardFormPage() {
   const existing = cardId ? cards.find((c) => c.id === cardId) : undefined;
   const presetPerson = params.get('persona') ?? '';
 
-  const [imageUrl, setImageUrl] = useState(existing?.imageUrl ?? '');
+  // A link typed by hand, or a photo uploaded from the phone (stored file).
+  const [imageUrl, setImageUrl] = useState(existing && !existing.imagePath ? existing.imageUrl : '');
+  const [stored, setStored] = useState<UploadedPhoto | null>(
+    existing?.imagePath
+      ? { path: existing.imagePath, blurredPath: existing.blurredPath, previewUrl: existing.imageUrl }
+      : null,
+  );
   const [title, setTitle] = useState(existing?.title ?? '');
   const [personId, setPersonId] = useState(
     existing ? (existing.personId ?? '') : people.some((p) => p.id === presetPerson) ? presetPerson : (sortPeople(people)[0]?.id ?? ''),
   );
   const [takenAt, setTakenAt] = useState(existing?.takenAt ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
-  const [previewFailed, setPreviewFailed] = useState(false);
 
   if (!isAdmin) {
     return (
@@ -48,7 +51,6 @@ export function CardFormPage() {
 
   const albumUrl = `/albumes/${channel.id}`;
   const back = existing ? `${albumUrl}/${existing.id}` : albumUrl;
-  const showPreview = isHttpsUrl(imageUrl.trim());
 
   return (
     <div className={ui.page}>
@@ -65,7 +67,8 @@ export function CardFormPage() {
           const input: CardInput = {
             title,
             description,
-            imageUrl: imageUrl.trim(),
+            imageUrl: stored ? '' : imageUrl.trim(),
+            ...(stored ? { imagePath: stored.path, blurredPath: stored.blurredPath } : {}),
             takenAt: takenAt.trim(),
             ...(personId ? { personId } : {}),
           };
@@ -82,34 +85,23 @@ export function CardFormPage() {
           }
         }}
       >
-        <div className={styles.imageRow}>
-          <div className={styles.preview} aria-hidden>
-            {showPreview && !previewFailed ? (
-              <FitImage src={imageUrl.trim()} loading="eager" onError={() => setPreviewFailed(true)} />
-            ) : (
-              <span>{previewFailed ? 'No se puede cargar' : 'Vista previa'}</span>
-            )}
-          </div>
-          <Field
-            label="Enlace de la imagen"
-            htmlFor="imageUrl"
-            hint="Enlace a la foto"
-          >
-            <input
-              id="imageUrl"
-              className={ui.input}
-              type="url"
-              inputMode="url"
-              value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value);
-                setPreviewFailed(false);
-              }}
-              placeholder="https://"
-              required
-            />
-          </Field>
-        </div>
+        <PhotoField
+          label="Foto del cromo"
+          channelId={channel.id}
+          kind="cromo"
+          aspect="3 / 4"
+          previewUrl={stored?.previewUrl}
+          url={imageUrl}
+          onUrlChange={(url) => {
+            setImageUrl(url);
+            if (url) setStored(null);
+          }}
+          onUploaded={(photo) => {
+            setStored(photo);
+            setImageUrl('');
+          }}
+          onClear={() => setStored(null)}
+        />
         <Field label="Título" htmlFor="title">
           <input
             id="title"

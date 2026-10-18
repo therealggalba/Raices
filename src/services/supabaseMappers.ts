@@ -62,6 +62,7 @@ export interface PersonRow {
   death_date: string | null;
   gender: Gender | null;
   photo_url: string | null;
+  photo_path: string | null;
   relationship: string;
   biography: string;
   parent_ids: string[];
@@ -81,6 +82,7 @@ export interface VideoRow {
   description: string;
   media_url: string;
   thumbnail_url: string | null;
+  thumbnail_path: string | null;
   event_date: string;
   uploaded_at: string;
   duration_seconds: number | null;
@@ -131,10 +133,10 @@ export const COLUMNS = {
   members: 'channel_id,user_id,display_name,role,joined_at,invitation_id,person_id',
   invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at,person_id',
   people:
-    'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,relationship,biography,parent_ids',
+    'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,photo_path,relationship,biography,parent_ids',
   partnerships: 'id,channel_id,person_a,person_b,since,until',
   videos:
-    'id,channel_id,title,description,media_url,thumbnail_url,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id',
+    'id,channel_id,title,description,media_url,thumbnail_url,thumbnail_path,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id',
   events: 'id,channel_id,type,title,date,person_ids,notes',
   cards: 'id,channel_id,number,person_id,title,image_url,image_path,blurred_path,taken_at,created_at,author_id',
   notifications: 'id,channel_id,kind,actor_id,actor_name,person_id,changes,created_at,read_at',
@@ -192,6 +194,7 @@ export function toPerson(r: PersonRow): Person {
     ...(r.death_date ? { deathDate: r.death_date } : {}),
     ...(r.gender ? { gender: r.gender } : {}),
     ...(r.photo_url ? { photoUrl: r.photo_url } : {}),
+    ...(r.photo_path ? { photoPath: r.photo_path } : {}),
     relationship: r.relationship,
     biography: r.biography,
     parentIds: r.parent_ids ?? [],
@@ -216,6 +219,7 @@ export function toVideo(r: VideoRow): Video {
     description: r.description,
     mediaUrl: r.media_url,
     ...(r.thumbnail_url ? { thumbnailUrl: r.thumbnail_url } : {}),
+    ...(r.thumbnail_path ? { thumbnailPath: r.thumbnail_path } : {}),
     eventDate: r.event_date,
     uploadedAt: r.uploaded_at,
     ...(r.duration_seconds ? { durationSeconds: r.duration_seconds } : {}),
@@ -252,6 +256,8 @@ export function toCard(r: CardRow, imageUrl: string, description: string): Album
     title: r.title,
     description,
     imageUrl,
+    ...(r.image_path ? { imagePath: r.image_path } : {}),
+    ...(r.blurred_path ? { blurredPath: r.blurred_path } : {}),
     takenAt: r.taken_at,
     createdAt: r.created_at,
     authorId: r.author_id,

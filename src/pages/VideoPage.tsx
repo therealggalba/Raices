@@ -97,7 +97,10 @@ export function VideoPage() {
         <div className={styles.actions}>
           <Button
             variant={favorite ? 'primary' : 'secondary'}
+            className={ui.iconOnly}
             aria-pressed={favorite}
+            aria-label={favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+            title={favorite ? 'En favoritos' : 'Añadir a favoritos'}
             disabled={pending}
             onClick={() =>
               run(async () => {
@@ -106,14 +109,16 @@ export function VideoPage() {
               })
             }
           >
-            <Icon name={favorite ? 'heartFilled' : 'heart'} size={18} />
-            {favorite ? 'En favoritos' : 'Añadir a favoritos'}
+            <Icon name={favorite ? 'heartFilled' : 'heart'} size={20} />
           </Button>
           {isAdmin && (
             <>
-              <LinkButton to={`/c/${channel.id}/v/${video.id}/editar`}>Editar</LinkButton>
+              <LinkButton to={`/c/${channel.id}/v/${video.id}/editar`} small>
+                Editar
+              </LinkButton>
               <Button
                 variant="danger"
+                small
                 disabled={pending}
                 onClick={async () => {
                   if (!confirmAction(`¿Eliminar «${video.title}» del canal ${channel.name}?`)) return;

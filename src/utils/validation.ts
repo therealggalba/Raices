@@ -108,6 +108,23 @@ function readString(
   return value;
 }
 
+const STORED_PHOTO_RE = /^[0-9a-f-]{36}\/(?:[0-9a-f-]{36}\/)?[A-Za-z0-9_-]{1,64}\.webp$/;
+
+/** «<channel>/<file>.webp» or «<channel>/<person>/<file>.webp», as uploaded by the app. */
+export function isStoredPhotoPath(value: unknown): value is string {
+  return typeof value === 'string' && STORED_PHOTO_RE.test(value);
+}
+
+function readOptionalPath(obj: Record<string, unknown>, key: string, label: string, errors: string[]) {
+  const raw = obj[key];
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  if (!isStoredPhotoPath(raw)) {
+    errors.push(`${label}: archivo no válido`);
+    return undefined;
+  }
+  return raw;
+}
+
 function readOptionalUrl(obj: Record<string, unknown>, key: string, label: string, errors: string[]) {
   const raw = obj[key];
   if (raw === undefined || raw === null || (typeof raw === 'string' && raw.trim() === '')) return undefined;
@@ -180,7 +197,9 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
     if ((GENDERS as readonly unknown[]).includes(input.gender)) gender = input.gender as Gender;
     else errors.push('Género: valor inválido');
   }
-  const photoUrl = readOptionalUrl(input, 'photoUrl', 'Fotografía', errors);
+  const photoPath = readOptionalPath(input, 'photoPath', 'Fotografía', errors);
+  // An uploaded photo wins over a link (the link may be its temporary URL).
+  const photoUrl = photoPath ? undefined : readOptionalUrl(input, 'photoUrl', 'Fotografía', errors);
   const parentIds = readIdList(input, 'parentIds', 'Progenitores', errors);
   if (parentIds.length > 2) errors.push('Progenitores: como máximo dos');
   if (errors.length) return { ok: false, errors };
@@ -196,6 +215,7 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
       ...(deathDate ? { deathDate } : {}),
       ...(gender ? { gender } : {}),
       ...(photoUrl ? { photoUrl } : {}),
+      ...(photoPath ? { photoPath } : {}),
     },
   };
 }
@@ -205,7 +225,7 @@ export function validateSelfPersonInput(input: unknown): ValidationResult<SelfPe
   if (!isRecord(input)) return { ok: false, errors: ['Datos de la persona inválidos'] };
   const result = validatePersonInput({ ...input, relationship: '', parentIds: [], deathDate: undefined });
   if (!result.ok) return result;
-  const { firstName, lastName, birthDate, gender, photoUrl, biography } = result.value;
+  const { firstName, lastName, birthDate, gender, photoUrl, photoPath, biography } = result.value;
   return {
     ok: true,
     value: {
@@ -215,6 +235,7 @@ export function validateSelfPersonInput(input: unknown): ValidationResult<SelfPe
       ...(birthDate ? { birthDate } : {}),
       ...(gender ? { gender } : {}),
       ...(photoUrl ? { photoUrl } : {}),
+      ...(photoPath ? { photoPath } : {}),
     },
   };
 }
@@ -263,7 +284,8 @@ export function validateVideoInput(input: unknown): ValidationResult<VideoInput>
     errors.push('Enlace del vídeo: debe ser un enlace https válido');
   } else mediaUrl = input.mediaUrl.trim();
 
-  const thumbnailUrl = readOptionalUrl(input, 'thumbnailUrl', 'Miniatura', errors);
+  const thumbnailPath = readOptionalPath(input, 'thumbnailPath', 'Miniatura', errors);
+  const thumbnailUrl = thumbnailPath ? undefined : readOptionalUrl(input, 'thumbnailUrl', 'Miniatura', errors);
 
   if (!isPartialDate(input.eventDate)) errors.push('Fecha del acontecimiento: usa AAAA, AAAA-MM o AAAA-MM-DD');
 
@@ -300,6 +322,7 @@ export function validateVideoInput(input: unknown): ValidationResult<VideoInput>
       tags,
       personIds,
       ...(thumbnailUrl ? { thumbnailUrl } : {}),
+      ...(thumbnailPath ? { thumbnailPath } : {}),
       ...(durationSeconds ? { durationSeconds } : {}),
     },
   };
@@ -335,9 +358,17 @@ export function validateCardInput(input: unknown): ValidationResult<CardInput> {
     multiline: true,
   });
   let imageUrl = '';
-  if (typeof input.imageUrl !== 'string' || input.imageUrl.trim() === '') errors.push('Imagen: obligatoria');
-  else if (!isHttpsUrl(input.imageUrl)) errors.push('Imagen: debe ser un enlace https válido');
-  else imageUrl = input.imageUrl.trim();
+  const imagePath = readOptionalPath(input, 'imagePath', 'Imagen', errors);
+  const blurredPath = imagePath
+    ? typeof input.blurredPath === 'string' && /^[0-9a-f-]{36}\/[A-Za-z0-9_-]{1,64}_blur\.webp$/.test(input.blurredPath)
+      ? input.blurredPath
+      : (errors.push('Imagen: falta la copia desenfocada'), undefined)
+    : undefined;
+  if (!imagePath) {
+    if (typeof input.imageUrl !== 'string' || input.imageUrl.trim() === '') errors.push('Imagen: obligatoria');
+    else if (!isHttpsUrl(input.imageUrl)) errors.push('Imagen: debe ser un enlace https válido');
+    else imageUrl = input.imageUrl.trim();
+  }
   if (!isPartialDate(input.takenAt)) errors.push('Fecha de la foto: usa AAAA, AAAA-MM o AAAA-MM-DD');
   let personId: string | undefined;
   if (input.personId !== undefined && input.personId !== null && input.personId !== '') {
@@ -351,6 +382,7 @@ export function validateCardInput(input: unknown): ValidationResult<CardInput> {
       title,
       description,
       imageUrl,
+      ...(imagePath ? { imagePath, blurredPath } : {}),
       takenAt: input.takenAt as string,
       ...(personId ? { personId } : {}),
     },

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   AlbumCard,
+  CardInput,
   ChannelSnapshot,
   EventInput,
   PersonInput,
@@ -9,6 +10,9 @@ import type {
   Library,
   PackPull,
   PackStatus,
+  Person,
+  PhotoKind,
+  Video,
   ValidationResult,
 } from '../types/domain';
 import { PACKS_PER_DAY } from '../types/domain';
@@ -61,7 +65,11 @@ import {
 // backend before they are sent.
 
 /** Signed URLs for private storage images (cromos) last this long. */
-const SIGNED_URL_SECONDS = 60 * 60;
+const SIGNED_URL_SECONDS = 6 * 60 * 60;
+
+const BUCKETS: Record<PhotoKind, string> = { cromo: 'cromos', persona: 'personas', miniatura: 'miniaturas' };
+/** Compressed photos are far smaller; this only stops mistakes. */
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 interface Result<T> {
   data: T | null;
@@ -91,9 +99,36 @@ function ensureAffected(rows: unknown[] | null, what: string): void {
 const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(b.name, 'es');
 
 export function createSupabaseRepository(client: SupabaseClient): MemoriesRepository {
-  // Signed URL handed out for each stored cromo image: when a form sends the
-  // same URL back, the stored file is kept instead of saving the temporary URL.
-  const signedImages = new Map<string, string>();
+  /** Temporary URLs for files in a private bucket (path -> URL). */
+  async function signAll(bucket: string, paths: (string | undefined | null)[]): Promise<Map<string, string>> {
+    const unique = [...new Set(paths.filter((p): p is string => !!p))];
+    const signed = new Map<string, string>();
+    if (unique.length) {
+      const { data } = await client.storage.from(bucket).createSignedUrls(unique, SIGNED_URL_SECONDS);
+      for (const item of data ?? []) if (item.path && item.signedUrl) signed.set(item.path, item.signedUrl);
+    }
+    return signed;
+  }
+
+  /** Uploaded profile photos are shown through temporary URLs. */
+  async function hydratePeople(rows: PersonRow[]): Promise<Person[]> {
+    const signed = await signAll('personas', rows.map((r) => r.photo_path));
+    return rows.map((r) => {
+      const person = toPerson(r);
+      const url = r.photo_path ? signed.get(r.photo_path) : undefined;
+      return url ? { ...person, photoUrl: url } : person;
+    });
+  }
+
+  /** Uploaded video covers are shown through temporary URLs. */
+  async function hydrateVideos(rows: VideoRow[]): Promise<Video[]> {
+    const signed = await signAll('miniaturas', rows.map((r) => r.thumbnail_path));
+    return rows.map((r) => {
+      const video = toVideo(r);
+      const url = r.thumbnail_path ? signed.get(r.thumbnail_path) : undefined;
+      return url ? { ...video, thumbnailUrl: url } : video;
+    });
+  }
 
   async function userId(): Promise<string> {
     const { data } = await client.auth.getSession();
@@ -109,16 +144,10 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
     const unlocked = must(await client.rpc('unlocked_card_descriptions')) as { card_id: string; description: string }[];
     const descriptions = new Map(unlocked.map((d) => [d.card_id, d.description]));
     const pathOf = (r: CardRow) => (r.image_url ? null : descriptions.has(r.id) ? r.image_path : r.blurred_path);
-    const paths = [...new Set(rows.map(pathOf).filter((p): p is string => !!p))];
-    const signed = new Map<string, string>();
-    if (paths.length) {
-      const { data } = await client.storage.from('cromos').createSignedUrls(paths, SIGNED_URL_SECONDS);
-      for (const item of data ?? []) if (item.path && item.signedUrl) signed.set(item.path, item.signedUrl);
-    }
+    const signed = await signAll('cromos', rows.map(pathOf));
     return rows.map((r) => {
       const path = pathOf(r);
       const imageUrl = r.image_url ?? (path ? (signed.get(path) ?? '') : '');
-      if (!r.image_url && imageUrl) signedImages.set(r.id, imageUrl);
       return toCard(r, imageUrl, descriptions.get(r.id) ?? '');
     });
   }
@@ -207,8 +236,8 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
           .filter((c) => roles.has(c.id))
           .map((c) => ({ id: c.id, name: c.name, kind: c.kind, packTheme: c.pack_theme, role: roles.get(c.id)! }))
           .sort(byName),
-        videos: (must(videos) as VideoRow[]).map(toVideo),
-        people: (must(people) as PersonRow[]).map(toPerson),
+        videos: await hydrateVideos(must(videos) as VideoRow[]),
+        people: await hydratePeople(must(people) as PersonRow[]),
         events: (must(events) as EventRow[]).map(toEvent),
         viewCounts: Object.fromEntries(
           (must(views) as { video_id: string; views: number }[]).map((v) => [v.video_id, Number(v.views)]),
@@ -304,8 +333,8 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
         channel: toChannel(channelRow),
         me: mine,
         members: memberList,
-        people: (must(people) as PersonRow[]).map(toPerson),
-        videos: (must(videos) as VideoRow[]).map(toVideo),
+        people: await hydratePeople(must(people) as PersonRow[]),
+        videos: await hydrateVideos(must(videos) as VideoRow[]),
         events: (must(events) as EventRow[]).map(toEvent),
         cards: await hydrateCards(must(cards) as CardRow[]),
         partnerships: (must(partnerships) as PartnershipRow[]).map(toPartnership),
@@ -459,7 +488,8 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
           p_last_name: value.lastName,
           p_birth_date: value.birthDate ?? null,
           p_gender: value.gender ?? null,
-          p_photo_url: value.photoUrl ?? null,
+          p_photo_url: value.photoPath ? null : (value.photoUrl ?? null),
+          p_photo_path: value.photoPath ?? null,
           p_biography: value.biography,
         }),
       );
@@ -581,20 +611,19 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
             person_id: value.personId ?? null,
             title: value.title,
             description: value.description,
-            image_url: value.imageUrl,
+            ...cardImageColumns(value),
             taken_at: value.takenAt,
           })
           .select(COLUMNS.cards)
           .single(),
       ) as CardRow;
-      return toCard(row, value.imageUrl, value.description);
+      const [card] = await hydrateCards([row]);
+      return { ...card, description: value.description };
     },
 
     async updateCard(channelId, cardId, input) {
       requireId(cardId, 'El cromo');
       const value = ensure(validateCardInput(input));
-      // A temporary signed URL coming back from the form means "keep the stored file".
-      const keepStoredImage = signedImages.get(cardId) === value.imageUrl;
       const rows = must(
         await client
           .from('album_cards')
@@ -603,7 +632,7 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
             title: value.title,
             description: value.description,
             taken_at: value.takenAt,
-            ...(keepStoredImage ? {} : { image_url: value.imageUrl, image_path: null, blurred_path: null }),
+            ...cardImageColumns(value),
           })
           .eq('id', cardId)
           .eq('channel_id', channelId)
@@ -620,6 +649,35 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       );
     },
 
+    async uploadPhoto(channelId, kind, image, options = {}) {
+      requireId(channelId, 'El canal');
+      if (!(image instanceof Blob) || image.type !== 'image/webp' || image.size === 0 || image.size > MAX_UPLOAD_BYTES) {
+        throw new RepositoryError('invalid', 'La foto no es válida o es demasiado grande');
+      }
+      if (kind === 'persona' && !isId(options.personId ?? '')) throw new RepositoryError('invalid', 'Falta la persona');
+      if (kind === 'cromo' && !(options.blurred instanceof Blob)) throw new RepositoryError('invalid', 'Falta la copia desenfocada');
+      const name = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+      const folder = kind === 'persona' ? `${channelId}/${options.personId}` : channelId;
+      const path = `${folder}/${name}.webp`;
+      const bucket = client.storage.from(BUCKETS[kind]);
+      const upload = async (target: string, blob: Blob) => {
+        const { error } = await bucket.upload(target, blob, { contentType: 'image/webp', cacheControl: '31536000', upsert: false });
+        if (error) {
+          throw /row-level|unauthorized|403/i.test(error.message)
+            ? new RepositoryError('forbidden', 'No tienes permiso para subir esta foto')
+            : new RepositoryError('conflict', 'No se ha podido subir la foto. Inténtalo de nuevo.');
+        }
+      };
+      await upload(path, image);
+      let blurredPath: string | undefined;
+      if (kind === 'cromo' && options.blurred) {
+        blurredPath = `${channelId}/${name}_blur.webp`;
+        await upload(blurredPath, options.blurred);
+      }
+      const { data } = await bucket.createSignedUrl(path, SIGNED_URL_SECONDS);
+      return { path, ...(blurredPath ? { blurredPath } : {}), previewUrl: data?.signedUrl ?? '' };
+    },
+
     async resetDemo() {
       throw new RepositoryError('forbidden', 'Solo disponible en la demo');
     },
@@ -632,7 +690,8 @@ function videoColumns(value: VideoInput) {
     title: value.title,
     description: value.description,
     media_url: value.mediaUrl,
-    thumbnail_url: value.thumbnailUrl ?? null,
+    thumbnail_url: value.thumbnailPath ? null : (value.thumbnailUrl ?? null),
+    thumbnail_path: value.thumbnailPath ?? null,
     event_date: value.eventDate,
     duration_seconds: value.durationSeconds ?? null,
     category: value.category,
@@ -648,7 +707,8 @@ function personColumns(value: PersonInput) {
     birth_date: value.birthDate ?? null,
     death_date: value.deathDate ?? null,
     gender: value.gender ?? null,
-    photo_url: value.photoUrl ?? null,
+    photo_url: value.photoPath ? null : (value.photoUrl ?? null),
+    photo_path: value.photoPath ?? null,
     relationship: value.relationship,
     biography: value.biography,
     parent_ids: value.parentIds ?? [],
@@ -657,4 +717,10 @@ function personColumns(value: PersonInput) {
 
 function eventColumns(value: EventInput) {
   return { type: value.type, title: value.title, date: value.date, person_ids: value.personIds, notes: value.notes };
+}
+
+function cardImageColumns(value: CardInput) {
+  return value.imagePath
+    ? { image_url: null, image_path: value.imagePath, blurred_path: value.blurredPath ?? null }
+    : { image_url: value.imageUrl, image_path: null, blurred_path: null };
 }

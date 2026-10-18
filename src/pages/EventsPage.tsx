@@ -8,11 +8,27 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import { EVENT_TYPES } from '../types/domain';
+import { DAY_ONLY_EVENT_TYPES, DAY_ONLY_YEAR, EVENT_TYPES } from '../types/domain';
 import type { EventInput, EventType, FamilyEvent } from '../types/domain';
 import { addDays, parsePartialDate } from '../utils/dates';
 import { occurrenceIn, upcomingEvents } from '../utils/events';
 import { EVENT_LABELS } from '../utils/labels';
+import styles from './EventsPage.module.scss';
+
+const MONTHS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
 
 /**
  * A channel's important dates: where they are added and edited. The yearly
@@ -128,6 +144,21 @@ function EventForm({
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const channelId = snapshot.channel.id;
 
+  const dayOnly = DAY_ONLY_EVENT_TYPES.includes(type);
+  const [month, day] = date ? [Number(date.slice(5, 7)), Number(date.slice(8, 10))] : [0, 0];
+  const setDayMonth = (m: number, d: number) => {
+    const maxDay = new Date(DAY_ONLY_YEAR, m, 0).getDate();
+    const safeDay = Math.min(d || 1, maxDay);
+    setDate(m ? `${DAY_ONLY_YEAR}-${String(m).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}` : '');
+  };
+  const changeType = (next: EventType) => {
+    const nextDayOnly = DAY_ONLY_EVENT_TYPES.includes(next);
+    // Day-only dates keep day and month; real dates need their real year again.
+    if (nextDayOnly && !dayOnly && date) setDayMonth(month, day);
+    if (!nextDayOnly && dayOnly) setDate('');
+    setType(next);
+  };
+
   // Live preview of what the date will show this year / next time.
   const thisYear = parsePartialDate(today)?.year ?? 0;
   const preview = parsePartialDate(date)?.day ? occurrenceIn(date, Math.max(thisYear, Number(date.slice(0, 4)))) : null;
@@ -148,7 +179,7 @@ function EventForm({
     >
       <h2>{initial ? 'Editar fecha' : 'Nueva fecha'}</h2>
       <Field label="Tipo de evento" htmlFor="type">
-        <select id="type" className={ui.input} value={type} onChange={(e) => setType(e.target.value as EventType)}>
+        <select id="type" className={ui.input} value={type} onChange={(e) => changeType(e.target.value as EventType)}>
           {EVENT_TYPES.map((t) => (
             <option key={t} value={t}>
               {EVENT_LABELS[t]}
@@ -167,27 +198,63 @@ function EventForm({
           required
         />
       </Field>
-      <Field
-        label="Fecha de origen"
-        htmlFor="date"
-        hint={
-          preview
-            ? preview.years > 0
-              ? `Este año: ${preview.years}.º ${type === 'cumpleanos' ? 'cumpleaños' : 'aniversario'}`
-              : 'Aún no ha ocurrido: aparecerá ese día'
-            : 'El día en que ocurrió por primera vez (año incluido)'
-        }
-      >
-        <input
-          id="date"
-          className={ui.input}
-          type="date"
-          value={date}
-          max={addDays(today, 3650)}
-          onChange={(e) => setDate(e.target.value)}
-          required
-        />
-      </Field>
+      {dayOnly ? (
+        <Field label="Día del año" htmlFor="day" hint="Se recuerda cada año ese día, sin contar años">
+          <div className={styles.dayMonth}>
+            <select
+              id="day"
+              className={ui.input}
+              value={day || ''}
+              onChange={(e) => setDayMonth(month || 1, Number(e.target.value))}
+              required
+              aria-label="Día"
+            >
+              <option value="">Día</option>
+              {Array.from({ length: 31 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {i + 1}
+                </option>
+              ))}
+            </select>
+            <select
+              className={ui.input}
+              value={month || ''}
+              onChange={(e) => setDayMonth(Number(e.target.value), day || 1)}
+              required
+              aria-label="Mes"
+            >
+              <option value="">Mes</option>
+              {MONTHS.map((name, i) => (
+                <option key={name} value={i + 1}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </Field>
+      ) : (
+        <Field
+          label="Fecha de origen"
+          htmlFor="date"
+          hint={
+            preview
+              ? preview.years > 0
+                ? `Este año: ${preview.years}.º ${type === 'cumpleanos' ? 'cumpleaños' : 'aniversario'}`
+                : 'Aún no ha ocurrido: aparecerá ese día'
+              : 'El día en que ocurrió por primera vez (año incluido)'
+          }
+        >
+          <input
+            id="date"
+            className={ui.input}
+            type="date"
+            value={date}
+            max={addDays(today, 3650)}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+        </Field>
+      )}
       <Field label="Personas (opcional)" htmlFor="people">
         <PeoplePicker people={snapshot.people} value={personIds} onChange={setPersonIds} />
       </Field>

@@ -18,6 +18,8 @@ export const EVENT_LABELS: Record<EventType, string> = {
   bautizo: 'Bautizo',
   boda: 'Boda',
   fallecimiento: 'Fallecimiento',
+  santo: 'Santo',
+  dia_senalado: 'Día señalado',
   otro: 'Otro evento',
 };
 

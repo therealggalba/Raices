@@ -47,6 +47,7 @@ describe('row mappers', () => {
       death_date: '2020-05-03',
       gender: 'mujer',
       photo_url: null,
+      photo_path: null,
       relationship: 'Abuela',
       biography: '',
       parent_ids: [],
@@ -66,6 +67,7 @@ describe('row mappers', () => {
       description: '',
       media_url: 'https://drive.google.com/file/d/abcdefghijk/view',
       thumbnail_url: null,
+      thumbnail_path: '0b6d2b5e-0000-4000-8000-000000000002/portada.webp',
       event_date: '1998',
       uploaded_at: '2026-10-17T10:00:00Z',
       duration_seconds: null,
@@ -75,6 +77,7 @@ describe('row mappers', () => {
       author_id: B,
     });
     expect(video.tags).toEqual(['feria']);
+    expect(video.thumbnailPath).toBe('0b6d2b5e-0000-4000-8000-000000000002/portada.webp');
     expect(video.personIds).toEqual([A]);
     expect('durationSeconds' in video).toBe(false);
   });

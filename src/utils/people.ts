@@ -30,11 +30,7 @@ export function lifeAge(person: Pick<Person, 'birthDate' | 'deathDate'>, today: 
   return years === null ? null : { years, deceased: !!person.deathDate };
 }
 
-/**
- * What a person is to the viewer: kinship from the family tree when the
- * viewer said who they are in the channel («Tío», «Yo»…), otherwise the
- * free-text relationship of the person.
- */
+/** What a person is to the viewer («Tío», «Yo»…), from the family tree; '' when unrelated or unknown. */
 export function relationTo(
   person: Person,
   viewerPersonId: string | undefined,
@@ -42,7 +38,7 @@ export function relationTo(
   partnerships: readonly Partnership[],
 ): string {
   const derived = viewerPersonId ? kinship(viewerPersonId, person.id, people, partnerships) : null;
-  return derived ? capitalize(derived) : person.relationship;
+  return derived ? capitalize(derived) : '';
 }
 
 /** Oldest first; people without a birth date go last, alphabetically. */
@@ -60,8 +56,9 @@ const SELF_FIELDS = ['firstName', 'lastName', 'birthDate', 'gender', 'photoUrl',
 /** What a member changed on their own card (for the admins' inbox). */
 export function selfChanges(before: Person, after: SelfPersonInput): FieldChange[] {
   return SELF_FIELDS.flatMap((field) => {
-    const old = before[field] ?? '';
-    const now = after[field] ?? '';
+    // The photo counts as one field, linked or uploaded.
+    const old = (field === 'photoUrl' ? (before.photoPath ?? before.photoUrl) : before[field]) ?? '';
+    const now = (field === 'photoUrl' ? (after.photoPath ?? after.photoUrl) : after[field]) ?? '';
     return old === now ? [] : [{ field, before: old, after: now }];
   });
 }

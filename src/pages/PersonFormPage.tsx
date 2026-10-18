@@ -6,9 +6,12 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import type { Gender, PersonInput } from '../types/domain';
+import type { Gender, PersonInput, UploadedPhoto } from '../types/domain';
 import { descendantsOf } from '../utils/familyTree';
 import { fullName, sortPeople } from '../utils/people';
+import { guessGender } from '../utils/genderNames';
+import { PhotoField } from '../components/PhotoField';
+import { PHOTO_MAX_SIDE, compressPhoto } from '../utils/imageCompress';
 import styles from './PersonFormPage.module.scss';
 
 /** Add (/personas/nueva) or edit (/personas/:personId/editar) a person. Admins only. */
@@ -28,9 +31,17 @@ export function PersonFormPage() {
   const [lastName, setLastName] = useState(existing?.lastName ?? '');
   const [birthDate, setBirthDate] = useState(existing?.birthDate ?? '');
   const [deathDate, setDeathDate] = useState(existing?.deathDate ?? '');
-  const [gender, setGender] = useState<Gender | ''>(existing?.gender ?? '');
-  const [relationship, setRelationship] = useState(existing?.relationship ?? '');
-  const [photoUrl, setPhotoUrl] = useState(existing?.photoUrl ?? '');
+  // Gender is guessed from the first name; it's only asked when the name
+  // doesn't tell, or when someone wants to change it.
+  const [chosenGender, setGender] = useState<Gender | '' | null>(existing ? (existing.gender ?? '') : null);
+  const [askGender, setAskGender] = useState(false);
+  // Photo: a link, a file already uploaded, or (new person) a file that is
+  // uploaded right after saving them, into their own folder.
+  const [photoUrl, setPhotoUrl] = useState(existing && !existing.photoPath ? (existing.photoUrl ?? '') : '');
+  const [photoStored, setPhotoStored] = useState<UploadedPhoto | null>(
+    existing?.photoPath ? { path: existing.photoPath, previewUrl: existing.photoUrl ?? '' } : null,
+  );
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [biography, setBiography] = useState(existing?.biography ?? '');
   const [parent1, setParent1] = useState(existing?.parentIds[0] ?? '');
   const [parent2, setParent2] = useState(existing?.parentIds[1] ?? '');
@@ -51,6 +62,10 @@ export function PersonFormPage() {
       </EmptyState>
     );
   }
+
+  const guessed = guessGender(firstName);
+  const gender: Gender | '' = chosenGender ?? guessed ?? '';
+  const showGenderSelect = askGender || (chosenGender === null && !guessed) || (chosenGender !== null && !gender);
 
   // Anyone but the person and their descendants (no one is their own ancestor).
   const below = existing ? descendantsOf(snapshot.people, existing.id) : new Set<string>();
@@ -80,18 +95,18 @@ export function PersonFormPage() {
           const input: PersonInput = {
             firstName,
             lastName,
-            // Only family channels use it.
-            relationship: isFamily ? relationship : '',
+            // Kinship comes from the family tree; old free text is kept as it was.
+            relationship: existing?.relationship ?? '',
             biography,
             ...(birthDate ? { birthDate } : {}),
             ...(deathDate ? { deathDate } : {}),
             ...(gender ? { gender } : {}),
-            ...(photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
+            ...(photoStored ? { photoPath: photoStored.path } : photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
             parentIds: [parent1, parent2].filter(Boolean),
           };
           const id = await run(async () => {
             if (selfMode && existing) {
-              const { firstName: f, lastName: l, biography: b, birthDate: d, gender: g, photoUrl: u } = input;
+              const { firstName: f, lastName: l, biography: b, birthDate: d, gender: g, photoUrl: u, photoPath: ph } = input;
               await repository.updateMyPerson(channelId, {
                 firstName: f,
                 lastName: l,
@@ -99,6 +114,7 @@ export function PersonFormPage() {
                 ...(d ? { birthDate: d } : {}),
                 ...(g ? { gender: g } : {}),
                 ...(u ? { photoUrl: u } : {}),
+                ...(ph ? { photoPath: ph } : {}),
               });
               return existing.id;
             }
@@ -107,6 +123,11 @@ export function PersonFormPage() {
               return existing.id;
             }
             const added = await repository.addPerson(channelId, input);
+            if (pendingPhoto) {
+              const image = await compressPhoto(pendingPhoto, PHOTO_MAX_SIDE.persona);
+              const photo = await repository.uploadPhoto(channelId, 'persona', image, { personId: added.id });
+              await repository.updatePerson(channelId, added.id, { ...input, photoUrl: undefined, photoPath: photo.path });
+            }
             if (isSelf) await repository.linkMemberPerson(channelId, snapshot.me.userId, added.id);
             return added.id;
           });
@@ -135,32 +156,28 @@ export function PersonFormPage() {
             maxLength={80}
           />
         </Field>
-        <Field label="Género" htmlFor="gender">
-          <select
-            id="gender"
-            className={ui.input}
-            value={gender}
-            onChange={(e) => setGender(e.target.value as Gender | '')}
-          >
-            <option value="">Sin indicar</option>
-            <option value="hombre">Hombre</option>
-            <option value="mujer">Mujer</option>
-          </select>
-        </Field>
-        {isFamily && !selfMode && (
-          <Field
-            label="Relación familiar"
-            htmlFor="relationship"
-            hint="Si no está en el árbol: amiga de la familia, vecino…"
-          >
-            <input
-              id="relationship"
+        {showGenderSelect ? (
+          <Field label="Género" htmlFor="gender">
+            <select
+              id="gender"
               className={ui.input}
-              value={relationship}
-              onChange={(e) => setRelationship(e.target.value)}
-              maxLength={60}
-            />
+              value={gender}
+              onChange={(e) => setGender(e.target.value as Gender | '')}
+            >
+              <option value="">Sin indicar</option>
+              <option value="hombre">Hombre</option>
+              <option value="mujer">Mujer</option>
+            </select>
           </Field>
+        ) : (
+          gender && (
+            <p className={styles.genderLine}>
+              {gender === 'hombre' ? 'Hombre' : 'Mujer'}
+              <button type="button" className={styles.change} onClick={() => setAskGender(true)}>
+                Cambiar
+              </button>
+            </p>
+          )
         )}
         {isFamily && !selfMode && (
           <fieldset className={styles.parents}>
@@ -210,16 +227,28 @@ export function PersonFormPage() {
             />
           </Field>
         )}
-        <Field label="Fotografía (opcional)" htmlFor="photoUrl">
-          <input
-            id="photoUrl"
-            className={ui.input}
-            type="url"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="https://"
-          />
-        </Field>
+        <PhotoField
+          label="Foto"
+          channelId={channelId}
+          kind="persona"
+          aspect="1 / 1"
+          personId={existing?.id}
+          previewUrl={photoStored?.previewUrl}
+          url={photoUrl}
+          onUrlChange={(url) => {
+            setPhotoUrl(url);
+            if (url) setPhotoStored(null);
+          }}
+          onUploaded={(photo) => {
+            setPhotoStored(photo);
+            setPhotoUrl('');
+          }}
+          onClear={() => {
+            setPhotoStored(null);
+            setPendingPhoto(null);
+          }}
+          onFileWaiting={setPendingPhoto}
+        />
         <Field label="Biografía" htmlFor="biography">
           <textarea
             id="biography"

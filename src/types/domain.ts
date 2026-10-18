@@ -48,8 +48,26 @@ export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
 export const GENDERS = ['hombre', 'mujer'] as const;
 export type Gender = (typeof GENDERS)[number];
 
-export const EVENT_TYPES = ['cumpleanos', 'aniversario', 'comunion', 'bautizo', 'boda', 'fallecimiento', 'otro'] as const;
+export const EVENT_TYPES = [
+  'cumpleanos',
+  'aniversario',
+  'comunion',
+  'bautizo',
+  'boda',
+  'fallecimiento',
+  'santo',
+  'dia_senalado',
+  'otro',
+] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
+
+/**
+ * Yearly dates that didn't start on a given year (a saint's day, a family
+ * tradition…): only day and month matter, no count of years.
+ */
+export const DAY_ONLY_EVENT_TYPES: readonly EventType[] = ['santo', 'dia_senalado'];
+/** Year stored for day-and-month-only dates (a leap year, so 29 February fits). */
+export const DAY_ONLY_YEAR = 2000;
 
 /** "YYYY", "YYYY-MM" or "YYYY-MM-DD". */
 export type PartialDate = string;
@@ -97,7 +115,10 @@ export interface Person {
   /** Shown with a cross (✝). */
   deathDate?: IsoDate;
   gender?: Gender;
+  /** Photo to show: an https link or, for uploaded photos, a temporary signed URL. */
   photoUrl?: string;
+  /** Uploaded photo in storage («<channel>/<person>/<file>.webp»). */
+  photoPath?: string;
   /** Free text: "Abuelo materno", "Prima", "Amigo de la familia"… */
   relationship: string;
   biography: string;
@@ -124,7 +145,10 @@ export interface Video {
   description: string;
   /** External media link (YouTube, Vimeo, Google Drive or a direct file). */
   mediaUrl: string;
+  /** Cover to show: an https link or, for uploaded covers, a temporary signed URL. */
   thumbnailUrl?: string;
+  /** Uploaded cover in storage («<channel>/<file>.webp»). */
+  thumbnailPath?: string;
   /** When the recorded moment actually happened. */
   eventDate: PartialDate;
   uploadedAt: IsoDateTime;
@@ -168,8 +192,11 @@ export interface AlbumCard {
   personId?: string;
   title: string;
   description: string;
-  /** https image (any host, including a Supabase Storage public URL). */
+  /** Image to show: an https link or, for uploaded photos, a temporary signed URL. */
   imageUrl: string;
+  /** Uploaded photo and its blurred copy (shown while locked) in storage. */
+  imagePath?: string;
+  blurredPath?: string;
   /** When the photo was taken. */
   takenAt: PartialDate;
   createdAt: IsoDateTime;
@@ -236,7 +263,8 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 /** One field changed by a member on their own card. */
 export interface FieldChange {
-  field: keyof SelfPersonInput;
+  /** photoUrl stands for the photo, whether linked or uploaded. */
+  field: 'firstName' | 'lastName' | 'birthDate' | 'gender' | 'photoUrl' | 'biography';
   before: string;
   after: string;
 }
@@ -300,6 +328,8 @@ export interface PersonInput {
   deathDate?: IsoDate;
   gender?: Gender;
   photoUrl?: string;
+  /** Uploaded photo (wins over photoUrl). */
+  photoPath?: string;
   relationship: string;
   biography: string;
   /** Up to two parents (omitted = none). */
@@ -313,6 +343,7 @@ export interface SelfPersonInput {
   birthDate?: IsoDate;
   gender?: Gender;
   photoUrl?: string;
+  photoPath?: string;
   biography: string;
 }
 
@@ -327,6 +358,8 @@ export interface VideoInput {
   description: string;
   mediaUrl: string;
   thumbnailUrl?: string;
+  /** Uploaded cover (wins over thumbnailUrl). */
+  thumbnailPath?: string;
   eventDate: PartialDate;
   durationSeconds?: number;
   category: VideoCategory;
@@ -338,8 +371,23 @@ export interface CardInput {
   personId?: string;
   title: string;
   description: string;
+  /** https link; ignored when the photo was uploaded (imagePath). */
   imageUrl: string;
+  imagePath?: string;
+  blurredPath?: string;
   takenAt: PartialDate;
+}
+
+/** Where an uploaded photo goes. */
+export const PHOTO_KINDS = ['cromo', 'persona', 'miniatura'] as const;
+export type PhotoKind = (typeof PHOTO_KINDS)[number];
+
+/** A photo just uploaded: where it is stored and a URL to preview it. */
+export interface UploadedPhoto {
+  path: string;
+  /** Cromos only: the tiny blurred copy shown while locked. */
+  blurredPath?: string;
+  previewUrl: string;
 }
 
 export interface EventInput {

@@ -1,0 +1,71 @@
+@use '../styles/variables' as *;
+
+.field {
+  display: grid;
+  gap: $space-2;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.row {
+  display: flex;
+  gap: $space-3;
+  align-items: center;
+}
+
+.preview {
+  flex: 0 0 auto;
+  width: 112px;
+  overflow: hidden;
+  border-radius: $radius-md;
+  border: 1px solid $color-line;
+  background: $color-bg-panel;
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: $color-text-dim;
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: grid;
+  justify-items: start;
+  gap: $space-1;
+}
+
+// The real file input is hidden; its label is the button.
+.file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.link {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $color-accent;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.error {
+  margin: 0;
+  color: $color-danger;
+  font-size: 0.85rem;
+}

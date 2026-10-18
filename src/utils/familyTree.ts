@@ -144,7 +144,6 @@ export function layoutTree(
   interface Unit {
     members: string[];
     children: Unit[];
-    width: number;
   }
   const unitOf = new Map<string, Unit>();
   const makeUnit = (head: Person): Unit => {
@@ -157,7 +156,7 @@ export function layoutTree(
         unitOf.set(partnerId, null as unknown as Unit);
       }
     }
-    const unit: Unit = { members, children: [], width: 0 };
+    const unit: Unit = { members, children: [] };
     for (const id of members) unitOf.set(id, unit);
     return unit;
   };
@@ -185,42 +184,57 @@ export function layoutTree(
   for (const p of sortPeople(people)) if (!unitOf.has(p.id)) roots.push(makeUnit(p));
 
   const membersWidth = (u: Unit) => u.members.length * W + (u.members.length - 1) * gapX;
-  const measure = (u: Unit): number => {
-    const kids = u.children.reduce((sum, c, i) => sum + measure(c) + (i ? gapX : 0), 0);
-    u.width = Math.max(membersWidth(u), kids);
-    return u.width;
-  };
-  roots.forEach(measure);
-
   const levels = [...new Set(gen.values())].sort((a, b) => a - b);
   const rowOfLevel = new Map(levels.map((l, i) => [l, i]));
-  const x = new Map<string, number>();
-  // Married-in partners go on the outer side: siblings on the left half get
-  // them on their left, so brothers and sisters stay together in the middle
-  // and the arrows from their parents are symmetric.
-  // The parents sit centred over their children (the cards of the children
-  // themselves, not their in-laws), without leaving their own block.
-  const place = (u: Unit, left: number, partnersOnLeft = false) => {
-    const kidsWidth = u.children.reduce((sum, c, i) => sum + c.width + (i ? gapX : 0), 0);
-    let cursor = left + (u.width - kidsWidth) / 2;
-    u.children.forEach((child, i) => {
-      place(child, cursor, i < (u.children.length - 1) / 2);
-      cursor += child.width + gapX;
-    });
-    const span = membersWidth(u);
-    let membersLeft = left + (u.width - span) / 2;
-    if (u.children.length) {
-      const heads = u.children.map((c) => x.get(c.members[0])! + W / 2);
-      const centre = (Math.min(...heads) + Math.max(...heads)) / 2;
-      membersLeft = Math.min(Math.max(centre - span / 2, left), left + u.width - span);
-    }
+
+  // Each unit is laid out on its own (relative x from 0) and returns its width
+  // and where its head person's centre is. Children are packed side by side
+  // and the parents' union (the middle of the couple) sits exactly over the
+  // middle of their children: one child right below it, two at the same
+  // distance on each side, more spread evenly from the first to the last.
+  // Married-in partners go on the outer side (left for the siblings on the
+  // left half), so brothers and sisters stay together.
+  interface Placed {
+    width: number;
+    x: Map<string, number>;
+    headCentre: number;
+  }
+  const layoutUnit = (u: Unit, partnersOnLeft: boolean): Placed => {
     const order = partnersOnLeft ? [...u.members.slice(1).reverse(), u.members[0]] : u.members;
-    order.forEach((id, i) => x.set(id, membersLeft + i * (W + gapX)));
+    const span = membersWidth(u);
+    const x = new Map<string, number>();
+    if (u.children.length === 0) {
+      order.forEach((id, i) => x.set(id, i * (W + gapX)));
+      return { width: span, x, headCentre: x.get(u.members[0])! + W / 2 };
+    }
+    const kids = u.children.map((child, i) => layoutUnit(child, i < (u.children.length - 1) / 2));
+    const offsets: number[] = [];
+    let cursor = 0;
+    for (const kid of kids) {
+      offsets.push(cursor);
+      cursor += kid.width + gapX;
+    }
+    const kidsWidth = cursor - gapX;
+    const heads = kids.map((kid, i) => offsets[i] + kid.headCentre);
+    const centre = (heads[0] + heads[heads.length - 1]) / 2;
+    const membersLeft = centre - span / 2;
+    // Parents wider than their children: shift everything right.
+    const shift = Math.max(0, -membersLeft);
+    kids.forEach((kid, i) => kid.x.forEach((value, id) => x.set(id, value + offsets[i] + shift)));
+    order.forEach((id, i) => x.set(id, membersLeft + shift + i * (W + gapX)));
+    return {
+      width: Math.max(kidsWidth + shift, membersLeft + shift + span),
+      x,
+      headCentre: x.get(u.members[0])! + W / 2,
+    };
   };
-  let cursor = 0;
+
+  const x = new Map<string, number>();
+  let rootLeft = 0;
   for (const root of roots) {
-    place(root, cursor);
-    cursor += root.width + gapX * 2;
+    const placed = layoutUnit(root, false);
+    placed.x.forEach((value, id) => x.set(id, value + rootLeft));
+    rootLeft += placed.width + gapX * 2;
   }
 
   // Start at 0 (a block's free side may have stayed empty).

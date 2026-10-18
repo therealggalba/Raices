@@ -4,6 +4,7 @@ import { CATEGORY_LABELS } from '../utils/labels';
 import { Icon } from './Icon';
 import { Thumbnail } from './Thumbnail';
 import { LinkButton } from './ui';
+import { ui } from './ui-styles';
 import styles from './Hero.module.scss';
 
 export function Hero({ video, kicker }: { video: Video; kicker: string }) {
@@ -27,7 +28,9 @@ export function Hero({ video, kicker }: { video: Video; kicker: string }) {
             <Icon name="play" size={18} />
             Reproducir
           </LinkButton>
-          <LinkButton to={to}>Más información</LinkButton>
+          <LinkButton to={to} className={ui.iconOnly} aria-label="Más información" title="Más información">
+            <Icon name="info" size={20} />
+          </LinkButton>
         </div>
       </div>
     </section>

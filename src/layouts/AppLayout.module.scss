@@ -9,17 +9,17 @@
   top: 0;
   z-index: 30;
   display: flex;
-  align-items: center;
+  // Content sits at the bottom of the bar, well clear of the status bar.
+  align-items: flex-end;
   gap: $space-2;
   height: $header-offset;
-  padding-top: $safe-top;
-  padding: 0 $space-3;
+  padding: $safe-top $space-3 $space-2;
   background: linear-gradient(to bottom, rgb(var(--bg-rgb) / 0.95), rgb(var(--bg-rgb) / 0.7) 70%, rgb(var(--bg-rgb) / 0));
   backdrop-filter: blur(6px);
 
   @include md-up {
     gap: $space-6;
-    padding: 0 $space-8;
+    padding: $safe-top $space-8 $space-2;
   }
 }
 

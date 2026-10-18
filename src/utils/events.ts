@@ -1,3 +1,4 @@
+import { DAY_ONLY_EVENT_TYPES } from '../types/domain';
 import type { DateFilters, DateOccurrence, EventType, FamilyEvent, IsoDate, Person } from '../types/domain';
 import { daysBetween, parsePartialDate, sameDayInYear } from './dates';
 import { fullName } from './people';
@@ -71,7 +72,9 @@ export function occurrenceIn(originDate: IsoDate, year: number): { date: IsoDate
 function toOccurrence(source: DateSource, year: number, today: IsoDate): DateOccurrence | null {
   const occ = occurrenceIn(source.originDate, year);
   if (!occ) return null;
-  return { ...source, date: occ.date, years: occ.years, daysUntil: daysBetween(today, occ.date) };
+  // Saints' days and the like don't count years.
+  const years = DAY_ONLY_EVENT_TYPES.includes(source.type) ? 0 : occ.years;
+  return { ...source, date: occ.date, years, daysUntil: daysBetween(today, occ.date) };
 }
 
 function byDate(a: DateOccurrence, b: DateOccurrence): number {

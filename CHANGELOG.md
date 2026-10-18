@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.18.0 — 2026-10-18
+
+- **Fotos subidas desde el móvil**: cromos, fotos de perfil y portadas de vídeo se pueden subir directamente
+  («Subir foto»); la app las reduce y convierte a WebP antes de enviarlas a Supabase (privado). Los cromos llevan
+  además una copia diminuta para cuando están bloqueados. Cada miembro puede subir la foto de su propia ficha.
+  Sigue existiendo la opción de pegar un enlace.
+- Cabecera: el contenido va abajo (sin mezclarse con la barra de estado del móvil: corregido un fallo que anulaba
+  el margen superior), el nombre del canal se ve entero y el buscador dice solo «Buscar».
+- «Más información» (portada) y «Favoritos» (vídeo) pasan a ser botones pequeños con icono, en la misma fila.
+- Nuevos tipos de fecha anual sin contar años: «Santo» y «Día señalado» (solo día y mes).
+- Personas: los fallecidos van al final, en un desplegable cerrado; no se pueden invitar; el género se deduce del
+  nombre (se puede cambiar) y desaparece el campo «Relación familiar» (el parentesco sale del árbol).
+- Árbol: los hijos quedan siempre centrados bajo la unión de sus padres (uno justo debajo, dos a igual distancia,
+  más repartidos de extremo a extremo).
+- Base de datos: migración `0006_uploads_dates.sql`.
+
 ## 0.17.0 — 2026-10-18
 
 - Tarjetas de vídeo: la imagen ocupa siempre la tarjeta entera (sin franjas laterales; también en cromos y

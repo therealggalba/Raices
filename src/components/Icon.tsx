@@ -57,6 +57,13 @@ const PATHS = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5.5M12 7.8v.2" />
+    </>
+  ),
+  upload: <path d="M12 16V4.5M7.5 9L12 4.5 16.5 9M5 19.5h14" />,
   chevronDown: <path d="M6 9.5l6 6 6-6" />,
   external: <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />,
   eye: (

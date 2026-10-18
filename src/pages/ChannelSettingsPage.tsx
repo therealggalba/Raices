@@ -203,7 +203,8 @@ function InvitationsSection() {
   const [days, setDays] = useState<number>(7);
   // Only people who aren't a member yet can be invited.
   const linked = new Set(members.map((m) => m.personId).filter(Boolean));
-  const candidates = sortPeople(people).filter((p) => !linked.has(p.id));
+  // Only living people who aren't members yet.
+  const candidates = sortPeople(people).filter((p) => !linked.has(p.id) && !p.deathDate);
   const [personId, setPersonId] = useState('');
   const forPerson = candidates.some((p) => p.id === personId) ? personId : (candidates[0]?.id ?? '');
   const [created, setCreated] = useState<Invitation | null>(null);

@@ -86,6 +86,14 @@
   }
 }
 
+.iconOnly {
+  // Secondary actions shown as a symbol only (with an aria-label).
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
 .small {
   min-height: 36px;
   padding: 0 $space-3;

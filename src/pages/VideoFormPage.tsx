@@ -7,10 +7,11 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { repository } from '../services';
 import { VIDEO_CATEGORIES } from '../types/domain';
-import type { VideoCategory, VideoInput } from '../types/domain';
+import type { UploadedPhoto, VideoCategory, VideoInput } from '../types/domain';
 import { formatDuration } from '../utils/dates';
 import { CATEGORY_LABELS } from '../utils/labels';
 import { resolveMedia } from '../utils/media';
+import { PhotoField } from '../components/PhotoField';
 import { parseDurationInput, parseTagsInput } from '../utils/validation';
 
 const PROVIDER_LABELS = {
@@ -35,7 +36,11 @@ export function VideoFormPage() {
   const [eventDate, setEventDate] = useState(existing?.eventDate ?? '');
   const [category, setCategory] = useState<VideoCategory>(existing?.category ?? 'reunion');
   const [description, setDescription] = useState(existing?.description ?? '');
-  const [thumbnailUrl, setThumbnailUrl] = useState(existing?.thumbnailUrl ?? '');
+  // Cover: a link or a photo uploaded from the phone (stored file).
+  const [thumbnailUrl, setThumbnailUrl] = useState(existing && !existing.thumbnailPath ? (existing.thumbnailUrl ?? '') : '');
+  const [thumbStored, setThumbStored] = useState<UploadedPhoto | null>(
+    existing?.thumbnailPath ? { path: existing.thumbnailPath, previewUrl: existing.thumbnailUrl ?? '' } : null,
+  );
   const [duration, setDuration] = useState(
     existing?.durationSeconds ? secondsToInput(existing.durationSeconds) : '',
   );
@@ -74,7 +79,11 @@ export function VideoFormPage() {
       category,
       tags: parseTagsInput(tags),
       personIds,
-      ...(thumbnailUrl.trim() ? { thumbnailUrl: thumbnailUrl.trim() } : {}),
+      ...(thumbStored
+        ? { thumbnailPath: thumbStored.path }
+        : thumbnailUrl.trim()
+          ? { thumbnailUrl: thumbnailUrl.trim() }
+          : {}),
       ...(durationSeconds ? { durationSeconds } : {}),
     };
     const id = await run(async () => {
@@ -166,20 +175,23 @@ export function VideoFormPage() {
         <Field label="Personas que aparecen" htmlFor="people">
           <PeoplePicker people={people} value={personIds} onChange={setPersonIds} />
         </Field>
-        <Field
-          label="Miniatura (opcional)"
-          htmlFor="thumbnailUrl"
-          hint={media?.kind === 'youtube' ? 'Si la dejas vacía se usa la de YouTube' : 'Enlace https a una imagen'}
-        >
-          <input
-            id="thumbnailUrl"
-            className={ui.input}
-            type="url"
-            value={thumbnailUrl}
-            onChange={(e) => setThumbnailUrl(e.target.value)}
-            placeholder="https://"
-          />
-        </Field>
+        <PhotoField
+          label={media?.kind === 'youtube' || media?.kind === 'drive' ? 'Portada (opcional: si no, la del vídeo)' : 'Portada (opcional)'}
+          channelId={channel.id}
+          kind="miniatura"
+          aspect="16 / 9"
+          previewUrl={thumbStored?.previewUrl}
+          url={thumbnailUrl}
+          onUrlChange={(url) => {
+            setThumbnailUrl(url);
+            if (url) setThumbStored(null);
+          }}
+          onUploaded={(photo) => {
+            setThumbStored(photo);
+            setThumbnailUrl('');
+          }}
+          onClear={() => setThumbStored(null)}
+        />
         <Field
           label="Duración (opcional)"
           htmlFor="duration"

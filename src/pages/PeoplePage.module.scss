@@ -34,3 +34,22 @@
   font-size: 0.8rem;
   color: $color-text-dim;
 }
+
+.deceased {
+  margin-top: $space-6;
+  border-top: 1px solid $color-line;
+  padding-top: $space-4;
+
+  summary {
+    min-height: $touch;
+    display: flex;
+    align-items: center;
+    color: $color-text-muted;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .grid {
+    margin-top: $space-3;
+  }
+}

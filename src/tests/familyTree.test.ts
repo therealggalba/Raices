@@ -96,3 +96,47 @@ describe('relativesOf', () => {
     expect(r.siblings.map((x) => x.id)).toEqual(['E']);
   });
 });
+
+describe('children centred under their parents', () => {
+  const sizes = { cardWidth: 100, cardHeight: 50, gapX: 20, gapY: 60 };
+  const unionCentre = (l: ReturnType<typeof layoutTree>, a: string, b: string) => {
+    const xs = [a, b].map((id) => l.nodes.find((n) => n.person.id === id)!.x + 50);
+    return (xs[0] + xs[1]) / 2;
+  };
+  const centreOf = (l: ReturnType<typeof layoutTree>, id: string) => l.nodes.find((n) => n.person.id === id)!.x + 50;
+  const parents = [p('M', '1950-01-01'), p('N', '1951-01-01')];
+
+  it('puts a single child right under the union', () => {
+    const l = layoutTree([...parents, p('K1', '1980-01-01', ['M', 'N'])], [couple('M', 'N')], sizes);
+    expect(centreOf(l, 'K1')).toBeCloseTo(unionCentre(l, 'M', 'N'), 5);
+  });
+
+  it('puts two children at the same distance on each side', () => {
+    const l = layoutTree([...parents, p('K1', '1980-01-01', ['M', 'N']), p('K2', '1982-01-01', ['M', 'N'])], [couple('M', 'N')], sizes);
+    const c = unionCentre(l, 'M', 'N');
+    expect(c - centreOf(l, 'K1')).toBeCloseTo(centreOf(l, 'K2') - c, 5);
+  });
+
+  it('centres the union between the first and the last of three or more, even with in-laws', () => {
+    const l = layoutTree(
+      [
+        ...parents,
+        p('K1', '1980-01-01', ['M', 'N']),
+        p('S1', '1979-01-01'),
+        p('K2', '1982-01-01', ['M', 'N']),
+        p('K3', '1985-01-01', ['M', 'N']),
+        p('S3', '1984-01-01'),
+      ],
+      [couple('M', 'N'), couple('K1', 'S1'), couple('K3', 'S3')],
+      sizes,
+    );
+    expect(unionCentre(l, 'M', 'N')).toBeCloseTo((centreOf(l, 'K1') + centreOf(l, 'K3')) / 2, 5);
+    // In-laws go outside: S1 left of K1, S3 right of K3.
+    expect(centreOf(l, 'S1')).toBeLessThan(centreOf(l, 'K1'));
+    expect(centreOf(l, 'S3')).toBeGreaterThan(centreOf(l, 'K3'));
+    // Nobody overlaps on the same row.
+    const rows = new Map<number, number[]>();
+    for (const n of l.nodes) rows.set(n.y, [...(rows.get(n.y) ?? []), n.x].sort((a, b) => a - b));
+    for (const xs of rows.values()) xs.slice(1).forEach((v, i) => expect(v - xs[i]).toBeGreaterThanOrEqual(100));
+  });
+});

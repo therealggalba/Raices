@@ -14,3 +14,23 @@
     color: $color-text-muted;
   }
 }
+
+.genderLine {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  margin: -$space-2 0 0;
+  color: $color-text-muted;
+  font-size: 0.9rem;
+}
+
+.change {
+  min-height: 36px;
+  padding: 0 $space-2;
+  border: 0;
+  background: none;
+  color: $color-accent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

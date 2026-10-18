@@ -68,8 +68,10 @@
 }
 
 .actions {
+  // Favourite, edit and delete: always one row.
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: $space-2;
 }
 

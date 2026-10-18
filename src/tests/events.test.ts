@@ -130,3 +130,12 @@ describe('people who passed away', () => {
     expect(anniversaryLabel(list[0])).toBe('Hace 37 años');
   });
 });
+
+describe('day-only dates (saints, family traditions)', () => {
+  it('come back every year without counting years', () => {
+    const santo = makeEvent({ id: 's', type: 'santo', title: 'Santo de Antonio', date: '2000-06-13' });
+    const [next] = upcomingEvents([santo], [], '2026-06-01', 30);
+    expect(next).toMatchObject({ date: '2026-06-13', years: 0 });
+    expect(anniversaryLabel(next)).toBeNull();
+  });
+});

@@ -534,7 +534,8 @@ export function createLocalRepository({
     async createInvitation(channelId, expiresInDays, personId) {
       requireAdmin(channelId);
       if (!isId(personId)) throw new RepositoryError('invalid', 'Elige para quién es la invitación');
-      findIn(db.people, channelId, personId, 'La persona');
+      const person = findIn(db.people, channelId, personId, 'La persona');
+      if (person.deathDate) throw new RepositoryError('invalid', 'No se puede invitar a una persona fallecida');
       const member = db.members.find((m) => m.channelId === channelId && m.personId === personId);
       if (member) throw new RepositoryError('conflict', `Esa persona ya está en el canal (${member.displayName})`);
       if (!Number.isInteger(expiresInDays) || expiresInDays < 1 || expiresInDays > MAX_EXPIRY_DAYS) {
@@ -705,7 +706,7 @@ export function createLocalRepository({
       if (changes.length === 0) return;
       const index = db.people.indexOf(person);
       const updated: Person = { ...person, firstName: value.firstName, lastName: value.lastName, biography: value.biography };
-      for (const key of ['birthDate', 'gender', 'photoUrl'] as const) {
+      for (const key of ['birthDate', 'gender', 'photoUrl', 'photoPath'] as const) {
         if (value[key]) (updated as unknown as Record<string, unknown>)[key] = value[key];
         else delete updated[key];
       }
@@ -849,6 +850,10 @@ export function createLocalRepository({
       db.cards = db.cards.filter((c) => c.id !== cardId);
       db.copies = db.copies.filter((c) => c.cardId !== cardId);
       commit();
+    },
+
+    async uploadPhoto() {
+      throw new RepositoryError('invalid', 'Subir fotos solo está disponible con una cuenta');
     },
 
     async resetDemo() {
