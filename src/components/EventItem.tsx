@@ -34,7 +34,7 @@ export function EventItem({ event, people, channelName, actions }: Props) {
         <h3 className={styles.title}>
           {event.title}
         </h3>
-        <p className={styles.meta}>
+        <p className={[styles.meta, 'one-line'].join(' ')}>
           {label ? <strong className={styles.number}>{label}</strong> : EVENT_LABELS[event.type]}
           {channelName && <span> · {channelName}</span>}
           {tagged.length > 0 && (

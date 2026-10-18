@@ -13,6 +13,8 @@ import type {
   PackTheme,
   Partnership,
   Person,
+  PersonKind,
+  Species,
   Role,
   Video,
   VideoCategory,
@@ -56,6 +58,8 @@ export interface InvitationRow {
 export interface PersonRow {
   id: string;
   channel_id: string;
+  kind: PersonKind;
+  species: Species | null;
   first_name: string;
   last_name: string;
   birth_date: string | null;
@@ -133,7 +137,7 @@ export const COLUMNS = {
   members: 'channel_id,user_id,display_name,role,joined_at,invitation_id,person_id',
   invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at,person_id',
   people:
-    'id,channel_id,first_name,last_name,birth_date,death_date,gender,photo_url,photo_path,relationship,biography,parent_ids',
+    'id,channel_id,kind,species,first_name,last_name,birth_date,death_date,gender,photo_url,photo_path,relationship,biography,parent_ids',
   partnerships: 'id,channel_id,person_a,person_b,since,until',
   videos:
     'id,channel_id,title,description,media_url,thumbnail_url,thumbnail_path,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id',
@@ -188,6 +192,7 @@ export function toPerson(r: PersonRow): Person {
   return {
     id: r.id,
     channelId: r.channel_id,
+    ...(r.kind === 'mascota' ? { kind: 'mascota' as const, ...(r.species ? { species: r.species } : {}) } : {}),
     firstName: r.first_name,
     lastName: r.last_name,
     ...(r.birth_date ? { birthDate: r.birth_date } : {}),

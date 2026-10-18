@@ -21,7 +21,9 @@ export async function setupStatusBar(): Promise<void> {
     try {
       // Style.Dark = light icons (for a dark app); Style.Light = dark icons.
       await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light });
-      await StatusBar.setBackgroundColor({ color: dark ? '#121110' : '#fbfaf8' });
+      // The season's background (CSS variable), so the bar blends with the app.
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+      await StatusBar.setBackgroundColor({ color: bg || (dark ? '#121010' : '#fbf8f4') });
     } catch {
       // Not available on every Android version (edge-to-edge): harmless.
     }
@@ -111,5 +113,28 @@ export async function shareText(title: string, text: string): Promise<'shared' |
     return 'copied';
   } catch {
     return 'failed';
+  }
+}
+
+/**
+ * In the Android app: take a photo with the camera or pick one from the
+ * gallery (the plugin asks for camera permission when it needs it).
+ * Null when cancelled, or in the browser (the page uses file inputs there).
+ */
+export async function pickNativePhoto(source: 'camera' | 'gallery'): Promise<Blob | null> {
+  if (!isNativeApp()) return null;
+  const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+  try {
+    const photo = await Camera.getPhoto({
+      resultType: CameraResultType.Uri,
+      source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
+      quality: 92,
+      correctOrientation: true,
+    });
+    if (!photo.webPath) return null;
+    return await (await fetch(photo.webPath)).blob();
+  } catch {
+    // Cancelled, or permission refused.
+    return null;
   }
 }

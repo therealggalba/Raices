@@ -94,7 +94,7 @@ export function ChannelLayout() {
           <Link to="/" className={styles.brand} aria-label="Volver al inicio">
             <BrandMark size={34} />
           </Link>
-          <span className={styles.channelName}>{value.snapshot.channel.name}</span>
+          <span className={[styles.channelName, 'one-line'].join(' ')}>{value.snapshot.channel.name}</span>
           <form
             className={styles.search}
             role="search"

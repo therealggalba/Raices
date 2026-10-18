@@ -64,6 +64,12 @@ const PATHS = {
     </>
   ),
   upload: <path d="M12 16V4.5M7.5 9L12 4.5 16.5 9M5 19.5h14" />,
+  camera: (
+    <>
+      <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
   chevronDown: <path d="M6 9.5l6 6 6-6" />,
   external: <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />,
   eye: (

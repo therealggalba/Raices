@@ -160,8 +160,8 @@ export function OptionsMenu() {
                         {channel.name.charAt(0)}
                       </span>
                       <span className={styles.itemText}>
-                        <span>{channel.name}</span>
-                        <span className={styles.hint}>
+                        <span className="one-line">{channel.name}</span>
+                        <span className={[styles.hint, 'one-line'].join(' ')}>
                           {CHANNEL_KIND_LABELS[channel.kind]} · {ROLE_LABELS[role]} · {videoCount} vídeos
                         </span>
                       </span>
@@ -188,9 +188,14 @@ export function OptionsMenu() {
               </>
             )}
             {auth.status === 'signed-in' && (
+              <Link to="/sugerencias" className={styles.item}>
+                Enviar una sugerencia
+              </Link>
+            )}
+            {auth.status === 'signed-in' && (
               <button
                 type="button"
-                className={styles.item}
+                className={[styles.item, styles.signOut].join(' ')}
                 disabled={pending}
                 onClick={async () => {
                   if (!confirmAction('¿Cerrar la sesión en este dispositivo?')) return;

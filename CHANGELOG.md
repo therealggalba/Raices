@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.19.0 — 2026-10-18
+
+- Fotos: botones «Cámara» y «Galería» (en la app de Android, con el plugin de cámara, que pide permiso al
+  usarla) y paso de **encuadre** antes de subir (arrastrar y pellizcar o deslizador de zoom, con la forma final:
+  cromo 3:4, perfil cuadrado, portada 16:9).
+- Portada de vídeo «Del vídeo»: varios fotogramas para elegir (YouTube publica los suyos; de los archivos y de
+  Google Drive la app saca 6 fotogramas repartidos, si el servidor lo permite).
+- **Mascotas** en los canales: selector «Personas / Mascotas» en la lista y botón «Añadir». Tienen especie,
+  fechas (cumpleaños, fallecimiento), fotos y vídeos, su apartado de fallecidas, y no entran en el árbol ni
+  pueden ser miembros.
+- **Sugerencias** (menú › «Enviar una sugerencia»): asunto y mensaje que llegan por correo al autor de la app,
+  a través de una función de Supabase que exige sesión, limita los envíos (2 por hora, 5 al día) y analiza el
+  texto (rechaza código e intentos de inyección; marca para revisar enlaces, datos personales o temas ajenos).
+- «Cerrar sesión» en rojo y separado.
+- **Estética por estaciones** según el calendario: otoño negro y naranja, invierno blanco y azul, primavera
+  verde y pastel, verano negro y rojo; cada una en claro u oscuro según el móvil (también el logotipo y la
+  barra de estado).
+- Títulos, botones, avisos y etiquetas siempre en una línea (la letra se ajusta sola); en el móvil, las
+  próximas fechas de Inicio pasan a una por fila para que se lean enteras.
+- Base de datos: migración `0007_pets_feedback.sql`; función `supabase/functions/send-feedback`.
+
 ## 0.18.0 — 2026-10-18
 
 - **Fotos subidas desde el móvil**: cromos, fotos de perfil y portadas de vídeo se pueden subir directamente

@@ -1,4 +1,4 @@
-import { CHANNEL_KINDS, EVENT_TYPES, GENDERS, PACK_THEMES, VIDEO_CATEGORIES } from '../types/domain';
+import { CHANNEL_KINDS, EVENT_TYPES, GENDERS, PACK_THEMES, SPECIES, VIDEO_CATEGORIES } from '../types/domain';
 import type {
   CardInput,
   ChannelInput,
@@ -202,18 +202,27 @@ export function validatePersonInput(input: unknown): ValidationResult<PersonInpu
   const photoUrl = photoPath ? undefined : readOptionalUrl(input, 'photoUrl', 'Fotografía', errors);
   const parentIds = readIdList(input, 'parentIds', 'Progenitores', errors);
   if (parentIds.length > 2) errors.push('Progenitores: como máximo dos');
+  const pet = input.kind === 'mascota';
+  if (input.kind !== undefined && input.kind !== 'persona' && !pet) errors.push('Tipo: inválido');
+  let species: (typeof SPECIES)[number] | undefined;
+  if (pet) {
+    if ((SPECIES as readonly unknown[]).includes(input.species)) species = input.species as (typeof SPECIES)[number];
+    else errors.push('Especie: elige una');
+    if (parentIds.length) errors.push('Las mascotas no tienen progenitores en el árbol');
+  }
   if (errors.length) return { ok: false, errors };
   return {
     ok: true,
     value: {
+      ...(pet ? { kind: 'mascota' as const, species } : {}),
       firstName,
-      lastName,
+      lastName: pet ? '' : lastName,
       relationship,
       biography,
       parentIds,
       ...(birthDate ? { birthDate } : {}),
       ...(deathDate ? { deathDate } : {}),
-      ...(gender ? { gender } : {}),
+      ...(gender && !pet ? { gender } : {}),
       ...(photoUrl ? { photoUrl } : {}),
       ...(photoPath ? { photoPath } : {}),
     },

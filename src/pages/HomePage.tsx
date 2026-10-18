@@ -68,8 +68,8 @@ export function HomePage() {
               className={[styles.packs, library.packs.remaining === 0 ? styles.packsDone : ''].join(' ')}
             >
               <span className={styles.packsText}>
-                <strong>{packStatusText(library.packs)}</strong>
-                {library.packs.remaining > 0 && <span>Elige álbum y descubre nuevos cromos</span>}
+                <strong className="one-line">{packStatusText(library.packs)}</strong>
+                {library.packs.remaining > 0 && <span className="one-line">Elige álbum y descubre nuevos cromos</span>}
               </span>
               {library.packs.remaining > 0 && <span className={styles.packsCta}>Abrir ›</span>}
             </Link>

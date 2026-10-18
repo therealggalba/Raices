@@ -5,7 +5,7 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import { fullName, sortPeople } from '../utils/people';
+import { fullName, humansOnly, sortPeople } from '../utils/people';
 import styles from './WhoAreYou.module.scss';
 
 /**
@@ -19,7 +19,7 @@ export function WhoAreYou() {
   const { run, pending, error } = useAction();
   const [selected, setSelected] = useState('');
   const taken = new Set(members.map((m) => m.personId).filter(Boolean));
-  const free = sortPeople(people).filter((p) => !taken.has(p.id));
+  const free = sortPeople(humansOnly(people)).filter((p) => !taken.has(p.id));
 
   return (
     <div className={[ui.page, styles.page].join(' ')}>

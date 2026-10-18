@@ -41,6 +41,8 @@ describe('row mappers', () => {
     const person = toPerson({
       id: A,
       channel_id: B,
+      kind: 'persona',
+      species: null,
       first_name: 'Pilar',
       last_name: 'Montero',
       birth_date: '1950-02-01',

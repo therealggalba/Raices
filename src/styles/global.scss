@@ -1,53 +1,86 @@
+@use 'sass:color';
+@use 'sass:map';
 @use './variables' as *;
 
-// Theme tokens (see _variables.scss). Light by default, dark when the phone is
-// in dark mode. *-rgb are the same colours as "r g b" for translucent uses.
-:root {
-  color-scheme: light;
-  --bg: #fbfaf8;
-  --bg-rgb: 251 250 248;
-  --raised: #ffffff;
-  --raised-rgb: 255 255 255;
-  --panel: #f3f1ee;
-  --hover: #ebe8e4;
-  --line: #e5e1dc;
-  --text: #1f1c1a;
-  --muted: #6b655f;
-  --muted-rgb: 107 101 95;
-  --dim: #9b948d;
-  --accent: #e46c16;
-  --accent-rgb: 228 108 22;
-  --accent-strong: #c75b0c;
-  --on-accent: #ffffff;
-  --danger: #c43d3d;
-  --danger-rgb: 196 61 61;
-  --success: #2e8452;
-  // Subtle overlays: dark on light backgrounds, light on dark ones.
-  --tint-rgb: 31 28 26;
+// Theme tokens (see _variables.scss). The app changes look with the season
+// of the real calendar (data-season on <html>, set at start-up) and every
+// season has a light and a dark version, chosen by the phone.
+//   otoño: negro y naranja · invierno: blanco y azul
+//   primavera: verde y pastel · verano: negro y rojo
+$seasons: (
+  otono: (
+    light: (bg: #fbf8f4, raised: #ffffff, panel: #f3eee8, hover: #ebe5dd, line: #e5ddd3, text: #1f1a16,
+      muted: #6e655c, dim: #9c9289, accent: #d9661a, accent-strong: #b8540f),
+    dark: (bg: #121010, raised: #1b1817, panel: #24201e, hover: #2d2825, line: #36302c, text: #f4efe9,
+      muted: #aba39b, dim: #7a726b, accent: #f07f2b, accent-strong: #ff9447),
+  ),
+  invierno: (
+    light: (bg: #f7f9fc, raised: #ffffff, panel: #eef2f8, hover: #e4eaf3, line: #dde4ee, text: #18202b,
+      muted: #5f6b7a, dim: #8f9aa8, accent: #2f6fd6, accent-strong: #2459b0),
+    dark: (bg: #0e1218, raised: #161b23, panel: #1e242e, hover: #262d39, line: #2e3644, text: #eef3fa,
+      muted: #a3adbb, dim: #707b8a, accent: #6aa0ff, accent-strong: #8db7ff),
+  ),
+  primavera: (
+    light: (bg: #f6fbf5, raised: #ffffff, panel: #ecf5ea, hover: #e1eedf, line: #d8e7d6, text: #18231a,
+      muted: #5c6d5f, dim: #8c9c8e, accent: #3c9a55, accent-strong: #2f7d44),
+    dark: (bg: #0f1410, raised: #161c17, panel: #1d251f, hover: #252e27, line: #2d382f, text: #eef6ef,
+      muted: #a5b5a7, dim: #728274, accent: #6cc489, accent-strong: #8fd8a6),
+  ),
+  verano: (
+    light: (bg: #fdf8f7, raised: #ffffff, panel: #f6eeec, hover: #eee3e0, line: #e8dbd8, text: #221817,
+      muted: #72615e, dim: #a08f8c, accent: #d63a3a, accent-strong: #b02c2c),
+    dark: (bg: #121010, raised: #1b1717, panel: #241f1f, hover: #2d2727, line: #362f2f, text: #f6efee,
+      muted: #ada3a1, dim: #7b7270, accent: #ff5f57, accent-strong: #ff8178),
+  ),
+);
+
+@function rgb-triplet($c) {
+  @return #{color.channel($c, 'red', $space: rgb)} #{color.channel($c, 'green', $space: rgb)} #{color.channel($c, 'blue', $space: rgb)};
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+@mixin palette($p, $dark) {
+  @each $name, $value in $p {
+    --#{$name}: #{$value};
+  }
+  --bg-rgb: #{rgb-triplet(map.get($p, bg))};
+  --raised-rgb: #{rgb-triplet(map.get($p, raised))};
+  --muted-rgb: #{rgb-triplet(map.get($p, muted))};
+  --accent-rgb: #{rgb-triplet(map.get($p, accent))};
+  --on-accent: #ffffff;
+  @if $dark {
     color-scheme: dark;
-    --bg: #121110;
-    --bg-rgb: 18 17 16;
-    --raised: #1b1a18;
-    --raised-rgb: 27 26 24;
-    --panel: #23211f;
-    --hover: #2c2a27;
-    --line: #34312d;
-    --text: #f3f0ec;
-    --muted: #a9a39c;
-    --muted-rgb: 169 163 156;
-    --dim: #79736d;
-    --accent: #f07f2b;
-    --accent-rgb: 240 127 43;
-    --accent-strong: #ff9447;
-    --on-accent: #ffffff;
     --danger: #e86a6a;
     --danger-rgb: 232 106 106;
     --success: #5cb781;
+    // Subtle overlays: light on dark backgrounds.
     --tint-rgb: 255 255 255;
+  } @else {
+    color-scheme: light;
+    --danger: #c43d3d;
+    --danger-rgb: 196 61 61;
+    --success: #2e8452;
+    // Subtle overlays: dark on light backgrounds.
+    --tint-rgb: #{rgb-triplet(map.get($p, text))};
+  }
+}
+
+// Autumn is also the fallback before the season is known.
+:root {
+  @include palette(map.get($seasons, otono, light), false);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include palette(map.get($seasons, otono, dark), true);
+  }
+}
+@each $season, $modes in $seasons {
+  :root[data-season='#{$season}'] {
+    @include palette(map.get($modes, light), false);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root[data-season='#{$season}'] {
+      @include palette(map.get($modes, dark), true);
+    }
   }
 }
 
@@ -123,6 +156,19 @@ h3 {
   @include display-title;
   margin: 0;
   line-height: 1.2;
+}
+
+// One line, always (OneLineFitter shrinks the text first; «…» is the last resort).
+h1,
+h2,
+h3,
+.one-line,
+[data-one-line] {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 p {

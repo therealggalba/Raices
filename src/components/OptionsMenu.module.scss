@@ -179,3 +179,12 @@
   font-size: 0.75rem;
   color: $color-text-dim;
 }
+
+// Signing out is easy to tap by mistake: red, set apart.
+.signOut {
+  margin-top: $space-2;
+  border: 1px solid rgb(var(--danger-rgb) / 0.4);
+  color: $color-danger;
+  font-weight: 600;
+  justify-content: center;
+}

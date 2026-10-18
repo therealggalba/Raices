@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PersonAvatar } from '../components/PersonAvatar';
 import { EmptyState, LinkButton } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
-import { fullName, lifeAge, relationTo, sortPeople } from '../utils/people';
+import { SPECIES_LABELS } from '../utils/labels';
+import { fullName, isPet, lifeAge, relationTo, sortPeople } from '../utils/people';
 import type { Person } from '../types/domain';
 import styles from './PeoplePage.module.scss';
 import { PeopleViewSwitch } from './PeopleViewSwitch';
@@ -12,24 +13,31 @@ export function PeoplePage() {
   const { snapshot, today, isAdmin } = useChannel();
   const { channel, people, videos, partnerships, me } = snapshot;
 
-  const sorted = sortPeople(people);
+  // «Personas» or «Mascotas» (?ver=mascotas), chosen in the header.
+  const [params, setParams] = useSearchParams();
+  const pets = params.get('ver') === 'mascotas';
+  const sorted = sortPeople(people).filter((p) => isPet(p) === pets);
   const alive = sorted.filter((p) => !p.deathDate);
   const deceased = sorted.filter((p) => p.deathDate);
 
   const card = (person: Person) => {
     const age = lifeAge(person, today);
-    const relation = channel.kind === 'familia' && me.personId ? relationTo(person, me.personId, people, partnerships) : '';
+    const relation = isPet(person)
+      ? SPECIES_LABELS[person.species ?? 'otro']
+      : channel.kind === 'familia' && me.personId
+        ? relationTo(person, me.personId, people, partnerships)
+        : '';
     const count = videos.filter((v) => v.personIds.includes(person.id)).length;
     return (
       <Link key={person.id} to={`/c/${channel.id}/personas/${person.id}`} className={styles.card}>
         <PersonAvatar person={person} size={64} />
         <span className={styles.body}>
-          <strong>
+          <strong className="one-line">
             {fullName(person)}
             {person.deathDate && <span title="Fallecido/a"> ✝</span>}
           </strong>
-          {relation && <span className={ui.muted}>{relation}</span>}
-          <span className={styles.meta}>
+          {relation && <span className={[ui.muted, 'one-line'].join(' ')}>{relation}</span>}
+          <span className={[styles.meta, 'one-line'].join(' ')}>
             {age !== null && (age.deceased ? `✝ a los ${age.years} · ` : `${age.years} años · `)}
             {count} {count === 1 ? 'vídeo' : 'vídeos'}
           </span>
@@ -41,19 +49,28 @@ export function PeoplePage() {
   return (
     <div className={[ui.page, ui.pageWide].join(' ')}>
       <div className={ui.pageHeader}>
-        <h1>Personas</h1>
+        <h1>{pets ? 'Mascotas' : 'Personas'}</h1>
         <div className={ui.chips}>
-          {channel.kind === 'familia' && <PeopleViewSwitch channelId={channel.id} active="lista" />}
+          {channel.kind === 'familia' && !pets && <PeopleViewSwitch channelId={channel.id} active="lista" />}
+          <select
+            className={[ui.input, styles.kindSelect].join(' ')}
+            value={pets ? 'mascotas' : 'personas'}
+            onChange={(e) => setParams(e.target.value === 'mascotas' ? { ver: 'mascotas' } : {}, { replace: true })}
+            aria-label="Ver personas o mascotas"
+          >
+            <option value="personas">Personas</option>
+            <option value="mascotas">Mascotas</option>
+          </select>
           {isAdmin && (
-            <LinkButton to={`/c/${channel.id}/personas/nueva`} variant="primary" small>
-              + Añadir persona
+            <LinkButton to={`/c/${channel.id}/personas/nueva${pets ? '?tipo=mascota' : ''}`} variant="primary" small>
+              Añadir
             </LinkButton>
           )}
         </div>
       </div>
-      {people.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptyState>
-          <p>Todavía no hay personas en este canal.</p>
+          <p>{pets ? 'Todavía no hay mascotas en este canal.' : 'Todavía no hay personas en este canal.'}</p>
         </EmptyState>
       ) : (
         <>

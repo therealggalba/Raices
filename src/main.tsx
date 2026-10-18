@@ -4,6 +4,12 @@ import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/inter';
 import './styles/global.scss';
 import App from './App.tsx';
+import { applySeason } from './utils/season';
+
+// The colours follow the season (checked again every hour, in case the app
+// stays open across the change).
+applySeason();
+setInterval(() => applySeason(), 60 * 60 * 1000);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

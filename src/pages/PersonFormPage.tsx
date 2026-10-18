@@ -6,12 +6,13 @@ import { useChannel } from '../hooks/channel-context';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
-import type { Gender, PersonInput, UploadedPhoto } from '../types/domain';
+import { SPECIES } from '../types/domain';
+import type { Gender, PersonInput, Species, UploadedPhoto } from '../types/domain';
 import { descendantsOf } from '../utils/familyTree';
-import { fullName, sortPeople } from '../utils/people';
+import { fullName, humansOnly, sortPeople } from '../utils/people';
 import { guessGender } from '../utils/genderNames';
 import { PhotoField } from '../components/PhotoField';
-import { PHOTO_MAX_SIDE, compressPhoto } from '../utils/imageCompress';
+import { SPECIES_LABELS } from '../utils/labels';
 import styles from './PersonFormPage.module.scss';
 
 /** Add (/personas/nueva) or edit (/personas/:personId/editar) a person. Admins only. */
@@ -20,10 +21,13 @@ export function PersonFormPage() {
   // «No estoy en la lista»: the admin creating their own card.
   const [params] = useSearchParams();
   const isSelf = !personId && params.get('soyyo') === '1';
+  // A pet (?tipo=mascota, or an existing one): no surname, gender or parents.
   const navigate = useNavigate();
   const { snapshot, isAdmin, reload, personById } = useChannel();
   const { run, pending, error } = useAction();
   const existing = personId ? personById(personId) : undefined;
+  const pet = existing ? existing.kind === 'mascota' : params.get('tipo') === 'mascota';
+  const [species, setSpecies] = useState<Species>(existing?.species ?? 'perro');
   const channelId = snapshot.channel.id;
   const isFamily = snapshot.channel.kind === 'familia';
 
@@ -41,7 +45,7 @@ export function PersonFormPage() {
   const [photoStored, setPhotoStored] = useState<UploadedPhoto | null>(
     existing?.photoPath ? { path: existing.photoPath, previewUrl: existing.photoUrl ?? '' } : null,
   );
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<Blob | null>(null);
   const [biography, setBiography] = useState(existing?.biography ?? '');
   const [parent1, setParent1] = useState(existing?.parentIds[0] ?? '');
   const [parent2, setParent2] = useState(existing?.parentIds[1] ?? '');
@@ -69,7 +73,9 @@ export function PersonFormPage() {
 
   // Anyone but the person and their descendants (no one is their own ancestor).
   const below = existing ? descendantsOf(snapshot.people, existing.id) : new Set<string>();
-  const parentCandidates = sortPeople(snapshot.people).filter((p) => p.id !== existing?.id && !below.has(p.id));
+  const parentCandidates = sortPeople(humansOnly(snapshot.people)).filter(
+    (p) => p.id !== existing?.id && !below.has(p.id),
+  );
   const back = existing ? `/c/${channelId}/personas/${existing.id}` : `/c/${channelId}/personas`;
 
   return (
@@ -82,7 +88,9 @@ export function PersonFormPage() {
               ? `Editar a ${existing.firstName}`
               : isSelf
                 ? 'Tu ficha'
-                : 'Añadir persona'}
+                : pet
+                  ? 'Añadir mascota'
+                  : 'Añadir persona'}
         </h1>
         <LinkButton to={back} variant="ghost" small>
           Cancelar
@@ -93,6 +101,7 @@ export function PersonFormPage() {
         onSubmit={async (e) => {
           e.preventDefault();
           const input: PersonInput = {
+            ...(pet ? { kind: 'mascota' as const, species } : {}),
             firstName,
             lastName,
             // Kinship comes from the family tree; old free text is kept as it was.
@@ -124,8 +133,7 @@ export function PersonFormPage() {
             }
             const added = await repository.addPerson(channelId, input);
             if (pendingPhoto) {
-              const image = await compressPhoto(pendingPhoto, PHOTO_MAX_SIDE.persona);
-              const photo = await repository.uploadPhoto(channelId, 'persona', image, { personId: added.id });
+              const photo = await repository.uploadPhoto(channelId, 'persona', pendingPhoto, { personId: added.id });
               await repository.updatePerson(channelId, added.id, { ...input, photoUrl: undefined, photoPath: photo.path });
             }
             if (isSelf) await repository.linkMemberPerson(channelId, snapshot.me.userId, added.id);
@@ -147,16 +155,28 @@ export function PersonFormPage() {
             required
           />
         </Field>
-        <Field label="Apellidos" htmlFor="lastName">
-          <input
-            id="lastName"
-            className={ui.input}
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            maxLength={80}
-          />
-        </Field>
-        {showGenderSelect ? (
+        {pet ? (
+          <Field label="Especie" htmlFor="species">
+            <select id="species" className={ui.input} value={species} onChange={(e) => setSpecies(e.target.value as Species)}>
+              {SPECIES.map((sp) => (
+                <option key={sp} value={sp}>
+                  {SPECIES_LABELS[sp]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          <Field label="Apellidos" htmlFor="lastName">
+            <input
+              id="lastName"
+              className={ui.input}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              maxLength={80}
+            />
+          </Field>
+        )}
+        {pet ? null : showGenderSelect ? (
           <Field label="Género" htmlFor="gender">
             <select
               id="gender"
@@ -179,7 +199,7 @@ export function PersonFormPage() {
             </p>
           )
         )}
-        {isFamily && !selfMode && (
+        {isFamily && !selfMode && !pet && (
           <fieldset className={styles.parents}>
             <legend>Progenitores (árbol familiar)</legend>
             {[

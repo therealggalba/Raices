@@ -1,4 +1,4 @@
-/** The Raíces mark: a white tree with roots and a play button in its canopy, on orange. */
+/** The Raíces mark: a white tree with roots and a play button in its canopy, on the season's colour. */
 export function BrandMark({ size = 32, className }: { size?: number; className?: string }) {
   return (
     <svg className={className} width={size} height={size} viewBox="0 0 100 100" aria-hidden focusable="false">
@@ -21,7 +21,7 @@ export function BrandMark({ size = 32, className }: { size?: number; className?:
           <path d="M51.5 68 C52.5 75 56 79 58.5 86" />
           <path d="M53 68 C55 74 62 76 69 81" />
         </g>
-        <path d="M44.5 26 v18 l15-9 z" fill="#e46c16" stroke="#e46c16" strokeWidth="2.4" strokeLinejoin="round" />
+        <path d="M44.5 26 v18 l15-9 z" fill="var(--accent, #e46c16)" stroke="var(--accent, #e46c16)" strokeWidth="2.4" strokeLinejoin="round" />
       </g>
     </svg>
   );

@@ -1,0 +1,75 @@
+@use '../styles/variables' as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: calc(#{$space-4} + #{$safe-top}) $space-4 calc(#{$space-4} + #{$safe-bottom});
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-3;
+  padding: $space-4;
+  border-radius: $radius-lg;
+  background: $color-bg-raised;
+}
+
+.title {
+  font-size: 1.1rem;
+}
+
+.stage {
+  display: grid;
+  justify-items: center;
+}
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background: #000;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.zoom {
+  width: 100%;
+  accent-color: $color-accent;
+}
+
+.error {
+  margin: 0;
+  color: $color-danger;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-2;
+}

@@ -4,11 +4,13 @@ import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/auth-context';
 import { LoginScreen } from './auth/LoginScreen';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { OneLineFitter } from './components/OneLineFitter';
 import { NativeBridge } from './native/NativeBridge';
 import { EmptyState, LinkButton, Spinner } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
 import { AboutPage } from './pages/AboutPage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { AlbumsPage } from './pages/AlbumsPage';
 import { CardFormPage } from './pages/CardFormPage';
@@ -80,6 +82,7 @@ export default function App() {
       <AuthProvider>
         <AuthGate />
       </AuthProvider>
+      <OneLineFitter />
     </ErrorBoundary>
   );
 }
@@ -114,6 +117,7 @@ function AppRoutes() {
           <Route path="unirse" element={<JoinPage />} />
           <Route path="nuevo" element={<NewChannelPage />} />
           <Route path="saber-mas" element={<AboutPage />} />
+          <Route path="sugerencias" element={<FeedbackPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="c/:channelId" element={<ChannelLayout />}>

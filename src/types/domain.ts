@@ -44,6 +44,13 @@ export const VIDEO_CATEGORIES = [
 ] as const;
 export type VideoCategory = (typeof VIDEO_CATEGORIES)[number];
 
+/** A channel's cards are people or pets (pets: own dates and videos, no family tree, never members). */
+export const PERSON_KINDS = ['persona', 'mascota'] as const;
+export type PersonKind = (typeof PERSON_KINDS)[number];
+
+export const SPECIES = ['perro', 'gato', 'ave', 'conejo', 'roedor', 'pez', 'reptil', 'caballo', 'otro'] as const;
+export type Species = (typeof SPECIES)[number];
+
 /** Optional, used for gendered kinship words (tío / tía). */
 export const GENDERS = ['hombre', 'mujer'] as const;
 export type Gender = (typeof GENDERS)[number];
@@ -109,6 +116,10 @@ export interface Member {
 export interface Person {
   id: string;
   channelId: string;
+  /** Absent = a person. */
+  kind?: PersonKind;
+  /** Pets only. */
+  species?: Species;
   firstName: string;
   lastName: string;
   birthDate?: IsoDate;
@@ -322,6 +333,9 @@ export interface ChannelInput {
 }
 
 export interface PersonInput {
+  /** Absent = a person. Pets have no surname, gender or parents. */
+  kind?: PersonKind;
+  species?: Species;
   firstName: string;
   lastName: string;
   birthDate?: IsoDate;

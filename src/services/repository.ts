@@ -121,6 +121,9 @@ export interface MemoriesRepository {
     options?: { personId?: string; blurred?: Blob },
   ): Promise<UploadedPhoto>;
 
+  /** A suggestion for the app's owner (screened and e-mailed by the server). */
+  sendFeedback(subject: string, message: string): Promise<void>;
+
   /** Local mode only: wipes everything and restores the demo data. */
   resetDemo(): Promise<void>;
 }

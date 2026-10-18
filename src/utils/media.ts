@@ -126,3 +126,8 @@ export function thumbnailFor(video: { thumbnailUrl?: string; mediaUrl: string })
   const media = resolveMedia(video.mediaUrl);
   return media?.kind === 'youtube' || media?.kind === 'drive' ? media.thumbnailUrl : null;
 }
+
+/** Frames the app can take: YouTube publishes some; direct files and Drive (with key) can be read. */
+export function canPickFrames(media: MediaSource | null): media is MediaSource {
+  return !!media && (media.kind === 'youtube' || media.kind === 'file' || (media.kind === 'drive' && !!media.streamUrl));
+}

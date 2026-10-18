@@ -40,7 +40,7 @@ export function CardThumb({ card, to, locked, copies = 0 }: Props) {
             </span>
           )}
         </span>
-        <span className={styles.title}>{card.title}</span>
+        <span className={[styles.title, 'one-line'].join(' ')}>{card.title}</span>
         <span className={styles.date}>{formatPartialDate(card.takenAt)}</span>
       </span>
     </Link>

@@ -246,5 +246,16 @@ ok((await as(C, `select name from storage.objects where bucket_id = 'miniaturas'
 await as(C, `select public.update_my_person($1, 'Hijo', '', null, null, null, $2, '')`, [ch, `${ch}/${hijo.id}/yo.webp`]);
 ok((await as(A, `select photo_path from public.people where id = $1`, [hijo.id]))[0].photo_path.endsWith('/yo.webp'), 'el miembro pone su foto subida en su ficha');
 
+// Pets and suggestions (0007)
+const [perro] = await as(A, `insert into public.people (channel_id, kind, species, first_name, birth_date) values ($1, 'mascota', 'perro', 'Toby', '2015-05-02') returning id`, [ch]);
+ok(!!perro, 'se puede añadir una mascota');
+ok(!!(await fails(A, `insert into public.people (channel_id, kind, first_name) values ($1, 'mascota', 'Sin especie')`, [ch])), 'una mascota necesita especie');
+ok(!!(await fails(A, `insert into public.people (channel_id, first_name, parent_ids) values ($1, 'Cachorro', array[$2::uuid])`, [ch, perro.id])), 'una mascota no puede ser progenitora');
+ok(!!(await fails(A, `insert into public.partnerships (channel_id, person_a, person_b) select $1, least($2::uuid, $3::uuid), greatest($2::uuid, $3::uuid)`, [ch, perro.id, abuelo.id])), 'ni formar pareja en el árbol');
+ok((await fails(A, `select * from public.create_invitation($1, 7, $2)`, [ch, perro.id]))?.includes('mascotas'), 'ni recibir invitaciones');
+ok((await fails(A, `select public.set_member_person($1, $2, $3)`, [ch, A, perro.id]))?.includes('mascota'), 'ni ser un miembro');
+ok(!!(await fails(A, `select * from public.feedback_messages`)), 'nadie puede leer las sugerencias desde la app');
+ok(!!(await fails(A, `insert into public.feedback_messages (subject, message, verdict) values ('Hola', 'Mensaje de prueba', 'ok')`)), 'ni escribirlas saltándose la función');
+
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);

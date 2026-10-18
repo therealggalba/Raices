@@ -650,6 +650,16 @@ const DEMO_GENDERS: Record<string, Gender> = {
   'p-sofia': 'mujer', 'p-marta': 'mujer', 'p-javi': 'hombre', 'p-rosa': 'mujer', 'p-andres': 'hombre', 'p-lucia': 'mujer',
 };
 
+/** The family's pets: Toby, and Misi, who is no longer with them. */
+const DEMO_PETS: Person[] = [
+  { id: 'pet-toby', channelId: DEMO_FAMILY_ID, kind: 'mascota', species: 'perro', firstName: 'Toby', lastName: '',
+    birthDate: '2015-05-02', relationship: '', parentIds: [],
+    biography: 'Mestizo de mil razas. Llegó de la protectora y se quedó con el sofá.' },
+  { id: 'pet-misi', channelId: DEMO_FAMILY_ID, kind: 'mascota', species: 'gato', firstName: 'Misi', lastName: '',
+    birthDate: '2001-04-10', deathDate: '2018-11-03', relationship: '', parentIds: [],
+    biography: 'La gata de la abuela Carmen. Dormía siempre encima de la tele.' },
+];
+
 /** The visitor's own card in the channels where Carlos isn't a person yet. */
 const DEMO_VISITOR_PEOPLE: Person[] = [
   { id: 'p-alex', channelId: DEMO_FRIENDS_ID, firstName: 'Álex', lastName: 'Prieto', birthDate: '1982-09-19', gender: 'hombre',
@@ -679,6 +689,9 @@ export function addDemoPeopleDetails(db: Db, visitorId: string): void {
   for (const person of db.people) {
     const gender = DEMO_GENDERS[person.id];
     if (gender && !person.gender) person.gender = gender;
+  }
+  for (const pet of DEMO_PETS) {
+    if (db.channels.some((c) => c.id === pet.channelId) && !db.people.some((p) => p.id === pet.id)) db.people.push({ ...pet });
   }
   // The visitor is Carlos in the family channels and Álex among the friends.
   for (const person of DEMO_VISITOR_PEOPLE) {

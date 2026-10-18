@@ -16,6 +16,7 @@ import type {
   ValidationResult,
 } from '../types/domain';
 import { PACKS_PER_DAY } from '../types/domain';
+import { feedbackLengthError } from '../../supabase/functions/send-feedback/screen';
 import { decideProgress } from '../utils/progress';
 import {
   isId,
@@ -678,6 +679,27 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       return { path, ...(blurredPath ? { blurredPath } : {}), previewUrl: data?.signedUrl ?? '' };
     },
 
+    async sendFeedback(subject, message) {
+      const lengthError = feedbackLengthError(subject, message);
+      if (lengthError) throw new RepositoryError('invalid', lengthError);
+      const { error } = await client.functions.invoke('send-feedback', {
+        body: { subject: subject.trim(), message: message.trim() },
+      });
+      if (!error) return;
+      // The function answers with a Spanish message meant for the user.
+      let text = 'No se ha podido enviar ahora. Inténtalo más tarde.';
+      const context = (error as { context?: unknown }).context;
+      if (context instanceof Response) {
+        try {
+          const body = (await context.json()) as { error?: unknown };
+          if (typeof body.error === 'string') text = body.error;
+        } catch {
+          // Keep the generic message.
+        }
+      }
+      throw new RepositoryError('conflict', text);
+    },
+
     async resetDemo() {
       throw new RepositoryError('forbidden', 'Solo disponible en la demo');
     },
@@ -702,6 +724,8 @@ function videoColumns(value: VideoInput) {
 
 function personColumns(value: PersonInput) {
   return {
+    kind: value.kind ?? 'persona',
+    species: value.kind === 'mascota' ? (value.species ?? null) : null,
     first_name: value.firstName,
     last_name: value.lastName,
     birth_date: value.birthDate ?? null,

@@ -23,11 +23,11 @@ export function Button({
   type = 'button',
   ...rest
 }: StyleProps & ComponentProps<'button'>) {
-  return <button type={type} className={buttonClass({ variant, small, block }, className)} {...rest} />;
+  return <button type={type} className={buttonClass({ variant, small, block }, className)} data-one-line {...rest} />;
 }
 
 export function LinkButton({ variant, small, block, className, ...rest }: StyleProps & LinkProps) {
-  return <Link className={buttonClass({ variant, small, block }, className)} {...rest} />;
+  return <Link className={buttonClass({ variant, small, block }, className)} data-one-line {...rest} />;
 }
 
 export function Spinner({ label = 'Cargando…' }: { label?: string }) {
@@ -65,7 +65,7 @@ export function Field({
 }) {
   return (
     <div className={styles.field}>
-      <label className={styles.label} htmlFor={htmlFor}>
+      <label className={[styles.label, 'one-line'].join(' ')} htmlFor={htmlFor}>
         {label}
       </label>
       {children}

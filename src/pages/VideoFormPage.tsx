@@ -180,6 +180,7 @@ export function VideoFormPage() {
           channelId={channel.id}
           kind="miniatura"
           aspect="16 / 9"
+          video={media}
           previewUrl={thumbStored?.previewUrl}
           url={thumbnailUrl}
           onUrlChange={(url) => {

@@ -51,7 +51,6 @@
   font-size: clamp(0.82rem, 3.8vw, 1.05rem);
   line-height: 1.15;
   overflow-wrap: anywhere;
-  @include line-clamp(2);
 }
 
 .search {

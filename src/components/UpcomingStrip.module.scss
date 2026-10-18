@@ -2,23 +2,36 @@
 
 .strip {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: $space-2;
   margin: 0;
   padding: 0;
   list-style: none;
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
+  }
 
   @include md-up {
     gap: $space-3;
   }
 }
 
+// Phones: «hoy · Cumpleaños de Marta · 17 oct · 44 años» in one row.
 .item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: 2px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: $space-2;
   min-width: 0;
-  padding: $space-2;
+  padding: $space-2 $space-3;
+
+  @media (min-width: 600px) {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    align-items: stretch;
+    gap: 2px;
+  }
   border-radius: $radius-md;
   background: $color-bg-raised;
   border: 1px solid $color-line;
@@ -60,10 +73,9 @@
 }
 
 .title {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   line-height: 1.2;
-  @include line-clamp(2);
 
   @include md-up {
     font-size: 0.95rem;

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, ErrorBanner, Field } from '../components/ui';
 import { ui } from '../components/ui-styles';
 import { useChannel } from '../hooks/channel-context';
-import { fullName, sortPeople } from '../utils/people';
+import { fullName, humansOnly, sortPeople } from '../utils/people';
 import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { shareText } from '../native/nativeBridge';
@@ -154,7 +154,7 @@ function MembersSection() {
                   }}
                 >
                   <option value="">Sin asignar</option>
-                  {sortPeople(people)
+                  {sortPeople(humansOnly(people))
                     .filter((p) => p.id === m.personId || !members.some((o) => o.personId === p.id))
                     .map((p) => (
                       <option key={p.id} value={p.id}>
@@ -204,7 +204,7 @@ function InvitationsSection() {
   // Only people who aren't a member yet can be invited.
   const linked = new Set(members.map((m) => m.personId).filter(Boolean));
   // Only living people who aren't members yet.
-  const candidates = sortPeople(people).filter((p) => !linked.has(p.id) && !p.deathDate);
+  const candidates = sortPeople(humansOnly(people)).filter((p) => !linked.has(p.id) && !p.deathDate);
   const [personId, setPersonId] = useState('');
   const forPerson = candidates.some((p) => p.id === personId) ? personId : (candidates[0]?.id ?? '');
   const [created, setCreated] = useState<Invitation | null>(null);

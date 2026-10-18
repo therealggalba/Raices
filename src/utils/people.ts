@@ -62,3 +62,7 @@ export function selfChanges(before: Person, after: SelfPersonInput): FieldChange
     return old === now ? [] : [{ field, before: old, after: now }];
   });
 }
+
+export const isPet = (p: Pick<Person, 'kind'>): boolean => p.kind === 'mascota';
+/** People only (the family tree, kinship, members and invitations ignore pets). */
+export const humansOnly = <T extends Pick<Person, 'kind'>>(list: readonly T[]): T[] => list.filter((p) => !isPet(p));

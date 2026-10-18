@@ -9,7 +9,8 @@ import { useChannel } from '../hooks/channel-context';
 import { videosOfPerson } from '../utils/catalog';
 import { formatPartialDate } from '../utils/dates';
 import { upcomingEvents } from '../utils/events';
-import { fullName, lifeAge, relationTo } from '../utils/people';
+import { SPECIES_LABELS } from '../utils/labels';
+import { fullName, isPet, lifeAge, relationTo } from '../utils/people';
 import styles from './PersonPage.module.scss';
 
 export function PersonPage() {
@@ -28,7 +29,12 @@ export function PersonPage() {
   }
 
   const age = lifeAge(person, today);
-  const relation = channel.kind === 'familia' ? relationTo(person, me.personId, people, partnerships) : '';
+  const pet = isPet(person);
+  const relation = pet
+    ? SPECIES_LABELS[person.species ?? 'otro']
+    : channel.kind === 'familia'
+      ? relationTo(person, me.personId, people, partnerships)
+      : '';
   const isMe = me.personId === person.id;
   const linkedMember = members.find((m) => m.personId === person.id);
   const theirVideos = videosOfPerson(videos, person.id);
@@ -77,7 +83,7 @@ export function PersonPage() {
       </header>
 
       <div className={styles.content}>
-        {channel.kind === 'familia' && <PersonFamily key={person.id} person={person} />}
+        {channel.kind === 'familia' && !pet && <PersonFamily key={person.id} person={person} />}
         {person.biography && (
           <section className={ui.section}>
             <h2>Biografía</h2>

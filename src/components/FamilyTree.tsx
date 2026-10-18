@@ -97,9 +97,9 @@ export function FamilyTree({ people, partnerships, personHref, viewerPersonId }:
               className={[styles.card, isMe ? styles.me : '', person.deathDate ? styles.deceased : ''].join(' ')}
               style={{ left: PAD + x, top: PAD + y, width: W, height: H }}
             >
-              {relation && <span className={styles.relation}>{capitalize(relation)}</span>}
-              <span className={styles.name}>{fullName(person)}</span>
-              <span className={styles.birth}>{lifeLine(person)}</span>
+              {relation && <span className={[styles.relation, 'one-line'].join(' ')}>{capitalize(relation)}</span>}
+              <span className={[styles.name, 'one-line'].join(' ')}>{fullName(person)}</span>
+              <span className={[styles.birth, 'one-line'].join(' ')}>{lifeLine(person)}</span>
             </Link>
           );
         })}

@@ -308,6 +308,14 @@ export function createLocalRepository({
     }
   }
 
+  /** Parents and couples are people of the channel, never pets. */
+  function checkHumans(channelId: string, personIds: readonly string[]) {
+    checkPeople(channelId, personIds);
+    if (db.people.some((p) => personIds.includes(p.id) && p.kind === 'mascota')) {
+      throw new RepositoryError('invalid', 'Revisa los datos', ['Las mascotas no forman parte del árbol']);
+    }
+  }
+
   function findIn<T extends { id: string; channelId: string }>(list: T[], channelId: string, id: string, what: string): T {
     const item = list.find((x) => x.id === id && x.channelId === channelId);
     if (!item) throw new RepositoryError('not-found', `${what} no existe`);
@@ -536,6 +544,7 @@ export function createLocalRepository({
       if (!isId(personId)) throw new RepositoryError('invalid', 'Elige para quién es la invitación');
       const person = findIn(db.people, channelId, personId, 'La persona');
       if (person.deathDate) throw new RepositoryError('invalid', 'No se puede invitar a una persona fallecida');
+      if (person.kind === 'mascota') throw new RepositoryError('invalid', 'Las mascotas no pueden ser miembros del canal');
       const member = db.members.find((m) => m.channelId === channelId && m.personId === personId);
       if (member) throw new RepositoryError('conflict', `Esa persona ya está en el canal (${member.displayName})`);
       if (!Number.isInteger(expiresInDays) || expiresInDays < 1 || expiresInDays > MAX_EXPIRY_DAYS) {
@@ -590,7 +599,8 @@ export function createLocalRepository({
         throw new RepositoryError('forbidden', 'Solo un administrador puede cambiar quién es cada miembro');
       }
       if (personId !== null) {
-        findIn(db.people, channelId, personId, 'La persona');
+        const person = findIn(db.people, channelId, personId, 'La persona');
+        if (person.kind === 'mascota') throw new RepositoryError('invalid', 'Un miembro no puede ser una mascota');
         const taken = db.members.find((m) => m.channelId === channelId && m.personId === personId && m.userId !== userId);
         if (taken) throw new RepositoryError('conflict', `Esta persona ya está enlazada con ${taken.displayName}`);
         target.personId = personId;
@@ -658,7 +668,7 @@ export function createLocalRepository({
     async addPerson(channelId, input) {
       requireAdmin(channelId);
       const value = ensure(validatePersonInput(input));
-      checkPeople(channelId, value.parentIds ?? []);
+      checkHumans(channelId, value.parentIds ?? []);
       const person: Person = { id: newId(), channelId, ...value, parentIds: value.parentIds ?? [] };
       db.people.push(person);
       commit();
@@ -670,7 +680,7 @@ export function createLocalRepository({
       const person = findIn(db.people, channelId, personId, 'La persona');
       const value = ensure(validatePersonInput(input));
       const parentIds = value.parentIds ?? [];
-      checkPeople(channelId, parentIds);
+      checkHumans(channelId, parentIds);
       const inChannel = db.people.filter((p) => p.channelId === channelId);
       if (wouldCreateCycle(inChannel, person.id, parentIds)) {
         throw new RepositoryError('invalid', 'Revisa los datos', [
@@ -733,7 +743,7 @@ export function createLocalRepository({
     async addPartnership(channelId, input) {
       requireAdmin(channelId);
       const value = ensure(validatePartnershipInput(input));
-      checkPeople(channelId, value.personIds);
+      checkHumans(channelId, value.personIds);
       const key = partnershipKey(...value.personIds);
       if (db.partnerships.some((c) => c.channelId === channelId && partnershipKey(...c.personIds) === key)) {
         throw new RepositoryError('conflict', 'Esa pareja ya está registrada');
@@ -850,6 +860,10 @@ export function createLocalRepository({
       db.cards = db.cards.filter((c) => c.id !== cardId);
       db.copies = db.copies.filter((c) => c.cardId !== cardId);
       commit();
+    },
+
+    async sendFeedback() {
+      throw new RepositoryError('invalid', 'Las sugerencias se envían con una cuenta');
     },
 
     async uploadPhoto() {

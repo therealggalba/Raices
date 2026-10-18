@@ -441,6 +441,20 @@ describe('family tree', () => {
     expect((await repo.listNotifications(DEMO_FAMILY_ID)).length).toBe(1);
   });
 
+  it('keeps pets out of the tree and of the members', async () => {
+    const pet = await repo.addPerson(DEMO_FAMILY_ID, { ...base, kind: 'mascota', species: 'gato', firstName: 'Nube', lastName: 'Ignorado' });
+    expect(pet).toMatchObject({ kind: 'mascota', species: 'gato', lastName: '' });
+    expect((await rejection(repo.createInvitation(DEMO_FAMILY_ID, 7, pet.id))).message).toContain('mascotas');
+    expect((await rejection(repo.addPerson(DEMO_FAMILY_ID, { ...base, firstName: 'Hijo', parentIds: [pet.id] }))).details).toContain(
+      'Las mascotas no forman parte del árbol',
+    );
+    const me = (await repo.loadChannel(DEMO_FAMILY_ID)).me;
+    expect((await rejection(repo.linkMemberPerson(DEMO_FAMILY_ID, me.userId, pet.id))).code).toBe('invalid');
+    // The demo family has a dog and a cat who passed away.
+    const pets = (await repo.loadChannel(DEMO_FAMILY_ID)).people.filter((p) => p.kind === 'mascota').map((p) => p.firstName);
+    expect(pets).toEqual(expect.arrayContaining(['Toby', 'Misi']));
+  });
+
   it('stores gender and date of death (not before birth)', async () => {
     const added = await repo.addPerson(DEMO_FAMILY_ID, {
       ...base,

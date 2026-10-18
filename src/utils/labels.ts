@@ -1,4 +1,4 @@
-import type { ChannelKind, EventType, Role, VideoCategory } from '../types/domain';
+import type { ChannelKind, EventType, Role, Species, VideoCategory } from '../types/domain';
 
 export const CATEGORY_LABELS: Record<VideoCategory, string> = {
   vacaciones: 'Vacaciones',
@@ -33,4 +33,16 @@ export const CHANNEL_KIND_LABELS: Record<ChannelKind, string> = {
 export const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
   member: 'Miembro',
+};
+
+export const SPECIES_LABELS: Record<Species, string> = {
+  perro: 'Perro',
+  gato: 'Gato',
+  ave: 'Ave',
+  conejo: 'Conejo',
+  roedor: 'Roedor',
+  pez: 'Pez',
+  reptil: 'Reptil',
+  caballo: 'Caballo',
+  otro: 'Otro animal',
 };

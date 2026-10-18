@@ -69,3 +69,9 @@
   color: $color-danger;
   font-size: 0.85rem;
 }
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}

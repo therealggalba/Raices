@@ -3,11 +3,14 @@ import { EmptyState, LinkButton } from '../components/ui';
 import { useChannel } from '../hooks/channel-context';
 import { PeopleViewSwitch } from './PeopleViewSwitch';
 import { ui } from '../components/ui-styles';
+import { humansOnly } from '../utils/people';
 
 /** Family tree of a family channel (Personas › Árbol). */
 export function TreePage() {
   const { snapshot, isAdmin } = useChannel();
-  const { channel, people, partnerships, me } = snapshot;
+  const { channel, partnerships, me } = snapshot;
+  // The family tree is about people (pets have their own list).
+  const people = humansOnly(snapshot.people);
   const viewer = people.find((p) => p.id === me.personId);
 
   return (
