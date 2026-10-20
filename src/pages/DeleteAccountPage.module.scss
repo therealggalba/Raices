@@ -1,0 +1,41 @@
+@use '../styles/variables' as *;
+
+.block {
+  display: grid;
+  gap: $space-2;
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: $space-5;
+  }
+}
+
+.blocked {
+  padding: $space-3;
+  border: 1px solid rgb(var(--danger-rgb) / 0.4);
+  border-radius: $radius-md;
+}
+
+.confirm {
+  padding: $space-4;
+  border: 1px solid rgb(var(--danger-rgb) / 0.4);
+  border-radius: $radius-md;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  min-height: $touch;
+  font-size: 0.9rem;
+
+  input {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: $color-danger;
+  }
+}

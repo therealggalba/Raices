@@ -33,6 +33,7 @@ export function ChannelSettingsPage() {
       <MembersSection />
       {isAdmin && <InvitationsSection />}
       <LeaveSection lastAdmin={me.role === 'admin' && members.filter((m) => m.role === 'admin').length === 1} />
+      {isAdmin && <DeleteChannelSection />}
     </div>
   );
 }
@@ -355,6 +356,71 @@ function LeaveSection({ lastAdmin }: { lastAdmin: boolean }) {
           Salir del canal
         </Button>
       </div>
+    </section>
+  );
+}
+
+/**
+ * Admins: delete the channel for good. Two safety steps: typing the channel's
+ * exact name, then a last confirmation.
+ */
+function DeleteChannelSection() {
+  const { snapshot } = useChannel();
+  const navigate = useNavigate();
+  const { run, pending, error } = useAction();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const name = snapshot.channel.name;
+  const matches = typed.trim() === name.trim();
+
+  return (
+    <section className={[ui.section, styles.danger].join(' ')}>
+      <h2>Eliminar el canal</h2>
+      <p className={ui.muted}>
+        Se borrará para siempre para todos sus miembros: vídeos, fotos subidas, cromos, personas, fechas y el árbol.
+        Los vídeos que estén en Google Drive o YouTube no se tocan allí; solo desaparecen sus enlaces.
+      </p>
+      {!open ? (
+        <div>
+          <Button variant="danger" onClick={() => setOpen(true)}>
+            Eliminar el canal…
+          </Button>
+        </div>
+      ) : (
+        <div className={styles.confirmBox}>
+          <Field label={`Escribe «${name}» para confirmar`} htmlFor="confirm-delete">
+            <input
+              id="confirm-delete"
+              className={ui.input}
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
+          </Field>
+          <ErrorBanner message={error} />
+          <div className={ui.formActions}>
+            <Button variant="ghost" disabled={pending} onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              disabled={!matches || pending}
+              onClick={async () => {
+                if (!confirmAction(`Última confirmación: ¿eliminar «${name}» para siempre? No se puede deshacer.`)) return;
+                const done = await run(async () => {
+                  await repository.deleteChannel(snapshot.channel.id);
+                  return true;
+                });
+                if (done) navigate('/', { replace: true });
+              }}
+            >
+              {pending ? 'Eliminando…' : 'Eliminar para siempre'}
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

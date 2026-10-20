@@ -27,3 +27,6 @@ dist-ssr
 .env*
 !.env.example
 
+
+# Personal documents (business plans, guides): never in the repository
+docs/

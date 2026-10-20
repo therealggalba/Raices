@@ -1,4 +1,5 @@
 import type {
+  AccountDeletionPlan,
   AlbumCard,
   ChannelNotification,
   CardInput,
@@ -123,6 +124,13 @@ export interface MemoriesRepository {
 
   /** A suggestion for the app's owner (screened and e-mailed by the server). */
   sendFeedback(subject: string, message: string): Promise<void>;
+
+  /** Admins: deletes the channel for good, with its stored photos and all its content. */
+  deleteChannel(channelId: string): Promise<void>;
+  /** What deleting the current account would do (channel names). */
+  accountDeletionPlan(): Promise<AccountDeletionPlan>;
+  /** Deletes the current account for good (see accountDeletionPlan). */
+  deleteAccount(): Promise<void>;
 
   /** Local mode only: wipes everything and restores the demo data. */
   resetDemo(): Promise<void>;

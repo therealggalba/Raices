@@ -214,6 +214,11 @@ export function OptionsMenu() {
               </button>
             )}
           </section>
+          {auth.status === 'signed-in' && (
+            <Link to="/cuenta/eliminar" className={styles.deleteAccount}>
+              Eliminar mi cuenta
+            </Link>
+          )}
           <ErrorBanner message={error} />
           <p className={styles.footnote}>
             Raíces {appVersion}

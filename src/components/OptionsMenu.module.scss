@@ -188,3 +188,13 @@
   font-weight: 600;
   justify-content: center;
 }
+
+// Out of the way, but findable (required by the stores).
+.deleteAccount {
+  display: block;
+  padding: $space-2;
+  color: $color-text-dim;
+  font-size: 0.8rem;
+  text-align: center;
+  text-decoration: underline;
+}

@@ -156,3 +156,20 @@
   padding-block: 0;
   font-size: 0.85rem;
 }
+
+.danger {
+  border-top: 1px solid rgb(var(--danger-rgb) / 0.3);
+  padding-top: $space-4;
+
+  h2 {
+    color: $color-danger;
+  }
+}
+
+.confirmBox {
+  display: grid;
+  gap: $space-3;
+  padding: $space-3;
+  border: 1px solid rgb(var(--danger-rgb) / 0.4);
+  border-radius: $radius-md;
+}

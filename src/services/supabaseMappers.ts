@@ -32,7 +32,8 @@ export interface ChannelRow {
   pack_theme: PackTheme;
   cover_url: string | null;
   created_at: string;
-  created_by: string;
+  /** Null once its creator deleted their account. */
+  created_by: string | null;
 }
 export interface MemberRow {
   channel_id: string;
@@ -47,7 +48,7 @@ export interface InvitationRow {
   id: string;
   channel_id: string;
   code: string;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   expires_at: string;
   used_at: string | null;
@@ -93,7 +94,7 @@ export interface VideoRow {
   category: VideoCategory;
   tags: string[];
   person_ids: string[];
-  author_id: string;
+  author_id: string | null;
 }
 export interface EventRow {
   id: string;
@@ -116,7 +117,7 @@ export interface CardRow {
   blurred_path: string | null;
   taken_at: string;
   created_at: string;
-  author_id: string;
+  author_id: string | null;
 }
 
 export interface NotificationRow {
@@ -157,7 +158,7 @@ export function toChannel(r: ChannelRow): Channel {
     packTheme: r.pack_theme,
     ...(r.cover_url ? { coverUrl: r.cover_url } : {}),
     createdAt: r.created_at,
-    createdBy: r.created_by,
+    createdBy: r.created_by ?? '',
   };
 }
 
@@ -178,7 +179,7 @@ export function toInvitation(r: InvitationRow): Invitation {
     id: r.id,
     channelId: r.channel_id,
     code: r.code,
-    createdBy: r.created_by,
+    createdBy: r.created_by ?? '',
     createdAt: r.created_at,
     expiresAt: r.expires_at,
     usedAt: opt(r.used_at),
@@ -231,7 +232,7 @@ export function toVideo(r: VideoRow): Video {
     category: r.category,
     tags: r.tags ?? [],
     personIds: r.person_ids ?? [],
-    authorId: r.author_id,
+    authorId: r.author_id ?? '',
   };
 }
 
@@ -265,7 +266,7 @@ export function toCard(r: CardRow, imageUrl: string, description: string): Album
     ...(r.blurred_path ? { blurredPath: r.blurred_path } : {}),
     takenAt: r.taken_at,
     createdAt: r.created_at,
-    authorId: r.author_id,
+    authorId: r.author_id ?? '',
   };
 }
 

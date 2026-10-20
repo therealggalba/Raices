@@ -268,6 +268,16 @@ export interface Invitation {
 
 export type InvitationStatus = 'active' | 'used' | 'expired' | 'revoked';
 
+/** What deleting one's account does to each channel. */
+export interface AccountDeletionPlan {
+  /** Channels where the user is alone: deleted with everything in them. */
+  deleted: string[];
+  /** Channels the user just leaves. */
+  left: string[];
+  /** Channels where the user is the only admin and others remain: name another admin first. */
+  blocked: string[];
+}
+
 /** What a channel's admins are told about in their inbox. */
 export const NOTIFICATION_KINDS = ['person_edited', 'member_joined', 'member_left', 'member_removed'] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

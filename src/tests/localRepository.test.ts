@@ -455,6 +455,22 @@ describe('family tree', () => {
     expect(pets).toEqual(expect.arrayContaining(['Toby', 'Misi']));
   });
 
+  it('plans and performs permanent deletions', async () => {
+    const mine = await repo.createChannel({ name: 'Solo yo', description: '', kind: 'otros' });
+    const plan = await repo.accountDeletionPlan();
+    expect(plan.deleted).toEqual(['Solo yo']);
+    // In the family channel Elena is admin too, so the visitor just leaves.
+    expect(plan.left).toContain('Familia Montero');
+    expect(plan.blocked).toEqual([]);
+    // Members can't delete a channel; admins can, with everything in it.
+    expect((await rejection(repo.deleteChannel(DEMO_FRIENDS_ID))).code).toBe('forbidden');
+    await repo.deleteChannel(mine);
+    expect((await repo.listChannels()).some((c) => c.channel.id === mine)).toBe(false);
+    // The only admin of a channel with members is blocked until naming another.
+    await repo.setMemberRole(DEMO_FAMILY_ID, 'u-elena', 'member');
+    expect((await repo.accountDeletionPlan()).blocked).toEqual(['Familia Montero']);
+  });
+
   it('stores gender and date of death (not before birth)', async () => {
     const added = await repo.addPerson(DEMO_FAMILY_ID, {
       ...base,

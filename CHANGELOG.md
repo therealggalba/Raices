@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.0 — 2026-10-20
+
+- **Eliminar mi cuenta** (Opciones): explica qué pasa con cada canal (los tuyos en solitario se borran con todo,
+  de los demás sales) y pide escribir ELIMINAR, marcar que no se puede deshacer y una última confirmación. Si eres
+  el único administrador de un canal con más miembros, primero hay que nombrar a otro.
+- **Eliminar el canal** (Canal, solo administradores): borra para siempre el canal, su contenido y sus fotos
+  subidas; pide escribir el nombre exacto del canal y una última confirmación.
+- Base de datos: migración `0008_deletion.sql`.
+
 ## 0.20.0 — 2026-10-18
 
 - Parejas: se gestionan en «Editar» de cada persona (apartado «Pareja», con fecha de boda o inicio y de

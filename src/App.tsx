@@ -11,6 +11,7 @@ import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
 import { AboutPage } from './pages/AboutPage';
 import { FeedbackPage } from './pages/FeedbackPage';
+import { DeleteAccountPage } from './pages/DeleteAccountPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { AlbumsPage } from './pages/AlbumsPage';
 import { CardFormPage } from './pages/CardFormPage';
@@ -118,6 +119,7 @@ function AppRoutes() {
           <Route path="nuevo" element={<NewChannelPage />} />
           <Route path="saber-mas" element={<AboutPage />} />
           <Route path="sugerencias" element={<FeedbackPage />} />
+          <Route path="cuenta/eliminar" element={<DeleteAccountPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="c/:channelId" element={<ChannelLayout />}>

@@ -111,6 +111,32 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
     return signed;
   }
 
+  /** Every stored photo of a channel (cromos, people's photos, video covers). */
+  async function removeChannelFiles(channelId: string): Promise<void> {
+    const list = async (bucket: string, folder: string) => {
+      const names: { name: string; isFolder: boolean }[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await client.storage.from(bucket).list(folder, { limit: 1000, offset });
+        if (error) throw new RepositoryError('conflict', 'No se han podido borrar las fotos del canal. Inténtalo de nuevo.');
+        names.push(...(data ?? []).map((f) => ({ name: `${folder}/${f.name}`, isFolder: f.id === null })));
+        if (!data || data.length < 1000) break;
+      }
+      return names;
+    };
+    for (const bucket of Object.values(BUCKETS)) {
+      const entries = await list(bucket, channelId);
+      const files = entries.filter((e) => !e.isFolder).map((e) => e.name);
+      // personas/<channel>/<person>/<file>
+      for (const folder of entries.filter((e) => e.isFolder)) {
+        files.push(...(await list(bucket, folder.name)).filter((e) => !e.isFolder).map((e) => e.name));
+      }
+      for (let i = 0; i < files.length; i += 100) {
+        const { error } = await client.storage.from(bucket).remove(files.slice(i, i + 100));
+        if (error) throw new RepositoryError('conflict', 'No se han podido borrar las fotos del canal. Inténtalo de nuevo.');
+      }
+    }
+  }
+
   /** Uploaded profile photos are shown through temporary URLs. */
   async function hydratePeople(rows: PersonRow[]): Promise<Person[]> {
     const signed = await signAll('personas', rows.map((r) => r.photo_path));
@@ -677,6 +703,39 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       }
       const { data } = await bucket.createSignedUrl(path, SIGNED_URL_SECONDS);
       return { path, ...(blurredPath ? { blurredPath } : {}), previewUrl: data?.signedUrl ?? '' };
+    },
+
+    async deleteChannel(channelId) {
+      requireId(channelId, 'El canal');
+      const me = await userId();
+      const mine = must(
+        await client.from('channel_members').select('role').eq('channel_id', channelId).eq('user_id', me).maybeSingle(),
+      ) as { role: string } | null;
+      if (mine?.role !== 'admin') throw new RepositoryError('forbidden', 'Solo un administrador puede eliminar el canal');
+      // Photos first (Storage), then the channel and everything in it.
+      await removeChannelFiles(channelId);
+      must(await client.rpc('delete_channel', { p_channel: channelId }));
+    },
+
+    async accountDeletionPlan() {
+      const rows = must(await client.rpc('account_deletion_plan')) as {
+        channel_id: string;
+        channel_name: string;
+        outcome: 'delete' | 'leave' | 'blocked';
+      }[];
+      const names = (outcome: string) => rows.filter((r) => r.outcome === outcome).map((r) => r.channel_name);
+      return { deleted: names('delete'), left: names('leave'), blocked: names('blocked') };
+    },
+
+    async deleteAccount() {
+      const rows = must(await client.rpc('account_deletion_plan')) as { channel_id: string; outcome: string }[];
+      if (rows.some((r) => r.outcome === 'blocked')) {
+        throw new RepositoryError('conflict', 'Antes de eliminar tu cuenta, nombra a otro administrador en tus canales');
+      }
+      // The photos of the channels that go with the account.
+      for (const row of rows.filter((r) => r.outcome === 'delete')) await removeChannelFiles(row.channel_id);
+      must(await client.rpc('delete_my_account'));
+      await client.auth.signOut();
     },
 
     async sendFeedback(subject, message) {

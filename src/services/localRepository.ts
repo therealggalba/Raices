@@ -862,6 +862,28 @@ export function createLocalRepository({
       commit();
     },
 
+    async deleteChannel(channelId) {
+      requireAdmin(channelId);
+      deleteChannelData(channelId);
+      commit();
+    },
+
+    async accountDeletionPlan() {
+      const plan = { deleted: [] as string[], left: [] as string[], blocked: [] as string[] };
+      for (const m of db.members.filter((x) => x.userId === db.currentUserId)) {
+        const name = findChannel(m.channelId).name;
+        const others = db.members.filter((x) => x.channelId === m.channelId && x.userId !== m.userId);
+        if (others.length === 0) plan.deleted.push(name);
+        else if (m.role === 'admin' && !others.some((x) => x.role === 'admin')) plan.blocked.push(name);
+        else plan.left.push(name);
+      }
+      return plan;
+    },
+
+    async deleteAccount() {
+      throw new RepositoryError('invalid', 'La demo no tiene cuenta que borrar');
+    },
+
     async sendFeedback() {
       throw new RepositoryError('invalid', 'Las sugerencias se envían con una cuenta');
     },

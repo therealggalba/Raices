@@ -257,5 +257,24 @@ ok((await fails(A, `select public.set_member_person($1, $2, $3)`, [ch, A, perro.
 ok(!!(await fails(A, `select * from public.feedback_messages`)), 'nadie puede leer las sugerencias desde la app');
 ok(!!(await fails(A, `insert into public.feedback_messages (subject, message, verdict) values ('Hola', 'Mensaje de prueba', 'ok')`)), 'ni escribirlas saltándose la función');
 
+// Permanent deletion (0008)
+const solo = (await as(C, `select public.create_channel('Canal de Carla', '', 'otros') id`))[0].id;
+await as(C, `insert into public.videos (channel_id, title, media_url, event_date, category, author_id) values ($1, 'Mío', 'https://x.test/c.mp4', '2020', 'otros', $2)`, [solo, C]);
+const planC = await as(C, `select channel_name, outcome from public.account_deletion_plan()`);
+ok(planC.find((r) => r.channel_name === 'Canal de Carla')?.outcome === 'delete' && planC.find((r) => r.channel_name === 'Familia Prueba')?.outcome === 'leave', 'el plan de borrado distingue canales propios y compartidos');
+ok((await as(A, `select outcome from public.account_deletion_plan() where channel_name = 'Familia Prueba'`))[0].outcome === 'blocked', 'el único admin de un canal con gente queda bloqueado');
+ok((await fails(A, `select public.delete_my_account()`))?.includes('nombra a otro administrador'), 'y no puede borrar su cuenta hasta nombrar a otro');
+ok(!!(await fails(C, `select public.delete_channel($1)`, [ch])), 'un miembro no puede borrar el canal');
+await as(C, `select public.delete_my_account()`);
+ok((await db.query(`select count(*)::int n from auth.users where id = '${C}'`)).rows[0].n === 0, 'la cuenta se elimina');
+ok((await db.query(`select count(*)::int n from public.profiles where id = '${C}'`)).rows[0].n === 0, 'su perfil también');
+ok((await db.query(`select count(*)::int n from public.channels where id = '${solo}'`)).rows[0].n === 0, 'su canal en solitario desaparece con sus vídeos');
+ok((await db.query(`select count(*)::int n from public.channel_members where user_id = '${C}'`)).rows[0].n === 0, 'ya no es miembro de ningún canal');
+ok((await as(A, `select actor_id, kind from public.channel_notifications where channel_id = $1 and actor_name = 'Carla' order by created_at desc limit 1`, [ch]))[0]?.kind === 'member_left', 'el admin ve en el buzón que se fue');
+const throwaway = (await as(A, `select public.create_channel('Borrable', '', 'otros') id`))[0].id;
+await as(A, `insert into public.people (channel_id, first_name) values ($1, 'Alguien')`, [throwaway]);
+await as(A, `select public.delete_channel($1)`, [throwaway]);
+ok((await db.query(`select count(*)::int n from public.people where channel_id = '${throwaway}'`)).rows[0].n === 0, 'un admin elimina el canal con todo su contenido');
+
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);
