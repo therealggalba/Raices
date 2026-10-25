@@ -11,9 +11,10 @@ import {
 import { makePerson, makeVideo } from './fixtures';
 
 const lib: Library = {
+  userId: 'u1',
   channels: [
-    { id: 'fam', name: 'Familia Montero', kind: 'familia', packTheme: 'clasico', role: 'admin' },
-    { id: 'uni', name: 'Amigos Uni', kind: 'amigos', packTheme: 'clasico', role: 'member' },
+    { id: 'fam', name: 'Familia Montero', kind: 'familia', packTheme: 'clasico', role: 'owner', notifyAt: '09:00' },
+    { id: 'uni', name: 'Amigos Uni', kind: 'amigos', packTheme: 'clasico', role: 'member', notifyAt: '09:00' },
   ],
   videos: [
     makeVideo({ id: 'a', channelId: 'fam', title: 'Navidad 1999', category: 'navidad', eventDate: '1999-12', uploadedAt: '2026-01-01T00:00:00Z', personIds: ['p1'] }),

@@ -187,6 +187,9 @@ export function OptionsMenu() {
                 </Link>
               </>
             )}
+            <Link to="/ayuda" className={styles.item}>
+              Ayuda
+            </Link>
             {auth.status === 'signed-in' && (
               <Link to="/sugerencias" className={styles.item}>
                 Enviar una sugerencia

@@ -6,11 +6,14 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 import { EmptyState, LinkButton, Spinner } from '../components/ui';
 import { ChannelContext } from '../hooks/channel-context';
 import type { ChannelContextValue } from '../hooks/channel-context';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { canManage, canUpload } from '../utils/permissions';
 import { repository } from '../services';
 import { errorMessage } from '../services/repository';
 import type { ChannelSnapshot } from '../types/domain';
 import { toIsoDate } from '../utils/dates';
 import { WhoAreYou } from '../pages/WhoAreYou';
+import { useAuth } from '../auth/auth-context';
 import styles from './ChannelLayout.module.scss';
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
@@ -30,6 +33,7 @@ export function ChannelLayout() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [today] = useState(() => toIsoDate(new Date()));
+  const readOnly = useAuth().status === 'demo';
 
   const reload = useCallback(async () => {
     try {
@@ -60,17 +64,29 @@ export function ChannelLayout() {
     };
   }, [channelId]);
 
+  // Other members' new content appears on its own (errors stay silent here).
+  const refresh = useCallback(async () => {
+    try {
+      setSnapshot(await repository.loadChannel(channelId));
+    } catch {
+      // Keep what is on screen; the next refresh tries again.
+    }
+  }, [channelId]);
+  useAutoRefresh(refresh, snapshot !== null);
+
   const value = useMemo<ChannelContextValue | null>(() => {
     if (!snapshot) return null;
     const people = new Map(snapshot.people.map((p) => [p.id, p]));
     return {
       snapshot,
       today,
-      isAdmin: snapshot.me.role === 'admin',
+      isOwner: canManage(snapshot.me),
+      readOnly,
+      pendingCount: snapshot.pending.videos.length + snapshot.pending.cards.length,
       reload,
       personById: (id) => people.get(id),
     };
-  }, [snapshot, reload, today]);
+  }, [snapshot, reload, today, readOnly]);
 
   if (error) {
     return (
@@ -85,8 +101,12 @@ export function ChannelLayout() {
   if (!value) return <Spinner />;
 
   const base = `/c/${channelId}`;
-  // Nobody uses a channel without saying who they are (admins may first create their own card).
-  const mustChoose = !value.snapshot.me.personId && !(value.isAdmin && pathname.endsWith('/personas/nueva'));
+  // Nobody uses a channel without saying who they are (the owner may first create their own card).
+  const mustChoose = !value.snapshot.me.personId && !(value.isOwner && pathname.endsWith('/personas/nueva'));
+  // Owner: what awaits approval (Vídeos) and the unread inbox (Canal).
+  const badges: Record<string, number> = value.isOwner
+    ? { '': value.pendingCount, canal: value.snapshot.unreadNotifications }
+    : {};
   return (
     <ChannelContext.Provider value={value}>
       <div className={styles.shell}>
@@ -112,7 +132,7 @@ export function ChannelLayout() {
               maxLength={80}
             />
           </form>
-          {value.isAdmin && !mustChoose && (
+          {canUpload(value.snapshot.me) && !value.readOnly && !mustChoose && (
             <LinkButton to={`${base}/subir`} variant="primary" small aria-label="Añadir vídeo">
               + <span className={styles.hideSm}>Añadir</span>
             </LinkButton>
@@ -130,9 +150,12 @@ export function ChannelLayout() {
               >
                 <span className={styles.navIconWrap}>
                   <Icon name={item.icon} size={22} className={styles.navIcon} />
-                  {item.to === 'canal' && value.snapshot.unreadNotifications > 0 && (
-                    <span className={styles.badge} aria-label={`${value.snapshot.unreadNotifications} avisos sin leer`}>
-                      {Math.min(value.snapshot.unreadNotifications, 99)}
+                  {(badges[item.to] ?? 0) > 0 && (
+                    <span
+                      className={styles.badge}
+                      aria-label={item.to ? `${badges[item.to]} avisos sin leer` : `${badges[item.to]} por revisar`}
+                    >
+                      {Math.min(badges[item.to], 99)}
                     </span>
                   )}
                 </span>

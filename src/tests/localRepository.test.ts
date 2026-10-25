@@ -52,7 +52,7 @@ describe('local repository', () => {
     const channels = await repo.listChannels();
     expect(channels.map((c) => [c.channel.id, c.role])).toEqual([
       [DEMO_FRIENDS_ID, 'member'],
-      [DEMO_FAMILY_ID, 'admin'],
+      [DEMO_FAMILY_ID, 'owner'],
       [DEMO_COUSINS_ID, 'member'],
     ]);
     expect(parseDb(store.get(STORAGE_KEY))).not.toBeNull();
@@ -195,7 +195,7 @@ describe('local repository', () => {
     v4.events = v4.events.map((e) => (e.id === 'e-cumple-marta' ? { ...e, personIds: [] } : e));
     // The user left (and so deleted) the cousins channel, and has a real channel.
     v4.channels = v4.channels.filter((c) => c.id !== DEMO_COUSINS_ID);
-    v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', packTheme: 'clasico', createdAt: NOW.toISOString(), createdBy: v4.currentUserId });
+    v4.channels.push({ id: 'mi-familia', name: 'Mi familia', description: '', kind: 'familia', packTheme: 'clasico', createdAt: NOW.toISOString(), createdBy: v4.currentUserId } as Db['channels'][number]);
     const db = parseDb(JSON.stringify(v4))!;
     expect(db.schemaVersion).toBe(SCHEMA_VERSION);
     expect(db.cards.some((c) => c.channelId === DEMO_COUSINS_ID)).toBe(false);
@@ -296,11 +296,11 @@ describe('local repository', () => {
     expect(members.some((m) => m.userId === elena)).toBe(false);
   });
 
-  it('creates a channel with its creator as admin and deletes it when the last member leaves', async () => {
+  it('creates a channel with its creator as owner and deletes it when the last member leaves', async () => {
     const id = await repo.createChannel({ name: '  Viaje a Japón 2025 ', description: '', kind: 'viajes' });
     const snapshot = await repo.loadChannel(id);
     expect(snapshot.channel.name).toBe('Viaje a Japón 2025');
-    expect(snapshot.me.role).toBe('admin');
+    expect(snapshot.me.role).toBe('owner');
     await repo.leaveChannel(id);
     expect((await repo.listChannels()).some((c) => c.channel.id === id)).toBe(false);
   });
@@ -459,16 +459,17 @@ describe('family tree', () => {
     const mine = await repo.createChannel({ name: 'Solo yo', description: '', kind: 'otros' });
     const plan = await repo.accountDeletionPlan();
     expect(plan.deleted).toEqual(['Solo yo']);
-    // In the family channel Elena is admin too, so the visitor just leaves.
-    expect(plan.left).toContain('Familia Montero');
-    expect(plan.blocked).toEqual([]);
-    // Members can't delete a channel; admins can, with everything in it.
+    // The visitor owns the family channel: blocked until handing it over.
+    expect(plan.blocked).toEqual(['Familia Montero']);
+    expect(plan.left).toEqual(expect.arrayContaining(['Amigos de la Universidad']));
+    // Members can't delete a channel; its owner can, with everything in it.
     expect((await rejection(repo.deleteChannel(DEMO_FRIENDS_ID))).code).toBe('forbidden');
     await repo.deleteChannel(mine);
     expect((await repo.listChannels()).some((c) => c.channel.id === mine)).toBe(false);
-    // The only admin of a channel with members is blocked until naming another.
-    await repo.setMemberRole(DEMO_FAMILY_ID, 'u-elena', 'member');
-    expect((await repo.accountDeletionPlan()).blocked).toEqual(['Familia Montero']);
+    await repo.transferOwnership(DEMO_FAMILY_ID, 'u-elena');
+    const after = await repo.accountDeletionPlan();
+    expect(after.blocked).toEqual([]);
+    expect(after.left).toContain('Familia Montero');
   });
 
   it('stores gender and date of death (not before birth)', async () => {
@@ -577,5 +578,127 @@ describe('packs', () => {
     const empty = await repo.createChannel({ name: 'Vacío', description: '', kind: 'otros' });
     expect((await rejection(repo.openPack(empty))).code).toBe('conflict');
     expect((await repo.loadLibrary()).packs.remaining).toBe(3);
+  });
+});
+
+describe('roles and approval', () => {
+  let store: KeyValueStore;
+  let repo: MemoriesRepository;
+
+  /** Acts as another demo user from now on. */
+  const actAs = (userId: string) => {
+    const db = JSON.parse(store.get(STORAGE_KEY)!) as Db;
+    if (!db.users.some((u) => u.id === userId)) db.users.push({ id: userId, name: userId });
+    db.currentUserId = userId;
+    store.set(STORAGE_KEY, JSON.stringify(db));
+  };
+  const visitor = () => (JSON.parse(store.get(STORAGE_KEY)!) as Db).users[0].id;
+  const cardInput = { title: 'En la playa', description: 'Verano', imageUrl: 'https://example.test/c.jpg', takenAt: '2015' };
+
+  beforeEach(() => {
+    store = memoryStore();
+    repo = createLocalRepository({ store, now: () => NOW });
+  });
+
+  it('members upload content in which they appear, and it waits for the owner', async () => {
+    // Among the friends the visitor is a member (Álex); Marta owns the channel.
+    expect((await rejection(repo.addVideo(DEMO_FRIENDS_ID, { ...videoInput, personIds: ['p-marta'] }))).code).toBe('forbidden');
+    const video = await repo.addVideo(DEMO_FRIENDS_ID, { ...videoInput, personIds: ['p-alex', 'p-marta'] });
+    expect(video.pending).toBe(true);
+    let mine = await repo.loadChannel(DEMO_FRIENDS_ID);
+    expect(mine.pending.videos.map((v) => v.id)).toEqual([video.id]);
+    expect(mine.videos.some((v) => v.id === video.id)).toBe(false);
+    expect((await repo.loadLibrary()).videos.some((v) => v.id === video.id)).toBe(false);
+    // Another member doesn't see it at all.
+    const visitorId = visitor();
+    actAs('u-javi');
+    expect((await repo.loadChannel(DEMO_FRIENDS_ID)).pending.videos).toEqual([]);
+    expect((await rejection(repo.approveContent(DEMO_FRIENDS_ID, 'video', video.id))).code).toBe('forbidden');
+    // The owner reviews and approves it: now everybody sees it.
+    actAs('u-marta');
+    expect((await repo.loadChannel(DEMO_FRIENDS_ID)).pending.videos.map((v) => v.id)).toEqual([video.id]);
+    await repo.approveContent(DEMO_FRIENDS_ID, 'video', video.id);
+    actAs(visitorId);
+    mine = await repo.loadChannel(DEMO_FRIENDS_ID);
+    expect(mine.videos.some((v) => v.id === video.id)).toBe(true);
+    // Editing it sends it back for review.
+    await repo.updateVideo(DEMO_FRIENDS_ID, video.id, { ...videoInput, title: 'Otra', personIds: ['p-alex'] });
+    expect((await repo.loadChannel(DEMO_FRIENDS_ID)).pending.videos.map((v) => v.id)).toEqual([video.id]);
+    // Nobody else's content can be touched.
+    const marta = (await repo.loadChannel(DEMO_FRIENDS_ID)).videos.find((v) => v.authorId !== visitorId)!;
+    expect((await rejection(repo.deleteVideo(DEMO_FRIENDS_ID, marta.id))).code).toBe('forbidden');
+  });
+
+  it('pending cromos get their number on approval and stay out of packs', async () => {
+    const card = await repo.addCard(DEMO_FRIENDS_ID, { ...cardInput, personId: 'p-alex' });
+    expect(card).toMatchObject({ pending: true, number: 0 });
+    expect((await rejection(repo.addCard(DEMO_FRIENDS_ID, { ...cardInput, personId: 'p-marta' }))).code).toBe('forbidden');
+    expect((await rejection(repo.addCard(DEMO_FRIENDS_ID, cardInput))).code).toBe('forbidden');
+    for (let i = 0; i < 3; i++) {
+      const pulls = await repo.openPack(DEMO_FRIENDS_ID);
+      expect(pulls.some((p) => p.card.id === card.id)).toBe(false);
+    }
+    const before = Math.max(...(await repo.loadChannel(DEMO_FRIENDS_ID)).cards.map((c) => c.number));
+    actAs('u-marta');
+    await repo.approveContent(DEMO_FRIENDS_ID, 'card', card.id);
+    const approved = (await repo.loadChannel(DEMO_FRIENDS_ID)).cards.find((c) => c.id === card.id)!;
+    expect(approved.pending).toBeUndefined();
+    expect(approved.number).toBe(before + 1);
+  });
+
+  it('admins upload content of anyone, still pending; only the owner manages', async () => {
+    actAs('u-marta');
+    await repo.setMemberRole(DEMO_FRIENDS_ID, 'u-javi', 'admin');
+    expect((await rejection(repo.setMemberRole(DEMO_FRIENDS_ID, 'u-marta', 'member'))).message).toContain('cede el canal');
+    actAs('u-javi');
+    const video = await repo.addVideo(DEMO_FRIENDS_ID, { ...videoInput, personIds: ['p-marta'] });
+    expect(video.pending).toBe(true);
+    expect((await rejection(repo.createInvitation(DEMO_FRIENDS_ID, 7, 'p-marta'))).code).toBe('forbidden');
+    expect((await rejection(repo.setNotifyTime(DEMO_FRIENDS_ID, '20:00'))).code).toBe('forbidden');
+    expect((await rejection(repo.updateChannel(DEMO_FRIENDS_ID, { name: 'X', description: '', kind: 'amigos' }))).code).toBe(
+      'forbidden',
+    );
+  });
+
+  it('anyone edits the dates in which they appear, without leaving them', async () => {
+    const own = await repo.addEvent(DEMO_FRIENDS_ID, { ...eventInput, personIds: ['p-alex'] });
+    expect((await rejection(repo.addEvent(DEMO_FRIENDS_ID, { ...eventInput, personIds: ['p-marta'] }))).code).toBe('forbidden');
+    actAs('u-marta');
+    const shared = await repo.addEvent(DEMO_FRIENDS_ID, { ...eventInput, personIds: ['p-marta', 'p-alex'] });
+    const hers = await repo.addEvent(DEMO_FRIENDS_ID, { ...eventInput, personIds: ['p-marta'] });
+    actAs((JSON.parse(store.get(STORAGE_KEY)!) as Db).users[0].id);
+    await repo.updateEvent(DEMO_FRIENDS_ID, shared.id, { ...eventInput, notes: 'Fue genial', personIds: ['p-marta', 'p-alex'] });
+    expect((await rejection(repo.updateEvent(DEMO_FRIENDS_ID, shared.id, { ...eventInput, personIds: ['p-marta'] }))).code).toBe(
+      'forbidden',
+    );
+    expect((await rejection(repo.deleteEvent(DEMO_FRIENDS_ID, hers.id))).code).toBe('forbidden');
+    await repo.deleteEvent(DEMO_FRIENDS_ID, own.id);
+  });
+
+  it('the owner sets the reminder time and hands the channel over before leaving', async () => {
+    await repo.setNotifyTime(DEMO_FAMILY_ID, '20:30');
+    expect((await repo.loadChannel(DEMO_FAMILY_ID)).channel.notifyAt).toBe('20:30');
+    expect((await repo.loadLibrary()).channels.find((c) => c.id === DEMO_FAMILY_ID)?.notifyAt).toBe('20:30');
+    expect((await rejection(repo.setNotifyTime(DEMO_FAMILY_ID, '25:00'))).code).toBe('invalid');
+    expect((await rejection(repo.leaveChannel(DEMO_FAMILY_ID))).message).toContain('Cede el canal');
+    await repo.transferOwnership(DEMO_FAMILY_ID, 'u-luis');
+    const members = (await repo.loadChannel(DEMO_FAMILY_ID)).members;
+    expect(members.find((m) => m.userId === 'u-luis')?.role).toBe('owner');
+    expect(members.find((m) => m.userId === visitor())?.role).toBe('admin');
+    expect((await rejection(repo.setNotifyTime(DEMO_FAMILY_ID, '10:00'))).code).toBe('forbidden');
+    await repo.leaveChannel(DEMO_FAMILY_ID);
+  });
+
+  it('upgrades stored v9 data: each channel gets one owner', () => {
+    const v9 = buildDemoDb(NOW) as unknown as Record<string, unknown> & Db;
+    v9.schemaVersion = 9;
+    for (const m of v9.members) if (m.role === 'owner') m.role = 'admin';
+    for (const c of v9.channels) delete (c as Partial<Db['channels'][number]>).notifyAt;
+    const db = parseDb(JSON.stringify(v9))!;
+    for (const c of db.channels) {
+      expect(db.members.filter((m) => m.channelId === c.id && m.role === 'owner')).toHaveLength(1);
+      expect(c.notifyAt).toBe('09:00');
+    }
+    expect(db.members.find((m) => m.channelId === DEMO_FAMILY_ID && m.role === 'owner')?.userId).toBe(db.currentUserId);
   });
 });

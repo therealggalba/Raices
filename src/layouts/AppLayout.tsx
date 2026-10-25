@@ -5,6 +5,7 @@ import { OptionsMenu } from '../components/OptionsMenu';
 import { TodayPopup } from '../components/TodayPopup';
 import { ErrorBanner, Spinner } from '../components/ui';
 import { LibraryContext } from '../hooks/library-context';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import type { LibraryContextValue } from '../hooks/library-context';
 import { syncDateNotifications } from '../native/dateNotifications';
 import { repository } from '../services';
@@ -45,6 +46,16 @@ export function AppLayout() {
       cancelled = true;
     };
   }, []);
+
+  // Other members' new content appears on its own (errors stay silent here).
+  const refresh = useCallback(async () => {
+    try {
+      setLibrary(await repository.loadLibrary());
+    } catch {
+      // Keep what is on screen; the next refresh tries again.
+    }
+  }, []);
+  useAutoRefresh(refresh, library !== null);
 
   // Android app: keep the date reminders in sync with the user's channels.
   useEffect(() => {

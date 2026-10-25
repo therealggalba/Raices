@@ -1,0 +1,94 @@
+@use '../styles/variables' as *;
+
+.accordion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-2;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+  overflow: hidden;
+  scroll-margin-top: $header-offset;
+}
+
+.heading {
+  margin: 0;
+  font: inherit;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  width: 100%;
+  min-height: $touch + 8px;
+  padding: $space-3 $space-4;
+  border: 0;
+  background: none;
+  color: $color-text;
+  font-family: $font-ui;
+  font-size: 1rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    @include focus-ring;
+    outline-offset: -2px;
+  }
+
+  @include can-hover {
+    &:hover {
+      background: $color-bg-hover;
+    }
+  }
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge {
+  min-width: 1.4rem;
+  padding: 0 $space-2;
+  border-radius: $radius-pill;
+  background: $color-accent;
+  color: $color-on-accent;
+  font-size: 0.75rem;
+  line-height: 1.4rem;
+  text-align: center;
+}
+
+.chevron {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid $color-text-muted;
+  border-bottom: 2px solid $color-text-muted;
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.15s ease;
+
+  [aria-expanded='true'] > & {
+    transform: rotate(-135deg) translate(-2px, -2px);
+  }
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-3;
+  padding: 0 $space-4 $space-4;
+}
+
+.danger {
+  border-color: rgb(var(--danger-rgb) / 0.5);
+
+  .title {
+    color: $color-danger;
+  }
+}

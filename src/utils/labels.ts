@@ -31,6 +31,7 @@ export const CHANNEL_KIND_LABELS: Record<ChannelKind, string> = {
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  owner: 'Creador',
   admin: 'Administrador',
   member: 'Miembro',
 };

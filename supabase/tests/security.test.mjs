@@ -11,8 +11,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
-const migration = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()
-  .map((f) => readFileSync(join(migrationsDir, f), 'utf8')).join('\n');
+const files = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
+const read = (list) => list.map((f) => readFileSync(join(migrationsDir, f), 'utf8')).join('\n');
+// 0009 converts existing channels: it is applied after seeding a few «old» ones.
+const beforeRoles = read(files.filter((f) => f < '0009'));
+const fromRoles = read(files.filter((f) => f >= '0009'));
 process.on('unhandledRejection', (e) => { console.log('ERROR:', e.message, e.query ? '\n  en: ' + e.query.slice(0, 200) : ''); process.exit(2); });
 const db = await PGlite.create({ extensions: { pgcrypto } });
 
@@ -26,7 +29,7 @@ await db.exec(`
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid default auth.uid());
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid default auth.uid(), owner_id text default auth.uid()::text);
   alter table storage.objects enable row level security;
   grant usage on schema public, auth, storage, extensions to anon, authenticated;
   grant execute on function auth.uid() to anon, authenticated;
@@ -36,8 +39,21 @@ await db.exec(`
   alter default privileges in schema public grant all on sequences to anon, authenticated;
   alter default privileges in schema public grant execute on functions to anon, authenticated;
 `);
-await db.exec(migration);
+await db.exec(beforeRoles);
+// Channels as they were before 0009: creator still admin / creator gone / no admin left.
+const L = ['00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a3'];
+const LU = ['00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000b2'];
+await db.exec(`
+  insert into auth.users (id, email) values ('${LU[0]}', 'l1@example.com'), ('${LU[1]}', 'l2@example.com');
+  insert into public.channels (id, name, created_by) values ('${L[0]}', 'L0', '${LU[0]}'), ('${L[1]}', 'L1', null), ('${L[2]}', 'L2', '${LU[0]}');
+  insert into public.channel_members (channel_id, user_id, display_name, role, joined_at) values
+    ('${L[0]}', '${LU[1]}', 'Dos', 'admin', now() - interval '2 days'), ('${L[0]}', '${LU[0]}', 'Uno', 'admin', now()),
+    ('${L[1]}', '${LU[0]}', 'Uno', 'member', now() - interval '2 days'), ('${L[1]}', '${LU[1]}', 'Dos', 'admin', now()),
+    ('${L[2]}', '${LU[1]}', 'Dos', 'member', now() - interval '2 days'), ('${L[2]}', '${LU[0]}', 'Uno', 'member', now());
+`);
+await db.exec(fromRoles);
 console.log('✓ migración aplicada sin errores');
+const ownerOf = async (c) => (await db.query(`select user_id from public.channel_members where channel_id = $1 and role = 'owner'`, [c])).rows.map((r) => r.user_id);
 
 const A = '00000000-0000-0000-0000-00000000000a';
 const B = '00000000-0000-0000-0000-00000000000b';
@@ -67,6 +83,12 @@ async function fails(user, sql, params = []) {
   try { await as(user, sql, params); return null; } catch (e) { return e.message; }
 }
 
+ok((await ownerOf(L[0])).join() === LU[0], 'canales previos: su creador, si sigue de admin, pasa a ser el creador');
+ok((await ownerOf(L[1])).join() === LU[1], 'sin creador, lo es su admin');
+ok((await ownerOf(L[2])).join() === LU[1], 'sin admins, su miembro más antiguo');
+await db.exec(fromRoles);
+ok((await db.query(`select count(*)::int n from public.channel_members where role = 'owner'`)).rows[0].n === 3, 'aplicar 0009 otra vez no cambia nada');
+await db.exec(`delete from public.channels where id in ('${L.join("','")}'); delete from auth.users where id in ('${LU.join("','")}');`);
 ok((await db.query(`select count(*)::int n from public.profiles`)).rows[0].n === 3, 'se crea un perfil por cada cuenta nueva');
 
 // Channel + content (A is admin)
@@ -132,7 +154,7 @@ const originals = visible.filter((n) => !n.endsWith('_blur.webp'));
 ok(visible.filter((n) => n.endsWith('_blur.webp')).length === 6, 'B ve las 6 miniaturas desenfocadas');
 ok(originals.length === owned.size, `B solo ve las ${owned.size} fotos originales que ha desbloqueado`);
 ok((await as(C, `select name from storage.objects`)).length === 0, 'C no ve ninguna imagen');
-ok(!!(await fails(B, `insert into storage.objects (bucket_id, name) values ('cromos', $1::text || '/x.webp')`, [ch])), 'un miembro no puede subir cromos');
+ok((await as(B, `insert into storage.objects (bucket_id, name) values ('cromos', $1::text || '/x.webp') returning name`, [ch])).length === 1, 'un miembro con ficha puede subir la foto de un cromo');
 
 // D opens a single pack (5 of 6): exactly one cromo stays locked for D.
 const Dusr = '00000000-0000-0000-0000-00000000000d';
@@ -149,8 +171,8 @@ ok(lockedForD.every((c) => dSees.has(c.image_path.replace('.webp', '_blur.webp')
 ok((await as(Dusr, `select * from public.unlocked_card_descriptions()`)).length === 5, 'D solo recibe las 5 descripciones de sus cromos');
 
 // Admin rules
-ok((await fails(A, `select public.set_member_role($1, $2, 'member')`, [ch, A]))?.includes('al menos un administrador'), 'no se puede dejar el canal sin admin');
-ok((await fails(A, `select public.leave_channel($1)`, [ch]))?.includes('Nombra a otro administrador'), 'el último admin no puede irse sin relevo');
+ok((await fails(A, `select public.set_member_role($1, $2, 'member')`, [ch, A]))?.includes('cede el canal'), 'el creador no se quita el rol: tiene que ceder el canal');
+ok((await fails(A, `select public.leave_channel($1)`, [ch]))?.includes('Cede el canal'), 'el creador no puede irse sin ceder el canal');
 ok(!!(await fails(A, `update public.people set parent_ids = array[$1::uuid] where id = $2`, [hijo.id, abuelo.id])), 'el árbol rechaza que alguien sea antepasado de sí mismo');
 
 // Numbers never reused
@@ -240,9 +262,9 @@ const inv3 = (await as(A, `select * from public.create_invitation($1, 3, $2)`, [
 await as(C, `select public.redeem_invitation($1, 'Carla')`, [inv3.code]);
 ok((await as(C, `insert into storage.objects (bucket_id, name) values ('personas', $1 || '/' || $2 || '/yo.webp') returning name`, [ch, hijo.id])).length === 1, 'un miembro sube la foto de su propia ficha');
 ok(!!(await fails(C, `insert into storage.objects (bucket_id, name) values ('personas', $1 || '/' || $2 || '/otro.webp')`, [ch, abuelo.id])), 'pero no la de otra persona');
-ok(!!(await fails(C, `insert into storage.objects (bucket_id, name) values ('miniaturas', $1 || '/x.webp')`, [ch])), 'un miembro no sube miniaturas');
+ok((await as(C, `insert into storage.objects (bucket_id, name) values ('miniaturas', $1 || '/x.webp') returning name`, [ch])).length === 1, 'un miembro con ficha sube miniaturas');
 ok((await as(A, `insert into storage.objects (bucket_id, name) values ('miniaturas', $1 || '/portada.webp') returning name`, [ch])).length === 1, 'un admin sí');
-ok((await as(C, `select name from storage.objects where bucket_id = 'miniaturas'`)).length === 1, 'y los miembros ven las miniaturas de su canal');
+ok((await as(C, `select name from storage.objects where bucket_id = 'miniaturas'`)).length === 2, 'y los miembros ven las miniaturas de su canal');
 await as(C, `select public.update_my_person($1, 'Hijo', '', null, null, null, $2, '')`, [ch, `${ch}/${hijo.id}/yo.webp`]);
 ok((await as(A, `select photo_path from public.people where id = $1`, [hijo.id]))[0].photo_path.endsWith('/yo.webp'), 'el miembro pone su foto subida en su ficha');
 
@@ -262,8 +284,8 @@ const solo = (await as(C, `select public.create_channel('Canal de Carla', '', 'o
 await as(C, `insert into public.videos (channel_id, title, media_url, event_date, category, author_id) values ($1, 'Mío', 'https://x.test/c.mp4', '2020', 'otros', $2)`, [solo, C]);
 const planC = await as(C, `select channel_name, outcome from public.account_deletion_plan()`);
 ok(planC.find((r) => r.channel_name === 'Canal de Carla')?.outcome === 'delete' && planC.find((r) => r.channel_name === 'Familia Prueba')?.outcome === 'leave', 'el plan de borrado distingue canales propios y compartidos');
-ok((await as(A, `select outcome from public.account_deletion_plan() where channel_name = 'Familia Prueba'`))[0].outcome === 'blocked', 'el único admin de un canal con gente queda bloqueado');
-ok((await fails(A, `select public.delete_my_account()`))?.includes('nombra a otro administrador'), 'y no puede borrar su cuenta hasta nombrar a otro');
+ok((await as(A, `select outcome from public.account_deletion_plan() where channel_name = 'Familia Prueba'`))[0].outcome === 'blocked', 'el creador de un canal con gente queda bloqueado');
+ok((await fails(A, `select public.delete_my_account()`))?.includes('cede estos canales'), 'y no puede borrar su cuenta hasta cederlo');
 ok(!!(await fails(C, `select public.delete_channel($1)`, [ch])), 'un miembro no puede borrar el canal');
 await as(C, `select public.delete_my_account()`);
 ok((await db.query(`select count(*)::int n from auth.users where id = '${C}'`)).rows[0].n === 0, 'la cuenta se elimina');
@@ -275,6 +297,85 @@ const throwaway = (await as(A, `select public.create_channel('Borrable', '', 'ot
 await as(A, `insert into public.people (channel_id, first_name) values ($1, 'Alguien')`, [throwaway]);
 await as(A, `select public.delete_channel($1)`, [throwaway]);
 ok((await db.query(`select count(*)::int n from public.people where channel_id = '${throwaway}'`)).rows[0].n === 0, 'un admin elimina el canal con todo su contenido');
+
+// Roles and approval (0009): A owner, E member, F admin
+const E = '00000000-0000-0000-0000-00000000000e';
+const F = '00000000-0000-0000-0000-00000000000f';
+await db.exec(`insert into auth.users (id, email) values ('${E}','eva@example.com'), ('${F}','fede@example.com')`);
+const ch9 = (await as(A, `select public.create_channel('Roles', '', 'familia') id`))[0].id;
+ok((await as(A, `select role from public.channel_members where channel_id = $1`, [ch9]))[0].role === 'owner', 'quien crea un canal es su creador (owner)');
+const [pA, pE, pF] = await as(A, `insert into public.people (channel_id, first_name) values ($1,'Ana'), ($1,'Eva'), ($1,'Fede') returning id`, [ch9]);
+await as(A, `select public.set_member_person($1, $2, $3)`, [ch9, A, pA.id]);
+for (const [user, person, name] of [[E, pE, 'Eva'], [F, pF, 'Fede']]) {
+  const code = (await as(A, `select code from public.create_invitation($1, 7, $2)`, [ch9, person.id]))[0].code;
+  await as(user, `select public.redeem_invitation($1, $2)`, [code, name]);
+}
+await as(A, `select public.set_member_role($1, $2, 'admin')`, [ch9, F]);
+const addVideo = (user, title, people) => as(user,
+  `insert into public.videos (channel_id, title, media_url, event_date, category, author_id, person_ids)
+   values ($1, $2, 'https://x.test/v.mp4', '2020', 'otros', $3, $4::uuid[]) returning id, status`, [ch9, title, user, people]);
+const [vE] = await addVideo(E, 'De Eva', [pE.id]);
+ok(vE.status === 'pending', 'un miembro sube un vídeo en el que sale y queda pendiente');
+ok(!!(await fails(E, `insert into public.videos (channel_id, title, media_url, event_date, category, author_id, person_ids) values ($1, 'Ajeno', 'https://x.test/v.mp4', '2020', 'otros', $2, $3::uuid[])`, [ch9, E, [pF.id]])), 'un miembro no sube vídeos en los que no sale');
+const [vF] = await addVideo(F, 'De Fede sobre Eva', [pE.id]);
+ok(vF.status === 'pending', 'un admin sube vídeos de cualquiera, también pendientes');
+const [vA] = await addVideo(A, 'Del creador', [pA.id]);
+ok(vA.status === 'approved', 'lo que sube el creador se aprueba solo');
+ok((await as(F, `select id from public.videos where channel_id = $1`, [ch9])).map((r) => r.id).sort().join() === [vA.id, vF.id].sort().join(), 'nadie más ve lo pendiente de otro (F ve lo aprobado y lo suyo)');
+ok((await as(A, `select id from public.videos where channel_id = $1`, [ch9])).length === 3, 'el creador lo ve todo para revisarlo');
+ok(!!(await fails(E, `select public.approve_content('video', $1)`, [vE.id])), 'un miembro no aprueba contenido');
+ok(!!(await fails(F, `select public.approve_content('video', $1)`, [vE.id])), 'un admin tampoco');
+await as(A, `select public.approve_content('video', $1)`, [vE.id]);
+ok((await as(F, `select id from public.videos where id = $1`, [vE.id])).length === 1, 'aprobado, lo ven todos');
+ok(!!(await fails(E, `update public.videos set status = 'approved' where id = $1`, [vF.id])), 'nadie se aprueba a mano el estado');
+await as(E, `update public.videos set title = 'De Eva (editado)' where id = $1`, [vE.id]);
+ok((await as(A, `select status from public.videos where id = $1`, [vE.id]))[0].status === 'pending', 'si el autor lo edita, vuelve a revisión');
+ok((await as(E, `update public.videos set title = 'Hack' where id = $1 returning id`, [vA.id])).length === 0, 'un miembro no edita vídeos de otros');
+ok((await as(F, `delete from public.videos where id = $1 returning id`, [vA.id])).length === 0, 'ni un admin borra vídeos de otros');
+ok((await as(A, `delete from public.videos where id = $1 returning id`, [vF.id])).length === 1, 'el creador rechaza (borra) lo que no aprueba');
+// Cromos
+const addCard = (user, title, person) => as(user,
+  `insert into public.album_cards (channel_id, title, image_url, taken_at, author_id, person_id)
+   values ($1, $2, 'https://x.test/c.jpg', '2020', $3, $4) returning id, status, number`, [ch9, title, user, person]);
+const [cA] = await addCard(A, 'Cromo A', pA.id);
+const [cE] = await addCard(E, 'Cromo Eva', pE.id);
+ok(cA.status === 'approved' && cA.number === 1, 'el cromo del creador entra con número');
+ok(cE.status === 'pending' && cE.number === null, 'el de un miembro espera sin número');
+ok(!!(await fails(E, `insert into public.album_cards (channel_id, title, image_url, taken_at, author_id, person_id) values ($1, 'x', 'https://x.test/c.jpg', '2020', $2, $3)`, [ch9, E, pF.id])), 'un miembro no sube cromos de otra persona');
+ok(!!(await fails(E, `insert into public.album_cards (channel_id, title, image_url, taken_at, author_id) values ($1, 'x', 'https://x.test/c.jpg', '2020', $2)`, [ch9, E])), 'ni cromos sin persona');
+const packF = await as(F, `select * from public.open_pack($1, 'Europe/Madrid')`, [ch9]);
+ok(packF.every((p) => p.card_id === cA.id), 'los sobres solo traen cromos aprobados');
+await as(A, `select public.approve_content('card', $1)`, [cE.id]);
+ok((await as(A, `select number from public.album_cards where id = $1`, [cE.id]))[0].number === 2, 'al aprobarlo recibe el siguiente número');
+// Dates
+ok((await as(E, `insert into public.events (channel_id, type, title, date, person_ids) values ($1, 'cumpleanos', 'Cumple Eva', '1990-01-01', $2::uuid[]) returning id`, [ch9, [pE.id]])).length === 1, 'cada uno añade fechas en las que sale');
+ok(!!(await fails(E, `insert into public.events (channel_id, type, title, date, person_ids) values ($1, 'cumpleanos', 'Cumple Fede', '1990-01-01', $2::uuid[])`, [ch9, [pF.id]])), 'pero no fechas ajenas');
+const [evA] = await as(A, `insert into public.events (channel_id, type, title, date, person_ids) values ($1, 'aniversario', 'Boda', '2000-05-05', $2::uuid[]) returning id`, [ch9, [pA.id, pE.id]]);
+ok((await as(E, `update public.events set notes = 'Fue en mayo' where id = $1 returning id`, [evA.id])).length === 1, 'y edita cualquier fecha en la que aparece');
+ok(!!(await fails(E, `update public.events set person_ids = $2::uuid[] where id = $1`, [evA.id, [pA.id]])), 'sin poder sacarse de ella');
+// Management is the owner's
+ok(!!(await fails(F, `select * from public.create_invitation($1, 7, $2)`, [ch9, pA.id])), 'un admin no crea invitaciones');
+ok((await as(F, `update public.channels set name = 'Otro' where id = $1 returning id`, [ch9])).length === 0, 'ni cambia el canal');
+ok((await as(F, `update public.people set first_name = 'X' where id = $1 returning id`, [pE.id])).length === 0, 'ni edita fichas ajenas');
+ok((await as(F, `select * from public.channel_notifications where channel_id = $1`, [ch9])).length === 0, 'ni lee el buzón');
+ok((await as(A, `update public.channels set notify_at = '20:30' where id = $1 returning notify_at`, [ch9]))[0].notify_at === '20:30', 'el creador elige la hora de los avisos');
+ok(!!(await fails(A, `update public.channels set notify_at = '25:00' where id = $1`, [ch9])), 'con una hora válida');
+// Storage
+ok((await as(E, `insert into storage.objects (bucket_id, name) values ('cromos', $1 || '/eva.webp') returning name`, [ch9])).length === 1, 'un miembro sube la foto de su cromo');
+ok((await as(E, `select name from storage.objects where name = $1 || '/eva.webp'`, [ch9])).length === 1, 'y la ve aunque esté pendiente');
+ok((await as(F, `select name from storage.objects where name = $1 || '/eva.webp'`, [ch9])).length === 0, 'los demás no ven el original');
+await as(A, `insert into storage.objects (bucket_id, name) values ('cromos', $1 || '/ana.webp')`, [ch9]);
+ok((await as(E, `delete from storage.objects where name = $1 || '/ana.webp' returning name`, [ch9])).length === 0, 'nadie borra fotos de otros');
+ok((await as(A, `delete from storage.objects where name = $1 || '/eva.webp' returning name`, [ch9])).length === 1, 'el creador sí (al rechazar)');
+// Handing over
+ok(!!(await fails(E, `select public.transfer_ownership($1, $2)`, [ch9, E])), 'solo el creador cede el canal');
+await as(A, `select public.transfer_ownership($1, $2)`, [ch9, F]);
+const roles9 = Object.fromEntries((await as(F, `select user_id, role from public.channel_members where channel_id = $1`, [ch9])).map((r) => [r.user_id, r.role]));
+ok(roles9[F] === 'owner' && roles9[A] === 'admin', 'al cederlo, F pasa a creador y A queda como admin');
+ok(!!(await fails(A, `select * from public.create_invitation($1, 7, $2)`, [ch9, pA.id])), 'A ya no gestiona el canal');
+ok((await fails(F, `select public.leave_channel($1)`, [ch9]))?.includes('Cede el canal'), 'el nuevo creador tampoco se va sin cederlo');
+await as(A, `select public.leave_channel($1)`, [ch9]);
+ok((await as(A, `select * from public.channels where id = $1`, [ch9])).length === 0, 'A ya puede salir');
 
 console.log(failures ? `\n${failures} comprobaciones FALLIDAS` : '\nTodas las comprobaciones correctas');
 process.exit(failures ? 1 : 0);

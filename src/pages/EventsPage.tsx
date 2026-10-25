@@ -13,6 +13,7 @@ import type { EventInput, EventType, FamilyEvent } from '../types/domain';
 import { addDays, parsePartialDate } from '../utils/dates';
 import { occurrenceIn, upcomingEvents } from '../utils/events';
 import { EVENT_LABELS } from '../utils/labels';
+import { canAddEvents, canEditEvent } from '../utils/permissions';
 import styles from './EventsPage.module.scss';
 
 const MONTHS = [
@@ -34,20 +35,21 @@ const MONTHS = [
  * A channel's important dates: where they are added and edited. The yearly
  * list of every channel together lives in the global «Fechas» page.
  * ?nueva=1 opens the form; ?editar=<id> opens it on an existing date.
+ * The owner manages every date; the rest, the dates in which they appear.
  */
 export function EventsPage() {
-  const { snapshot, today, isAdmin, reload } = useChannel();
+  const { snapshot, today, reload, readOnly } = useChannel();
   const { run, pending, error } = useAction();
   const [params, setParams] = useSearchParams();
   const { channel, events, people } = snapshot;
   const upcoming = upcomingEvents(events, people, today);
 
   const editId = params.get('editar');
-  const editing: FamilyEvent | 'new' | null = !isAdmin
-    ? null
-    : params.get('nueva') === '1'
-      ? 'new'
-      : (events.find((e) => e.id === editId) ?? null);
+  // The demo only shows dates.
+  const me = readOnly ? { ...snapshot.me, personId: undefined } : snapshot.me;
+  const target = events.find((e) => e.id === editId);
+  const editing: FamilyEvent | 'new' | null =
+    params.get('nueva') === '1' && canAddEvents(me) ? 'new' : target && canEditEvent(me, target) ? target : null;
   const openForm = (value: FamilyEvent | 'new' | null) =>
     setParams(value === null ? {} : value === 'new' ? { nueva: '1' } : { editar: value.id }, { replace: true });
 
@@ -59,7 +61,7 @@ export function EventsPage() {
           <LinkButton to={`/fechas?canal=${channel.id}`} small>
             Ver el año completo
           </LinkButton>
-          {isAdmin && !editing && (
+          {canAddEvents(me) && !editing && (
             <Button variant="primary" small onClick={() => openForm('new')}>
               + Añadir fecha
             </Button>
@@ -95,7 +97,7 @@ export function EventsPage() {
                 event={event}
                 people={people}
                 actions={
-                  isAdmin && stored ? (
+                  stored && canEditEvent(me, stored) ? (
                     <>
                       <Button variant="ghost" small onClick={() => openForm(stored)}>
                         Editar
@@ -140,7 +142,11 @@ function EventForm({
   const [type, setType] = useState<EventType>(initial?.type ?? 'cumpleanos');
   const [title, setTitle] = useState(initial?.title ?? '');
   const [date, setDate] = useState(initial?.date ?? '');
-  const [personIds, setPersonIds] = useState<string[]>(initial?.personIds ?? []);
+  // Outside the owner, people add their own dates: they start ticked.
+  const { me } = snapshot;
+  const [personIds, setPersonIds] = useState<string[]>(
+    initial?.personIds ?? (me.role !== 'owner' && me.personId ? [me.personId] : []),
+  );
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const channelId = snapshot.channel.id;
 
@@ -255,7 +261,11 @@ function EventForm({
           />
         </Field>
       )}
-      <Field label="Personas (opcional)" htmlFor="people">
+      <Field
+        label={me.role === 'owner' ? 'Personas (opcional)' : 'Personas'}
+        htmlFor="people"
+        hint={me.role === 'owner' ? undefined : 'Tienes que aparecer tú para poder guardarla y editarla'}
+      >
         <PeoplePicker people={snapshot.people} value={personIds} onChange={setPersonIds} />
       </Field>
       <Field label="Notas (opcional)" htmlFor="notes">

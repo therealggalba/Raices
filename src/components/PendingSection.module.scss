@@ -1,0 +1,135 @@
+@use '../styles/variables' as *;
+
+.section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-2;
+  margin: 0 $space-4;
+  padding: $space-4;
+  border: 1px solid rgb(var(--accent-rgb) / 0.35);
+  border-radius: $radius-lg;
+  background: rgb(var(--accent-rgb) / 0.06);
+
+  @include md-up {
+    margin: 0 $space-8;
+  }
+}
+
+.title {
+  font-family: $font-ui;
+  font-size: 1.05rem;
+  font-weight: 700;
+
+  span {
+    display: inline-block;
+    min-width: 1.5rem;
+    padding: 0 $space-2;
+    border-radius: $radius-pill;
+    background: $color-accent;
+    color: $color-on-accent;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+}
+
+.hint {
+  color: $color-text-muted;
+  font-size: 0.875rem;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: $space-3;
+  padding: $space-3;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+}
+
+.thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: $radius-sm;
+  background: $color-bg-panel;
+  color: $color-text-dim;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.thumbCard {
+  aspect-ratio: 3 / 4;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-1;
+  align-content: start;
+}
+
+.kind {
+  color: $color-accent-strong;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.name {
+  overflow-wrap: anywhere;
+}
+
+.meta,
+.detail {
+  color: $color-text-muted;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.link {
+  color: $color-accent-strong;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  margin-top: $space-1;
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 $space-3;
+  border: 1px solid $color-line;
+  border-radius: $radius-pill;
+  color: $color-text;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}

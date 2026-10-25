@@ -19,6 +19,7 @@ import type {
   Video,
   VideoCategory,
 } from '../types/domain';
+import { DEFAULT_NOTIFY_AT } from '../utils/permissions';
 import { RepositoryError } from './repository';
 
 // Database rows (snake_case, as stored in Supabase) <-> domain objects.
@@ -31,6 +32,7 @@ export interface ChannelRow {
   kind: ChannelKind;
   pack_theme: PackTheme;
   cover_url: string | null;
+  notify_at: string;
   created_at: string;
   /** Null once its creator deleted their account. */
   created_by: string | null;
@@ -95,6 +97,7 @@ export interface VideoRow {
   tags: string[];
   person_ids: string[];
   author_id: string | null;
+  status: ContentStatus;
 }
 export interface EventRow {
   id: string;
@@ -109,7 +112,8 @@ export interface EventRow {
 export interface CardRow {
   id: string;
   channel_id: string;
-  number: number;
+  /** Null while pending (numbers are given on approval). */
+  number: number | null;
   person_id: string | null;
   title: string;
   image_url: string | null;
@@ -118,7 +122,10 @@ export interface CardRow {
   taken_at: string;
   created_at: string;
   author_id: string | null;
+  status: ContentStatus;
 }
+
+export type ContentStatus = 'pending' | 'approved';
 
 export interface NotificationRow {
   id: string;
@@ -134,16 +141,16 @@ export interface NotificationRow {
 
 /** Columns to select for each table (album_cards cannot be read with `*`). */
 export const COLUMNS = {
-  channels: 'id,name,description,kind,pack_theme,cover_url,created_at,created_by',
+  channels: 'id,name,description,kind,pack_theme,cover_url,notify_at,created_at,created_by',
   members: 'channel_id,user_id,display_name,role,joined_at,invitation_id,person_id',
   invitations: 'id,channel_id,code,created_by,created_at,expires_at,used_at,used_by,revoked_at,person_id',
   people:
     'id,channel_id,kind,species,first_name,last_name,birth_date,death_date,gender,photo_url,photo_path,relationship,biography,parent_ids',
   partnerships: 'id,channel_id,person_a,person_b,since,until',
   videos:
-    'id,channel_id,title,description,media_url,thumbnail_url,thumbnail_path,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id',
+    'id,channel_id,title,description,media_url,thumbnail_url,thumbnail_path,event_date,uploaded_at,duration_seconds,category,tags,person_ids,author_id,status',
   events: 'id,channel_id,type,title,date,person_ids,notes',
-  cards: 'id,channel_id,number,person_id,title,image_url,image_path,blurred_path,taken_at,created_at,author_id',
+  cards: 'id,channel_id,number,person_id,title,image_url,image_path,blurred_path,taken_at,created_at,author_id,status',
   notifications: 'id,channel_id,kind,actor_id,actor_name,person_id,changes,created_at,read_at',
 } as const;
 
@@ -157,6 +164,7 @@ export function toChannel(r: ChannelRow): Channel {
     kind: r.kind,
     packTheme: r.pack_theme,
     ...(r.cover_url ? { coverUrl: r.cover_url } : {}),
+    notifyAt: r.notify_at ?? DEFAULT_NOTIFY_AT,
     createdAt: r.created_at,
     createdBy: r.created_by ?? '',
   };
@@ -233,6 +241,7 @@ export function toVideo(r: VideoRow): Video {
     tags: r.tags ?? [],
     personIds: r.person_ids ?? [],
     authorId: r.author_id ?? '',
+    ...(r.status === 'pending' ? { pending: true } : {}),
   };
 }
 
@@ -257,7 +266,7 @@ export function toCard(r: CardRow, imageUrl: string, description: string): Album
   return {
     id: r.id,
     channelId: r.channel_id,
-    number: r.number,
+    number: r.number ?? 0,
     ...(r.person_id ? { personId: r.person_id } : {}),
     title: r.title,
     description,
@@ -267,6 +276,7 @@ export function toCard(r: CardRow, imageUrl: string, description: string): Album
     takenAt: r.taken_at,
     createdAt: r.created_at,
     authorId: r.author_id ?? '',
+    ...(r.status === 'pending' ? { pending: true } : {}),
   };
 }
 

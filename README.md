@@ -18,7 +18,7 @@ GalbaHUB, pensada sobre todo como **app de Android** (APK) y servida también en
 | Módulo | Estado |
 | --- | --- |
 | Cuentas: registro con usuario, correo y contraseña; correo confirmado una vez con código de 6 dígitos; entrar con usuario o correo; recuperar contraseña; «Recordarme»; sesión de 30 días sin uso | ✅ |
-| Canales privados por familia o grupo, con roles (admin / miembro) | ✅ |
+| Canales privados por familia o grupo, con roles (creador / administrador / miembro) y aprobación del contenido | ✅ |
 | Invitaciones de un solo uso, con caducidad, **para una persona concreta** del canal | ✅ |
 | «¿Quién eres?» obligatorio al entrar en un canal; parentesco calculado respecto a quien mira | ✅ |
 | Vídeos por enlace (Google Drive con reproductor propio, YouTube, Vimeo, .mp4): inicio tipo plataforma, catálogo con filtros, favoritos, lo más visto, continuar viendo | ✅ |

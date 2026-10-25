@@ -7,7 +7,7 @@ import { humansOnly } from '../utils/people';
 
 /** Family tree of a family channel (Personas › Árbol). */
 export function TreePage() {
-  const { snapshot, isAdmin } = useChannel();
+  const { snapshot, isOwner } = useChannel();
   const { channel, partnerships, me } = snapshot;
   // The family tree is about people (pets have their own list).
   const people = humansOnly(snapshot.people);
@@ -22,7 +22,7 @@ export function TreePage() {
       {people.length === 0 ? (
         <EmptyState>
           <p>Añade personas al canal para empezar el árbol.</p>
-          {isAdmin && <LinkButton to={`/c/${channel.id}/personas/nueva`}>Añadir persona</LinkButton>}
+          {isOwner && <LinkButton to={`/c/${channel.id}/personas/nueva`}>Añadir persona</LinkButton>}
         </EmptyState>
       ) : (
         <>

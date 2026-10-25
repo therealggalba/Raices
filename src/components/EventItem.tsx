@@ -11,7 +11,7 @@ interface Props {
   people: readonly Person[];
   /** Shown when dates of several channels are listed together. */
   channelName?: string;
-  /** Extra controls (edit/delete) for admins. */
+  /** Extra controls (edit/delete) for whoever may change the date. */
   actions?: ReactNode;
 }
 

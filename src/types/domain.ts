@@ -10,7 +10,7 @@
 // Dates that describe *when something happened* use PartialDate, because
 // families often only remember the year or the month of an old video.
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 /**
  * What a channel is about. Thematic home rows only mix videos from channels
@@ -28,7 +28,12 @@ export const PACKS_PER_DAY = 3;
 /** Cromos per pack. */
 export const PACK_SIZE = 5;
 
-export const ROLES = ['admin', 'member'] as const;
+/**
+ * owner: the channel's creator (one per channel) manages it and approves
+ * content; admin: uploads videos and cromos of anyone; member: uploads
+ * content in which they appear. Uploads of admins and members await approval.
+ */
+export const ROLES = ['owner', 'admin', 'member'] as const;
 export type Role = (typeof ROLES)[number];
 
 /** VOD catalog categories, in the order the home screen shows them. */
@@ -97,6 +102,8 @@ export interface Channel {
   packTheme: PackTheme;
   /** Optional https image used as the channel cover. */
   coverUrl?: string;
+  /** Local time («HH:MM») of the date reminders on members' phones. */
+  notifyAt: string;
   createdAt: IsoDateTime;
   createdBy: string;
 }
@@ -169,6 +176,8 @@ export interface Video {
   /** People appearing in the video. */
   personIds: string[];
   authorId: string;
+  /** Waiting for the channel owner's approval (only its author and the owner see it). */
+  pending?: boolean;
 }
 
 /**
@@ -191,13 +200,13 @@ export interface FamilyEvent {
 /**
  * A collectible card (cromo) of the channel's album. The album is organised
  * by person: each person of the channel is a category. Cards are open-ended:
- * admins keep adding photos over time. All cromos are equal: no rarities
+ * members keep adding photos over time. All cromos are equal: no rarities
  * (a family photo is not "worth" more than another), same odds in packs.
  */
 export interface AlbumCard {
   id: string;
   channelId: string;
-  /** Album number (#49), assigned on creation, unique and stable per channel. */
+  /** Album number (#49), assigned on approval, unique and stable per channel (0 while pending). */
   number: number;
   /** Category; absent when the person was deleted ("Varios"). */
   personId?: string;
@@ -212,6 +221,8 @@ export interface AlbumCard {
   takenAt: PartialDate;
   createdAt: IsoDateTime;
   authorId: string;
+  /** Waiting for the channel owner's approval (only its author and the owner see it). */
+  pending?: boolean;
 }
 
 /**
@@ -278,7 +289,7 @@ export interface AccountDeletionPlan {
   blocked: string[];
 }
 
-/** What a channel's admins are told about in their inbox. */
+/** What a channel's owner is told about in their inbox. */
 export const NOTIFICATION_KINDS = ['person_edited', 'member_joined', 'member_left', 'member_removed'] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -333,6 +344,9 @@ export interface Favorite {
 // Inputs (what forms send to the repository; ids and audit fields are added
 // by the repository itself).
 
+/** What the owner approves or rejects. */
+export type ContentKind = 'video' | 'card';
+
 export interface ChannelInput {
   name: string;
   description: string;
@@ -360,7 +374,7 @@ export interface PersonInput {
   parentIds?: string[];
 }
 
-/** What a member may correct on their own card (the tree links stay with the admins). */
+/** What a member may correct on their own card (the tree links stay with the owner). */
 export interface SelfPersonInput {
   firstName: string;
   lastName: string;
@@ -438,13 +452,17 @@ export interface ChannelSnapshot {
   me: Member;
   members: Member[];
   people: Person[];
+  /** Approved videos (what everybody sees). */
   videos: Video[];
   events: FamilyEvent[];
+  /** Approved cromos. */
   cards: AlbumCard[];
   partnerships: Partnership[];
-  /** Only filled for admins. */
+  /** Waiting for approval: the owner sees everybody's, the rest only their own. */
+  pending: { videos: Video[]; cards: AlbumCard[] };
+  /** Only filled for the owner. */
   invitations: Invitation[];
-  /** Admins: notifications not read yet (0 for members). */
+  /** Owner: notifications not read yet (0 for the rest). */
   unreadNotifications: number;
   favoriteVideoIds: string[];
 }
@@ -489,6 +507,9 @@ export interface LibraryChannel {
   kind: ChannelKind;
   packTheme: PackTheme;
   role: Role;
+  /** Who the current user is in the channel (uploads and dates depend on it). */
+  personId?: string;
+  notifyAt: string;
 }
 
 /**
@@ -496,6 +517,8 @@ export interface LibraryChannel {
  * the global home (mixed rows) and the full catalog.
  */
 export interface Library {
+  /** The current user (authorship decides who edits a video or cromo). */
+  userId: string;
   channels: LibraryChannel[];
   videos: Video[];
   people: Person[];

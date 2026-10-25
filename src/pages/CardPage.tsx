@@ -6,6 +6,7 @@ import { useAction } from '../hooks/useAction';
 import { confirmAction } from '../hooks/useConfirm';
 import { repository } from '../services';
 import { NO_PERSON, albumSections, cardNeighbours } from '../utils/album';
+import { canEditContent } from '../utils/permissions';
 import styles from './CardPage.module.scss';
 
 /** One cromo, full size, with previous/next of the same person. */
@@ -77,7 +78,7 @@ export function CardPage() {
         ) : (
           card.description && <p className={styles.description}>{card.description}</p>
         )}
-        {channel.role === 'admin' && (
+        {canEditContent({ role: channel.role, userId: library.userId }, card) && (
           <div className={styles.actions}>
             <LinkButton to={`/c/${channel.id}/album/${card.id}/editar`} small>
               Editar

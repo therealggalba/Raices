@@ -100,14 +100,14 @@ export function buildDemoDb(now: Date): Db {
   });
 
   const members: Member[] = [
-    member(DEMO_FAMILY_ID, userId, 'Invitado', 'admin', 120),
+    member(DEMO_FAMILY_ID, userId, 'Invitado', 'owner', 120),
     member(DEMO_FAMILY_ID, 'u-elena', 'Elena', 'admin', 120),
     member(DEMO_FAMILY_ID, 'u-luis', 'Luis', 'member', 110),
     member(DEMO_FAMILY_ID, 'u-carlos', 'Carlos', 'member', 60),
-    member(DEMO_FRIENDS_ID, 'u-marta', 'Marta', 'admin', 300),
+    member(DEMO_FRIENDS_ID, 'u-marta', 'Marta', 'owner', 300),
     member(DEMO_FRIENDS_ID, userId, 'Invitado', 'member', 200),
     member(DEMO_FRIENDS_ID, 'u-javi', 'Javi', 'member', 190),
-    member(DEMO_COUSINS_ID, 'u-rosa', 'Rosa', 'admin', 400),
+    member(DEMO_COUSINS_ID, 'u-rosa', 'Rosa', 'owner', 400),
     member(DEMO_COUSINS_ID, userId, 'Invitado', 'member', 150),
     member(DEMO_COUSINS_ID, 'u-elena', 'Elena', 'member', 150),
   ];
@@ -477,6 +477,7 @@ export function buildDemoDb(now: Date): Db {
         description: 'Los recuerdos de tres generaciones: de las películas en Super 8 de los abuelos a los vídeos del móvil de Natalia.',
         kind: 'familia',
         packTheme: 'clasico',
+        notifyAt: '09:00',
         createdAt: iso(120),
         createdBy: userId,
       },
@@ -486,6 +487,7 @@ export function buildDemoDb(now: Date): Db {
         description: 'Promoción 2000-2004. Viajes, cenas y reencuentros.',
         kind: 'amigos',
         packTheme: 'atardecer',
+        notifyAt: '09:00',
         createdAt: iso(300),
         createdBy: 'u-marta',
       },
@@ -495,6 +497,7 @@ export function buildDemoDb(now: Date): Db {
         description: 'La rama de la familia de Elena: veranos en Asturias y Nocheviejas en el pueblo.',
         kind: 'familia',
         packTheme: 'oceano',
+        notifyAt: '09:00',
         createdAt: iso(400),
         createdBy: 'u-rosa',
       },

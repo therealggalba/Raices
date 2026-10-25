@@ -13,7 +13,7 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     title: 'Canales privados',
-    text: 'Cada familia o grupo de amigos tiene su canal. Solo entra quien recibe una invitación: un código de un solo uso que caduca. Dentro, los administradores añaden contenido y el resto disfruta de él.',
+    text: 'Cada familia o grupo de amigos tiene su canal. Solo entra quien recibe una invitación: un código de un solo uso que caduca. Dentro, cada uno aporta sus vídeos y fotos, y el creador del canal los revisa antes de publicarlos.',
   },
   {
     title: 'Vídeos como en una plataforma',

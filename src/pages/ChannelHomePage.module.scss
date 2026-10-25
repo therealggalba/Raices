@@ -21,6 +21,7 @@
 
 .alerts {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: $space-2;
   padding: 0 $space-4;
 

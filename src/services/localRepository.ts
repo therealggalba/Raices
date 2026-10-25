@@ -31,6 +31,16 @@ import type { RandomFn } from '../utils/packs';
 import { toIsoDate } from '../utils/dates';
 import { decideProgress } from '../utils/progress';
 import {
+  DEFAULT_NOTIFY_AT,
+  canAddEvents,
+  canEditContent,
+  canEditEvent,
+  canManage,
+  canUploadAbout,
+  isNotifyTime,
+  needsApproval,
+} from '../utils/permissions';
+import {
   MAX_EXPIRY_DAYS,
   expiryFrom,
   generateInvitationCode,
@@ -215,6 +225,21 @@ export function migrateDb(data: Record<string, unknown>, now: Date = new Date())
     data.notifications = [];
     data.schemaVersion = 9;
   }
+  if (data.schemaVersion === 9) {
+    // One owner per channel (its creator, else its first admin); reminder time.
+    if (!Array.isArray(data.channels) || !Array.isArray(data.members)) return null;
+    const members = data.members.filter(isRecord);
+    for (const c of data.channels.filter(isRecord)) {
+      c.notifyAt = DEFAULT_NOTIFY_AT;
+      const own = members.filter((m) => m.channelId === c.id);
+      const owner =
+        own.find((m) => m.userId === c.createdBy && m.role === 'admin') ??
+        own.find((m) => m.role === 'admin') ??
+        own[0];
+      if (owner) owner.role = 'owner';
+    }
+    data.schemaVersion = 10;
+  }
   return data.schemaVersion === SCHEMA_VERSION ? data : null;
 }
 
@@ -291,14 +316,33 @@ export function createLocalRepository({
     return member;
   }
 
-  function requireAdmin(channelId: string): Member {
+  /** Managing the channel is its owner's job. */
+  function requireOwner(channelId: string): Member {
     const member = requireMember(channelId);
-    if (member.role !== 'admin') throw new RepositoryError('forbidden', 'Solo un administrador puede hacer esto');
+    if (!canManage(member)) throw new RepositoryError('forbidden', 'Solo el creador del canal puede hacer esto');
     return member;
   }
 
-  function admins(channelId: string): Member[] {
-    return db.members.filter((m) => m.channelId === channelId && m.role === 'admin');
+  /** Videos and cromos: who may upload content showing these people. */
+  function requireUploadAbout(member: Member, personIds: readonly string[]) {
+    if (!canUploadAbout(member, personIds)) {
+      throw new RepositoryError('forbidden', 'Solo puedes subir contenido en el que apareces tú');
+    }
+  }
+
+  function requireEditContent(member: Member, item: { authorId: string }, what: string) {
+    if (!canEditContent(member, item)) throw new RepositoryError('forbidden', `Solo su autor o el creador del canal pueden cambiar ${what}`);
+  }
+
+  function requireEditEvent(member: Member, event: { personIds: readonly string[] }) {
+    if (!canEditEvent(member, event)) {
+      throw new RepositoryError('forbidden', 'Solo puedes cambiar fechas en las que apareces tú');
+    }
+  }
+
+  /** Visible to this member: published, or pending and theirs (the owner sees all). */
+  function visible<T extends { pending?: boolean; authorId: string }>(member: Member, item: T): boolean {
+    return !item.pending || canManage(member) || item.authorId === member.userId;
   }
 
   function checkPeople(channelId: string, personIds: readonly string[]) {
@@ -341,7 +385,7 @@ export function createLocalRepository({
     db.notifications = inChannel(db.notifications);
   }
 
-  /** Tells the channel's admins (inbox). */
+  /** Tells the channel's owner (inbox). */
   function notify(channelId: string, kind: ChannelNotification['kind'], member: Member, changes: FieldChange[] = []) {
     db.notifications.push({
       id: newId(),
@@ -388,20 +432,30 @@ export function createLocalRepository({
       const viewCounts: Record<string, number> = {};
       for (const view of inMine(db.views)) viewCounts[view.videoId] = (viewCounts[view.videoId] ?? 0) + 1;
       const library: Library = {
+        userId: db.currentUserId,
         channels: mine
           .map((m) => {
             const c = findChannel(m.channelId);
-            return { id: c.id, name: c.name, kind: c.kind, packTheme: c.packTheme, role: m.role };
+            return {
+              id: c.id,
+              name: c.name,
+              kind: c.kind,
+              packTheme: c.packTheme,
+              role: m.role,
+              ...(m.personId ? { personId: m.personId } : {}),
+              notifyAt: c.notifyAt,
+            };
           })
           .sort((a, b) => a.name.localeCompare(b.name, 'es')),
-        videos: inMine(db.videos),
+        // Published content only (pending items live in their channel).
+        videos: inMine(db.videos).filter((v) => !v.pending),
         people: inMine(db.people),
         events: inMine(db.events),
         viewCounts,
         favoriteVideoIds: inMine(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
           .map((f) => f.videoId),
-        cards: inMine(db.cards),
+        cards: inMine(db.cards).filter((c) => !c.pending),
         cardCopies: Object.fromEntries(
           inMine(db.copies)
             .filter((c) => c.userId === db.currentUserId && c.count > 0)
@@ -450,8 +504,15 @@ export function createLocalRepository({
       const value = ensure(validateChannelInput(input));
       const id = newId();
       const createdAt = nowIso();
-      db.channels.push({ id, ...value, packTheme: value.packTheme ?? 'clasico', createdAt, createdBy: db.currentUserId });
-      db.members.push({ channelId: id, userId: db.currentUserId, displayName: me().name, role: 'admin', joinedAt: createdAt });
+      db.channels.push({
+        id,
+        ...value,
+        packTheme: value.packTheme ?? 'clasico',
+        notifyAt: DEFAULT_NOTIFY_AT,
+        createdAt,
+        createdBy: db.currentUserId,
+      });
+      db.members.push({ channelId: id, userId: db.currentUserId, displayName: me().name, role: 'owner', joinedAt: createdAt });
       commit();
       return id;
     },
@@ -459,17 +520,21 @@ export function createLocalRepository({
     async loadChannel(channelId) {
       const member = requireMember(channelId);
       const of = <T extends { channelId: string }>(list: T[]) => list.filter((x) => x.channelId === channelId);
+      const owner = canManage(member);
+      const videos = of(db.videos).filter((v) => visible(member, v));
+      const cards = of(db.cards).filter((c) => visible(member, c));
       const snapshot: ChannelSnapshot = {
         channel: findChannel(channelId),
         me: member,
         members: of(db.members),
         people: of(db.people),
-        videos: of(db.videos),
+        videos: videos.filter((v) => !v.pending),
         events: of(db.events),
-        cards: of(db.cards),
+        cards: cards.filter((c) => !c.pending),
         partnerships: of(db.partnerships),
-        invitations: member.role === 'admin' ? of(db.invitations) : [],
-        unreadNotifications: member.role === 'admin' ? of(db.notifications).filter((n) => !n.readAt).length : 0,
+        pending: { videos: videos.filter((v) => v.pending), cards: cards.filter((c) => c.pending) },
+        invitations: owner ? of(db.invitations) : [],
+        unreadNotifications: owner ? of(db.notifications).filter((n) => !n.readAt).length : 0,
         favoriteVideoIds: of(db.favorites)
           .filter((f) => f.userId === db.currentUserId)
           .map((f) => f.videoId),
@@ -478,7 +543,7 @@ export function createLocalRepository({
     },
 
     async updateChannel(channelId, input) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const value = ensure(validateChannelInput(input));
       const channel = findChannel(channelId);
       channel.name = value.name;
@@ -490,14 +555,51 @@ export function createLocalRepository({
       commit();
     },
 
+    async setNotifyTime(channelId, time) {
+      requireOwner(channelId);
+      if (!isNotifyTime(time)) throw new RepositoryError('invalid', 'Elige una hora válida');
+      findChannel(channelId).notifyAt = time;
+      commit();
+    },
+
+    async transferOwnership(channelId, userId) {
+      const owner = requireOwner(channelId);
+      if (userId === owner.userId) throw new RepositoryError('invalid', 'Elige a otro miembro');
+      const target = db.members.find((m) => m.channelId === channelId && m.userId === userId);
+      if (!target) throw new RepositoryError('not-found', 'Ese miembro no existe');
+      owner.role = 'admin';
+      target.role = 'owner';
+      commit();
+    },
+
+    async approveContent(channelId, kind, id) {
+      requireOwner(channelId);
+      if (kind === 'video') {
+        delete findIn(db.videos, channelId, id, 'El vídeo').pending;
+      } else if (kind === 'card') {
+        const card = findIn(db.cards, channelId, id, 'El cromo');
+        if (card.pending && !card.number) {
+          card.number = nextCardNumber(
+            db.cards.filter((c) => c.channelId === channelId),
+            db.cardSequence[channelId],
+          );
+          db.cardSequence[channelId] = card.number;
+        }
+        delete card.pending;
+      } else {
+        throw new RepositoryError('invalid', 'Tipo de contenido inválido');
+      }
+      commit();
+    },
+
     async leaveChannel(channelId) {
       const member = requireMember(channelId);
       const others = db.members.filter((m) => m.channelId === channelId && m.userId !== member.userId);
       if (others.length === 0) {
         deleteChannelData(channelId);
       } else {
-        if (member.role === 'admin' && admins(channelId).length === 1) {
-          throw new RepositoryError('conflict', 'Nombra a otro administrador antes de salir del canal');
+        if (member.role === 'owner') {
+          throw new RepositoryError('conflict', 'Cede el canal a otro miembro antes de salir');
         }
         db.members = db.members.filter((m) => m !== member);
         notify(channelId, 'member_left', member);
@@ -540,7 +642,7 @@ export function createLocalRepository({
     },
 
     async createInvitation(channelId, expiresInDays, personId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       if (!isId(personId)) throw new RepositoryError('invalid', 'Elige para quién es la invitación');
       const person = findIn(db.people, channelId, personId, 'La persona');
       if (person.deathDate) throw new RepositoryError('invalid', 'No se puede invitar a una persona fallecida');
@@ -568,7 +670,7 @@ export function createLocalRepository({
     },
 
     async revokeInvitation(channelId, invitationId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const invitation = findIn(db.invitations, channelId, invitationId, 'La invitación');
       if (invitationStatus(invitation, nowIso()) !== 'active') {
         throw new RepositoryError('conflict', 'Solo se pueden revocar invitaciones activas');
@@ -578,12 +680,12 @@ export function createLocalRepository({
     },
 
     async setMemberRole(channelId, userId, role) {
-      requireAdmin(channelId);
-      if (!(ROLES as readonly string[]).includes(role)) throw new RepositoryError('invalid', 'Rol inválido');
+      requireOwner(channelId);
+      if (role !== 'admin' && role !== 'member') throw new RepositoryError('invalid', 'Rol inválido');
       const target = db.members.find((m) => m.channelId === channelId && m.userId === userId);
       if (!target) throw new RepositoryError('not-found', 'Ese miembro no existe');
-      if (target.role === 'admin' && role !== 'admin' && admins(channelId).length === 1) {
-        throw new RepositoryError('conflict', 'El canal necesita al menos un administrador');
+      if (target.role === 'owner') {
+        throw new RepositoryError('conflict', 'El creador no cambia de rol: cede el canal a otro miembro');
       }
       target.role = role;
       commit();
@@ -593,10 +695,10 @@ export function createLocalRepository({
       const me = requireMember(channelId);
       const target = db.members.find((m) => m.channelId === channelId && m.userId === userId);
       if (!target) throw new RepositoryError('not-found', 'Ese miembro no existe');
-      // Admins set anyone's; a member only picks their own, once.
+      // The owner sets anyone's; the rest only pick their own, once.
       const choosingOwn = userId === me.userId && !target.personId && personId !== null;
-      if (me.role !== 'admin' && !choosingOwn) {
-        throw new RepositoryError('forbidden', 'Solo un administrador puede cambiar quién es cada miembro');
+      if (!canManage(me) && !choosingOwn) {
+        throw new RepositoryError('forbidden', 'Solo el creador del canal puede cambiar quién es cada miembro');
       }
       if (personId !== null) {
         const person = findIn(db.people, channelId, personId, 'La persona');
@@ -611,7 +713,7 @@ export function createLocalRepository({
     },
 
     async removeMember(channelId, userId) {
-      const admin = requireAdmin(channelId);
+      const admin = requireOwner(channelId);
       if (userId === admin.userId) throw new RepositoryError('conflict', 'Para salir del canal usa «Salir del canal»');
       const removed = db.members.find((m) => m.channelId === channelId && m.userId === userId);
       if (!removed) throw new RepositoryError('not-found', 'Ese miembro no existe');
@@ -624,29 +726,44 @@ export function createLocalRepository({
     },
 
     async addVideo(channelId, input) {
-      requireAdmin(channelId);
+      const member = requireMember(channelId);
       const value = ensure(validateVideoInput(input));
       checkPeople(channelId, value.personIds);
-      const video: Video = { id: newId(), channelId, ...value, uploadedAt: nowIso(), authorId: db.currentUserId };
+      requireUploadAbout(member, value.personIds);
+      const video: Video = {
+        id: newId(),
+        channelId,
+        ...value,
+        uploadedAt: nowIso(),
+        authorId: db.currentUserId,
+        ...(needsApproval(member) ? { pending: true } : {}),
+      };
       db.videos.push(video);
       commit();
       return clone(video);
     },
 
     async updateVideo(channelId, videoId, input) {
-      requireAdmin(channelId);
+      const member = requireMember(channelId);
       const video = findIn(db.videos, channelId, videoId, 'El vídeo');
+      if (!visible(member, video)) throw new RepositoryError('not-found', 'El vídeo no existe');
+      requireEditContent(member, video, 'este vídeo');
       const value = ensure(validateVideoInput(input));
       checkPeople(channelId, value.personIds);
+      if (!canManage(member)) requireUploadAbout(member, value.personIds);
       Object.assign(video, value);
+      // An author's edit goes back to the owner for review.
+      if (needsApproval(member)) video.pending = true;
       if (!value.thumbnailUrl) delete video.thumbnailUrl;
       if (!value.durationSeconds) delete video.durationSeconds;
       commit();
     },
 
     async deleteVideo(channelId, videoId) {
-      requireAdmin(channelId);
-      findIn(db.videos, channelId, videoId, 'El vídeo');
+      const member = requireMember(channelId);
+      const video = findIn(db.videos, channelId, videoId, 'El vídeo');
+      if (!visible(member, video)) throw new RepositoryError('not-found', 'El vídeo no existe');
+      requireEditContent(member, video, 'este vídeo');
       db.videos = db.videos.filter((v) => v.id !== videoId);
       db.favorites = db.favorites.filter((f) => f.videoId !== videoId);
       db.views = db.views.filter((v) => v.videoId !== videoId);
@@ -666,7 +783,7 @@ export function createLocalRepository({
     },
 
     async addPerson(channelId, input) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const value = ensure(validatePersonInput(input));
       checkHumans(channelId, value.parentIds ?? []);
       const person: Person = { id: newId(), channelId, ...value, parentIds: value.parentIds ?? [] };
@@ -676,7 +793,7 @@ export function createLocalRepository({
     },
 
     async updatePerson(channelId, personId, input) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const person = findIn(db.people, channelId, personId, 'La persona');
       const value = ensure(validatePersonInput(input));
       const parentIds = value.parentIds ?? [];
@@ -693,7 +810,7 @@ export function createLocalRepository({
     },
 
     async deletePerson(channelId, personId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       findIn(db.people, channelId, personId, 'La persona');
       db.people = db.people.filter((p) => p.id !== personId);
       const unlink = (ids: string[]) => ids.filter((id) => id !== personId);
@@ -721,27 +838,27 @@ export function createLocalRepository({
         else delete updated[key];
       }
       db.people[index] = updated;
-      // Admins edit cards anyway: only members' corrections are reported.
-      if (me.role !== 'admin') notify(channelId, 'person_edited', me, changes);
+      // The owner edits cards anyway: only the others' corrections are reported.
+      if (!canManage(me)) notify(channelId, 'person_edited', me, changes);
       commit();
     },
 
     async listNotifications(channelId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       return clone(
         db.notifications.filter((n) => n.channelId === channelId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       );
     },
 
     async markNotificationsRead(channelId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const at = nowIso();
       for (const n of db.notifications) if (n.channelId === channelId && !n.readAt) n.readAt = at;
       commit();
     },
 
     async addPartnership(channelId, input) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const value = ensure(validatePartnershipInput(input));
       checkHumans(channelId, value.personIds);
       const key = partnershipKey(...value.personIds);
@@ -755,7 +872,7 @@ export function createLocalRepository({
     },
 
     async updatePartnership(channelId, partnershipId, input) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       const current = findIn(db.partnerships, channelId, partnershipId, 'La pareja');
       const value = ensure(validatePartnershipInput(input));
       if (partnershipKey(...value.personIds) !== partnershipKey(...current.personIds)) {
@@ -766,16 +883,18 @@ export function createLocalRepository({
     },
 
     async deletePartnership(channelId, partnershipId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       findIn(db.partnerships, channelId, partnershipId, 'La pareja');
       db.partnerships = db.partnerships.filter((c) => c.id !== partnershipId);
       commit();
     },
 
     async addEvent(channelId, input) {
-      requireAdmin(channelId);
+      const member = requireMember(channelId);
+      if (!canAddEvents(member)) throw new RepositoryError('forbidden', 'Primero elige quién eres en este canal');
       const value = ensure(validateEventInput(input));
       checkPeople(channelId, value.personIds);
+      requireEditEvent(member, value);
       const event: FamilyEvent = { id: newId(), channelId, ...value };
       db.events.push(event);
       commit();
@@ -783,17 +902,19 @@ export function createLocalRepository({
     },
 
     async updateEvent(channelId, eventId, input) {
-      requireAdmin(channelId);
+      const member = requireMember(channelId);
       const event = findIn(db.events, channelId, eventId, 'El evento');
+      requireEditEvent(member, event);
       const value = ensure(validateEventInput(input));
       checkPeople(channelId, value.personIds);
+      requireEditEvent(member, value);
       Object.assign(event, value);
       commit();
     },
 
     async deleteEvent(channelId, eventId) {
-      requireAdmin(channelId);
-      findIn(db.events, channelId, eventId, 'El evento');
+      const member = requireMember(channelId);
+      requireEditEvent(member, findIn(db.events, channelId, eventId, 'El evento'));
       db.events = db.events.filter((e) => e.id !== eventId);
       commit();
     },
@@ -804,7 +925,7 @@ export function createLocalRepository({
       if (packStatus(db.packs, db.currentUserId, today).remaining === 0) {
         throw new RepositoryError('conflict', 'Ya has abierto todos los sobres de hoy. ¡Vuelve mañana!');
       }
-      const pool = db.cards.filter((c) => c.channelId === channelId);
+      const pool = db.cards.filter((c) => c.channelId === channelId && !c.pending);
       if (pool.length === 0) throw new RepositoryError('conflict', 'Este álbum todavía no tiene cromos');
       const drawn = drawPack(pool, random);
       const at = nowIso();
@@ -824,46 +945,67 @@ export function createLocalRepository({
     },
 
     async addCard(channelId, input) {
-      requireAdmin(channelId);
+      const member = requireMember(channelId);
       const value = ensure(validateCardInput(input));
       if (value.personId) checkPeople(channelId, [value.personId]);
+      requireUploadAbout(member, value.personId ? [value.personId] : []);
+      // Numbers are given on approval: pending cromos wait without one.
+      const pending = needsApproval(member);
       const card: AlbumCard = {
         id: newId(),
         channelId,
-        number: nextCardNumber(
-          db.cards.filter((c) => c.channelId === channelId),
-          db.cardSequence[channelId],
-        ),
+        number: pending
+          ? 0
+          : nextCardNumber(
+              db.cards.filter((c) => c.channelId === channelId),
+              db.cardSequence[channelId],
+            ),
         ...value,
         createdAt: nowIso(),
         authorId: db.currentUserId,
+        ...(pending ? { pending: true } : {}),
       };
       db.cards.push(card);
-      db.cardSequence[channelId] = card.number;
+      if (!pending) db.cardSequence[channelId] = card.number;
       commit();
       return clone(card);
     },
 
     async updateCard(channelId, cardId, input) {
-      requireAdmin(channelId);
+      const member = requireMember(channelId);
       const card = findIn(db.cards, channelId, cardId, 'El cromo');
+      if (!visible(member, card)) throw new RepositoryError('not-found', 'El cromo no existe');
+      requireEditContent(member, card, 'este cromo');
       const value = ensure(validateCardInput(input));
       if (value.personId) checkPeople(channelId, [value.personId]);
+      if (!canManage(member)) requireUploadAbout(member, value.personId ? [value.personId] : []);
       const { id, number, createdAt, authorId } = card;
-      db.cards[db.cards.indexOf(card)] = { id, channelId, number, createdAt, authorId, ...value };
+      // An author's edit goes back to the owner for review.
+      const pending = card.pending || needsApproval(member);
+      db.cards[db.cards.indexOf(card)] = {
+        id,
+        channelId,
+        number,
+        createdAt,
+        authorId,
+        ...value,
+        ...(pending ? { pending: true } : {}),
+      };
       commit();
     },
 
     async deleteCard(channelId, cardId) {
-      requireAdmin(channelId);
-      findIn(db.cards, channelId, cardId, 'El cromo');
+      const member = requireMember(channelId);
+      const card = findIn(db.cards, channelId, cardId, 'El cromo');
+      if (!visible(member, card)) throw new RepositoryError('not-found', 'El cromo no existe');
+      requireEditContent(member, card, 'este cromo');
       db.cards = db.cards.filter((c) => c.id !== cardId);
       db.copies = db.copies.filter((c) => c.cardId !== cardId);
       commit();
     },
 
     async deleteChannel(channelId) {
-      requireAdmin(channelId);
+      requireOwner(channelId);
       deleteChannelData(channelId);
       commit();
     },
@@ -874,7 +1016,7 @@ export function createLocalRepository({
         const name = findChannel(m.channelId).name;
         const others = db.members.filter((x) => x.channelId === m.channelId && x.userId !== m.userId);
         if (others.length === 0) plan.deleted.push(name);
-        else if (m.role === 'admin' && !others.some((x) => x.role === 'admin')) plan.blocked.push(name);
+        else if (m.role === 'owner') plan.blocked.push(name);
         else plan.left.push(name);
       }
       return plan;

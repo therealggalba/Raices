@@ -9,7 +9,9 @@ import { confirmAction } from '../hooks/useConfirm';
 import { shareText } from '../native/nativeBridge';
 import { repository } from '../services';
 import { CHANNEL_KINDS, PACK_THEMES } from '../types/domain';
-import type { ChannelKind, Invitation, Member, PackTheme } from '../types/domain';
+import type { ChannelInput, ChannelKind, Invitation, Member, PackTheme } from '../types/domain';
+import { Accordion } from '../components/Accordion';
+import type { AccordionPanel } from '../components/Accordion';
 import { PackArt } from '../components/PackArt';
 import { PACK_LOOKS } from '../components/pack-looks';
 import { EXPIRY_OPTIONS_DAYS, STATUS_LABELS, invitationStatus } from '../utils/invitations';
@@ -20,52 +22,87 @@ import styles from './ChannelSettingsPage.module.scss';
 const dateTime = (iso: string) =>
   new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-/** Channel info, members and invitations (admins manage; members can only leave). */
+/**
+ * The channel's settings, folded: one section open at a time. The owner
+ * manages everything; the rest see the info, the members and can leave.
+ */
 export function ChannelSettingsPage() {
-  const { snapshot, isAdmin } = useChannel();
-  const { channel, me, members } = snapshot;
+  const { snapshot, isOwner } = useChannel();
+  const { channel, members } = snapshot;
+  const owner = members.find((m) => m.role === 'owner');
+
+  const panels: (AccordionPanel | false)[] = [
+    isOwner && { id: 'buzon', title: 'Buzón', badge: snapshot.unreadNotifications, content: <InboxSection /> },
+    {
+      id: 'info',
+      title: 'Información',
+      content: isOwner ? (
+        <ChannelInfoForm />
+      ) : (
+        <>
+          {channel.description && <p className={styles.text}>{channel.description}</p>}
+          <p className={ui.muted}>
+            {CHANNEL_KIND_LABELS[channel.kind]}
+            {owner && ` · creado por ${owner.displayName}`}
+          </p>
+        </>
+      ),
+    },
+    isOwner && { id: 'sobres', title: 'Diseño de los sobres', content: <PackDesignForm /> },
+    { id: 'avisos', title: 'Avisos de fechas', content: <NotifyTimeSection /> },
+    { id: 'miembros', title: `Miembros (${members.length})`, content: <MembersSection /> },
+    isOwner && { id: 'invitaciones', title: 'Invitaciones', content: <InvitationsSection /> },
+    isOwner && members.length > 1 && { id: 'ceder', title: 'Ceder el canal', content: <TransferSection /> },
+    { id: 'salir', title: 'Salir del canal', content: <LeaveSection /> },
+    isOwner && { id: 'eliminar', title: 'Eliminar el canal', tone: 'danger', content: <DeleteChannelSection /> },
+  ];
 
   return (
     <div className={ui.page}>
       <h1>{channel.name}</h1>
-      {isAdmin && <InboxSection />}
-      {isAdmin ? <ChannelInfoForm /> : channel.description && <p className={styles.text}>{channel.description}</p>}
-      <MembersSection />
-      {isAdmin && <InvitationsSection />}
-      <LeaveSection lastAdmin={me.role === 'admin' && members.filter((m) => m.role === 'admin').length === 1} />
-      {isAdmin && <DeleteChannelSection />}
+      <Accordion panels={panels.filter((p): p is AccordionPanel => !!p)} />
     </div>
   );
 }
 
-function ChannelInfoForm() {
+/** Saves the channel with some fields changed (the rest as they are). */
+function useSaveChannel() {
   const { snapshot, reload } = useChannel();
   const { channel } = snapshot;
-  const { run, pending, error } = useAction();
+  const action = useAction();
+  const [saved, setSaved] = useState(false);
+  const save = async (changes: Partial<ChannelInput>) => {
+    setSaved(false);
+    const done = await action.run(async () => {
+      const { name, description, kind, packTheme, coverUrl } = { ...channel, ...changes };
+      await repository.updateChannel(channel.id, { name, description, kind, packTheme, ...(coverUrl?.trim() ? { coverUrl } : {}) });
+      return true;
+    });
+    if (done) {
+      await reload();
+      setSaved(true);
+    }
+  };
+  return { ...action, saved, save };
+}
+
+function ChannelInfoForm() {
+  const { snapshot } = useChannel();
+  const { channel } = snapshot;
+  const { pending, error, saved, save } = useSaveChannel();
   const [name, setName] = useState(channel.name);
   const [description, setDescription] = useState(channel.description);
   const [kind, setKind] = useState<ChannelKind>(channel.kind);
-  const [packTheme, setPackTheme] = useState<PackTheme>(channel.packTheme);
   const [coverUrl, setCoverUrl] = useState(channel.coverUrl ?? '');
-  const [saved, setSaved] = useState(false);
 
   return (
     <form
-      className={[ui.form, ui.card].join(' ')}
-      onSubmit={async (e) => {
+      className={ui.form}
+      onSubmit={(e) => {
         e.preventDefault();
-        setSaved(false);
-        const done = await run(async () => {
-          await repository.updateChannel(channel.id, { name, description, kind, packTheme, ...(coverUrl.trim() ? { coverUrl } : {}) });
-          return true;
-        });
-        if (done) {
-          await reload();
-          setSaved(true);
-        }
+        void save({ name, description, kind, coverUrl });
       }}
     >
-      <h2>Datos del canal</h2>
       <Field label="Nombre" htmlFor="name">
         <input id="name" className={ui.input} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
       </Field>
@@ -81,18 +118,6 @@ function ChannelInfoForm() {
       <Field label="Descripción" htmlFor="description">
         <textarea id="description" className={ui.input} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
       </Field>
-      <fieldset className={styles.packThemes}>
-        <legend>Diseño de los sobres</legend>
-        <div className={styles.packGrid}>
-          {PACK_THEMES.map((t) => (
-            <label key={t} className={[styles.packOption, packTheme === t ? styles.packOptionOn : ''].join(' ')}>
-              <input type="radio" name="packTheme" value={t} checked={packTheme === t} onChange={() => setPackTheme(t)} />
-              <PackArt theme={t} title={name || channel.name} />
-              <span>{PACK_LOOKS[t].label}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
       <Field label="Portada (opcional)" htmlFor="coverUrl">
         <input id="coverUrl" className={ui.input} type="url" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://" />
       </Field>
@@ -107,11 +132,106 @@ function ChannelInfoForm() {
   );
 }
 
+function PackDesignForm() {
+  const { snapshot } = useChannel();
+  const { channel } = snapshot;
+  const { pending, error, saved, save } = useSaveChannel();
+  const [packTheme, setPackTheme] = useState<PackTheme>(channel.packTheme);
+
+  return (
+    <form
+      className={ui.form}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save({ packTheme });
+      }}
+    >
+      <fieldset className={styles.packThemes}>
+        <legend>Cómo se ven los sobres de cromos de este canal</legend>
+        <div className={styles.packGrid}>
+          {PACK_THEMES.map((t) => (
+            <label key={t} className={[styles.packOption, packTheme === t ? styles.packOptionOn : ''].join(' ')}>
+              <input type="radio" name="packTheme" value={t} checked={packTheme === t} onChange={() => setPackTheme(t)} />
+              <PackArt theme={t} title={channel.name} />
+              <span>{PACK_LOOKS[t].label}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <ErrorBanner message={error} />
+      <div className={ui.formActions}>
+        {saved && <span className={styles.saved}>Guardado</span>}
+        <Button type="submit" variant="primary" disabled={pending}>
+          Guardar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** When the date reminders reach the phones (the owner chooses it). */
+function NotifyTimeSection() {
+  const { snapshot, isOwner, reload } = useChannel();
+  const { channel } = snapshot;
+  const { run, pending, error } = useAction();
+  const [time, setTime] = useState(channel.notifyAt);
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <>
+      <p className={ui.muted}>
+        En la app de Android, cada fecha importante de este canal te avisa ese mismo día a las{' '}
+        <strong>{channel.notifyAt}</strong> (hora de tu móvil). Si la fecha está en varios de tus canales, avisa a la hora más
+        temprana.
+      </p>
+      {isOwner && (
+        <form
+          className={[ui.form, styles.inlineForm].join(' ')}
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setSaved(false);
+            const done = await run(async () => {
+              await repository.setNotifyTime(channel.id, time);
+              return true;
+            });
+            if (done) {
+              await reload();
+              setSaved(true);
+            }
+          }}
+        >
+          <Field label="Hora de los avisos" htmlFor="notify-at">
+            <input
+              id="notify-at"
+              className={ui.input}
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              required
+            />
+          </Field>
+          <ErrorBanner message={error} />
+          <div className={ui.formActions}>
+            {saved && <span className={styles.saved}>Guardado</span>}
+            <Button type="submit" variant="primary" disabled={pending || time === channel.notifyAt}>
+              Guardar
+            </Button>
+          </div>
+        </form>
+      )}
+    </>
+  );
+}
+
+const ROLE_ORDER: Record<Member['role'], number> = { owner: 0, admin: 1, member: 2 };
+
 function MembersSection() {
-  const { snapshot, isAdmin, reload, personById } = useChannel();
+  const { snapshot, isOwner, reload, personById } = useChannel();
   const { channel, me, members, invitations, people } = snapshot;
   const { run, pending, error } = useAction();
-  const sorted = [...members].sort((a, b) => (a.role === b.role ? a.displayName.localeCompare(b.displayName, 'es') : a.role === 'admin' ? -1 : 1));
+  const sorted = [...members].sort(
+    (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.displayName.localeCompare(b.displayName, 'es'),
+  );
 
   const act = (fn: () => Promise<void>) =>
     run(async () => {
@@ -125,8 +245,11 @@ function MembersSection() {
   };
 
   return (
-    <section className={ui.section}>
-      <h2>Miembros ({members.length})</h2>
+    <>
+      <p className={ui.muted}>
+        <strong>Creador:</strong> gestiona el canal y aprueba lo que suben los demás. <strong>Administrador:</strong> sube
+        vídeos y cromos de cualquiera. <strong>Miembro:</strong> sube vídeos y cromos en los que aparece.
+      </p>
       <ErrorBanner message={error} />
       <ul className={styles.list}>
         {sorted.map((m) => (
@@ -138,9 +261,9 @@ function MembersSection() {
               </strong>
               <span className={styles.itemMeta}>
                 {ROLE_LABELS[m.role]} · desde {new Date(m.joinedAt).toLocaleDateString('es-ES')}
-                {isAdmin && joinedVia(m)}
+                {isOwner && joinedVia(m)}
               </span>
-              {isAdmin ? (
+              {isOwner ? (
                 <select
                   className={[ui.input, styles.personSelect].join(' ')}
                   aria-label={`Quién es ${m.displayName}`}
@@ -168,7 +291,7 @@ function MembersSection() {
                 personById(m.personId) && <span className={styles.itemMeta}>{fullName(personById(m.personId)!)}</span>
               )}
             </div>
-            {isAdmin && m.userId !== me.userId && (
+            {isOwner && m.role !== 'owner' && (
               <div className={styles.itemActions}>
                 <Button
                   small
@@ -193,7 +316,53 @@ function MembersSection() {
           </li>
         ))}
       </ul>
-    </section>
+    </>
+  );
+}
+
+/** The owner hands the channel over (and stays as an admin). */
+function TransferSection() {
+  const { snapshot, reload } = useChannel();
+  const { channel, me, members } = snapshot;
+  const { run, pending, error } = useAction();
+  const others = members
+    .filter((m) => m.userId !== me.userId)
+    .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.displayName.localeCompare(b.displayName, 'es'));
+  const [userId, setUserId] = useState(others[0]?.userId ?? '');
+  const target = others.find((m) => m.userId === userId);
+
+  return (
+    <>
+      <p className={ui.muted}>
+        La otra persona pasará a ser la creadora: gestionará el canal y aprobará el contenido. Tú seguirás como
+        administrador. Es necesario para salir del canal o borrar tu cuenta.
+      </p>
+      <Field label="A quién" htmlFor="transfer-to">
+        <select id="transfer-to" className={ui.input} value={userId} onChange={(e) => setUserId(e.target.value)}>
+          {others.map((m) => (
+            <option key={m.userId} value={m.userId}>
+              {m.displayName} ({ROLE_LABELS[m.role].toLowerCase()})
+            </option>
+          ))}
+        </select>
+      </Field>
+      <ErrorBanner message={error} />
+      <div>
+        <Button
+          variant="primary"
+          disabled={pending || !target}
+          onClick={() => {
+            if (!target || !confirmAction(`¿Ceder «${channel.name}» a ${target.displayName}? No podrás deshacerlo tú.`)) return;
+            void run(async () => {
+              await repository.transferOwnership(channel.id, target.userId);
+              await reload();
+            });
+          }}
+        >
+          Ceder el canal
+        </Button>
+      </div>
+    </>
   );
 }
 
@@ -215,9 +384,8 @@ function InvitationsSection() {
   const list = [...snapshot.invitations].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
-    <section className={ui.section}>
-      <h2>Invitaciones</h2>
-      <div className={[ui.card, styles.create].join(' ')}>
+    <>
+      <div className={styles.create}>
         {candidates.length === 0 ? (
           <p className={ui.muted}>
             Todas las personas del canal ya son miembros. Para invitar a alguien nuevo, añádelo antes en{' '}
@@ -319,31 +487,31 @@ function InvitationsSection() {
           })}
         </ul>
       )}
-    </section>
+    </>
   );
 }
 
-function LeaveSection({ lastAdmin }: { lastAdmin: boolean }) {
+function LeaveSection() {
   const { snapshot } = useChannel();
   const navigate = useNavigate();
   const { run, pending, error } = useAction();
   const alone = snapshot.members.length === 1;
+  const mustHandOver = snapshot.me.role === 'owner' && !alone;
 
   return (
-    <section className={ui.section}>
-      <h2>Salir del canal</h2>
+    <>
       <p className={ui.muted}>
         {alone
           ? 'Eres el único miembro: si sales, el canal y todos sus recuerdos se borrarán.'
-          : lastAdmin
-            ? 'Eres el único administrador: nombra a otro antes de salir.'
+          : mustHandOver
+            ? 'Eres el creador del canal: cédelo a otro miembro antes de salir («Ceder el canal»).'
             : 'Dejarás de ver sus recuerdos. Para volver necesitarás una nueva invitación.'}
       </p>
       <ErrorBanner message={error} />
       <div>
         <Button
           variant="danger"
-          disabled={pending || (lastAdmin && !alone)}
+          disabled={pending || mustHandOver}
           onClick={async () => {
             if (!confirmAction(alone ? '¿Salir y borrar el canal definitivamente?' : '¿Salir del canal?')) return;
             const done = await run(async () => {
@@ -356,12 +524,12 @@ function LeaveSection({ lastAdmin }: { lastAdmin: boolean }) {
           Salir del canal
         </Button>
       </div>
-    </section>
+    </>
   );
 }
 
 /**
- * Admins: delete the channel for good. Two safety steps: typing the channel's
+ * The owner: delete the channel for good. Two safety steps: typing the channel's
  * exact name, then a last confirmation.
  */
 function DeleteChannelSection() {
@@ -374,8 +542,7 @@ function DeleteChannelSection() {
   const matches = typed.trim() === name.trim();
 
   return (
-    <section className={[ui.section, styles.danger].join(' ')}>
-      <h2>Eliminar el canal</h2>
+    <>
       <p className={ui.muted}>
         Se borrará para siempre para todos sus miembros: vídeos, fotos subidas, cromos, personas, fechas y el árbol.
         Los vídeos que estén en Google Drive o YouTube no se tocan allí; solo desaparecen sus enlaces.
@@ -421,6 +588,6 @@ function DeleteChannelSection() {
           </div>
         </div>
       )}
-    </section>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import type {
   ChannelInput,
   ChannelSnapshot,
   ChannelSummary,
+  ContentKind,
   EventInput,
   FamilyEvent,
   Invitation,
@@ -48,11 +49,16 @@ export interface MemoriesRepository {
    * or end clear it instead (nothing to resume).
    */
   saveProgress(videoId: string, positionSeconds: number, durationSeconds: number): Promise<void>;
-  /** Creates a channel; the creator becomes its first admin. */
+  /** Creates a channel; the creator becomes its owner. */
   createChannel(input: ChannelInput): Promise<string>;
   loadChannel(channelId: string): Promise<ChannelSnapshot>;
   updateChannel(channelId: string, input: ChannelInput): Promise<void>;
+  /** Owner: local time («HH:MM») of the channel's date reminders. */
+  setNotifyTime(channelId: string, time: string): Promise<void>;
+  /** Owners hand the channel over before leaving; ex-owners stay as admins. */
   leaveChannel(channelId: string): Promise<void>;
+  /** Owner: another member becomes the owner; the current one stays as admin. */
+  transferOwnership(channelId: string, userId: string): Promise<void>;
 
   /** Joins the channel the code belongs to, as the person it was made for. Returns its id. */
   redeemInvitation(code: string, displayName: string): Promise<string>;
@@ -64,12 +70,18 @@ export interface MemoriesRepository {
   /**
    * Which person of the channel a member is (kinship is shown relative to
    * them). Normally set by the invitation; a member without one must pick
-   * theirs once (they can't change it later); admins can set or clear anyone's.
+   * theirs once (they can't change it later); the owner can set or clear anyone's.
    * One member per person.
    */
   linkMemberPerson(channelId: string, userId: string, personId: string | null): Promise<void>;
   removeMember(channelId: string, userId: string): Promise<void>;
 
+  /**
+   * Videos and cromos: the owner and admins upload content of anyone,
+   * members only content in which they appear. What isn't the owner's waits
+   * for approval (pending); editing it sends it back. Authors and the owner
+   * edit and delete it.
+   */
   addVideo(channelId: string, input: VideoInput): Promise<Video>;
   updateVideo(channelId: string, videoId: string, input: VideoInput): Promise<void>;
   deleteVideo(channelId: string, videoId: string): Promise<void>;
@@ -82,19 +94,20 @@ export interface MemoriesRepository {
   /** Family tree: a couple (wedding / separation dates optional). */
   /**
    * A member corrects their own card (the person they are in the channel).
-   * The channel's admins get a notification with what changed.
+   * The channel's owner gets a notification with what changed (unless it's them).
    */
   updateMyPerson(channelId: string, input: SelfPersonInput): Promise<void>;
 
-  /** Admins: the channel's inbox, newest first. */
+  /** Owner: the channel's inbox, newest first. */
   listNotifications(channelId: string): Promise<ChannelNotification[]>;
-  /** Admins: marks every notification of the channel as read. */
+  /** Owner: marks every notification of the channel as read. */
   markNotificationsRead(channelId: string): Promise<void>;
 
   addPartnership(channelId: string, input: PartnershipInput): Promise<Partnership>;
   updatePartnership(channelId: string, partnershipId: string, input: PartnershipInput): Promise<void>;
   deletePartnership(channelId: string, partnershipId: string): Promise<void>;
 
+  /** Important dates: the owner, or anyone who appears in them (and stays in them). */
   addEvent(channelId: string, input: EventInput): Promise<FamilyEvent>;
   updateEvent(channelId: string, eventId: string, input: EventInput): Promise<void>;
   deleteEvent(channelId: string, eventId: string): Promise<void>;
@@ -104,6 +117,9 @@ export interface MemoriesRepository {
    * odds for all, duplicates accumulate. Consumes the pack immediately.
    */
   openPack(channelId: string): Promise<PackPull[]>;
+
+  /** Owner: publishes pending content (cromos get their album number). Rejecting is deleting it. */
+  approveContent(channelId: string, kind: ContentKind, id: string): Promise<void>;
 
   addCard(channelId: string, input: CardInput): Promise<AlbumCard>;
   updateCard(channelId: string, cardId: string, input: CardInput): Promise<void>;
@@ -125,7 +141,7 @@ export interface MemoriesRepository {
   /** A suggestion for the app's owner (screened and e-mailed by the server). */
   sendFeedback(subject: string, message: string): Promise<void>;
 
-  /** Admins: deletes the channel for good, with its stored photos and all its content. */
+  /** Owner: deletes the channel for good, with its stored photos and all its content. */
   deleteChannel(channelId: string): Promise<void>;
   /** What deleting the current account would do (channel names). */
   accountDeletionPlan(): Promise<AccountDeletionPlan>;

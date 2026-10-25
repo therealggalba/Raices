@@ -15,7 +15,7 @@ import styles from './PersonPage.module.scss';
 
 export function PersonPage() {
   const { personId } = useParams();
-  const { snapshot, today, isAdmin, personById } = useChannel();
+  const { snapshot, today, isOwner, personById } = useChannel();
   const { channel, videos, events, people, partnerships, favoriteVideoIds, me, members } = snapshot;
   const person = personId ? personById(personId) : undefined;
 
@@ -68,13 +68,13 @@ export function PersonPage() {
             </p>
           )}
           {isMe && <p className={styles.me}>Eres tú</p>}
-          {isMe && !isAdmin && (
+          {isMe && !isOwner && (
             <LinkButton to={`/c/${channel.id}/personas/${person.id}/editar`} small>
               Editar mis datos
             </LinkButton>
           )}
           {!isMe && linkedMember && <p className={ui.muted}>En el canal: {linkedMember.displayName}</p>}
-          {isAdmin && (
+          {isOwner && (
             <LinkButton to={`/c/${channel.id}/personas/${person.id}/editar`} small>
               Editar
             </LinkButton>

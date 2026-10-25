@@ -16,6 +16,7 @@ import type {
   ValidationResult,
 } from '../types/domain';
 import { PACKS_PER_DAY } from '../types/domain';
+import { isNotifyTime } from '../utils/permissions';
 import { feedbackLengthError } from '../../supabase/functions/send-feedback/screen';
 import { decideProgress } from '../utils/progress';
 import {
@@ -101,12 +102,27 @@ const byName = <T extends { name: string }>(a: T, b: T) => a.name.localeCompare(
 
 export function createSupabaseRepository(client: SupabaseClient): MemoriesRepository {
   /** Temporary URLs for files in a private bucket (path -> URL). */
+  const signedCache = new Map<string, { url: string; expires: number }>();
+
   async function signAll(bucket: string, paths: (string | undefined | null)[]): Promise<Map<string, string>> {
     const unique = [...new Set(paths.filter((p): p is string => !!p))];
     const signed = new Map<string, string>();
-    if (unique.length) {
-      const { data } = await client.storage.from(bucket).createSignedUrls(unique, SIGNED_URL_SECONDS);
-      for (const item of data ?? []) if (item.path && item.signedUrl) signed.set(item.path, item.signedUrl);
+    // Reuse a URL while it has more than half its life left: the same photo
+    // keeps the same address across refreshes (no flicker, no re-download).
+    const now = Date.now();
+    const missing: string[] = [];
+    for (const path of unique) {
+      const cached = signedCache.get(`${bucket}/${path}`);
+      if (cached && cached.expires - now > (SIGNED_URL_SECONDS * 1000) / 2) signed.set(path, cached.url);
+      else missing.push(path);
+    }
+    if (missing.length) {
+      const { data } = await client.storage.from(bucket).createSignedUrls(missing, SIGNED_URL_SECONDS);
+      for (const item of data ?? []) {
+        if (!item.path || !item.signedUrl) continue;
+        signed.set(item.path, item.signedUrl);
+        signedCache.set(`${bucket}/${item.path}`, { url: item.signedUrl, expires: now + SIGNED_URL_SECONDS * 1000 });
+      }
     }
     return signed;
   }
@@ -245,7 +261,7 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       const me = await userId();
       const [members, channels, videos, people, events, favorites, views, cards, copies, progress, packs] =
         await Promise.all([
-          client.from('channel_members').select('channel_id,role').eq('user_id', me),
+          client.from('channel_members').select('channel_id,role,person_id').eq('user_id', me),
           client.from('channels').select(COLUMNS.channels),
           client.from('videos').select(COLUMNS.videos),
           client.from('people').select(COLUMNS.people),
@@ -257,20 +273,37 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
           client.from('watch_progress').select('video_id,position_seconds,duration_seconds'),
           packStatus(),
         ]);
-      const roles = new Map((must(members) as { channel_id: string; role: MemberRow['role'] }[]).map((m) => [m.channel_id, m.role]));
+      const mine = new Map(
+        (must(members) as Pick<MemberRow, 'channel_id' | 'role' | 'person_id'>[]).map((m) => [m.channel_id, m]),
+      );
+      // The library shows published content only (pending items live in their channel).
+      const approved = <T extends { status: string }>(rows: T[]) => rows.filter((r) => r.status === 'approved');
       const library: Library = {
+        userId: me,
         channels: (must(channels) as ChannelRow[])
-          .filter((c) => roles.has(c.id))
-          .map((c) => ({ id: c.id, name: c.name, kind: c.kind, packTheme: c.pack_theme, role: roles.get(c.id)! }))
+          .filter((c) => mine.has(c.id))
+          .map((c) => {
+            const m = mine.get(c.id)!;
+            const channel = toChannel(c);
+            return {
+              id: c.id,
+              name: c.name,
+              kind: c.kind,
+              packTheme: c.pack_theme,
+              role: m.role,
+              ...(m.person_id ? { personId: m.person_id } : {}),
+              notifyAt: channel.notifyAt,
+            };
+          })
           .sort(byName),
-        videos: await hydrateVideos(must(videos) as VideoRow[]),
+        videos: await hydrateVideos(approved(must(videos) as VideoRow[])),
         people: await hydratePeople(must(people) as PersonRow[]),
         events: (must(events) as EventRow[]).map(toEvent),
         viewCounts: Object.fromEntries(
           (must(views) as { video_id: string; views: number }[]).map((v) => [v.video_id, Number(v.views)]),
         ),
         favoriteVideoIds: (must(favorites) as { video_id: string }[]).map((f) => f.video_id),
-        cards: await hydrateCards(must(cards) as CardRow[]),
+        cards: await hydrateCards(approved(must(cards) as CardRow[])),
         cardCopies: Object.fromEntries((must(copies) as { card_id: string; count: number }[]).map((c) => [c.card_id, c.count])),
         packs,
         progress: Object.fromEntries(
@@ -340,8 +373,9 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       const memberList = (must(members) as MemberRow[]).map(toMember);
       const mine = memberList.find((m) => m.userId === me);
       if (!channelRow || !mine) throw new RepositoryError('not-found', 'Este canal no existe');
+      const owner = mine.role === 'owner';
       const unread =
-        mine.role === 'admin'
+        owner
           ? ((
               await client
                 .from('channel_notifications')
@@ -351,20 +385,23 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
             ).count ?? 0)
           : 0;
       const invitations =
-        mine.role === 'admin'
+        owner
           ? (must(await of('invitations', COLUMNS.invitations).order('created_at', { ascending: false })) as InvitationRow[]).map(
               toInvitation,
             )
           : [];
+      const allVideos = await hydrateVideos(must(videos) as VideoRow[]);
+      const allCards = await hydrateCards(must(cards) as CardRow[]);
       const snapshot: ChannelSnapshot = {
         channel: toChannel(channelRow),
         me: mine,
         members: memberList,
         people: await hydratePeople(must(people) as PersonRow[]),
-        videos: await hydrateVideos(must(videos) as VideoRow[]),
+        videos: allVideos.filter((v) => !v.pending),
         events: (must(events) as EventRow[]).map(toEvent),
-        cards: await hydrateCards(must(cards) as CardRow[]),
+        cards: allCards.filter((c) => !c.pending),
         partnerships: (must(partnerships) as PartnershipRow[]).map(toPartnership),
+        pending: { videos: allVideos.filter((v) => v.pending), cards: allCards.filter((c) => c.pending) },
         invitations,
         unreadNotifications: unread,
         favoriteVideoIds: (must(favorites) as { video_id: string }[]).map((f) => f.video_id),
@@ -391,9 +428,28 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       ensureAffected(rows, 'El canal');
     },
 
+    async setNotifyTime(channelId, time) {
+      requireId(channelId, 'El canal');
+      if (!isNotifyTime(time)) throw new RepositoryError('invalid', 'Elige una hora válida');
+      ensureAffected(must(await client.from('channels').update({ notify_at: time }).eq('id', channelId).select('id')), 'El canal');
+    },
+
     async leaveChannel(channelId) {
       requireId(channelId, 'El canal');
       must(await client.rpc('leave_channel', { p_channel: channelId }));
+    },
+
+    async transferOwnership(channelId, memberId) {
+      requireId(channelId, 'El canal');
+      requireId(memberId, 'Ese miembro');
+      must(await client.rpc('transfer_ownership', { p_channel: channelId, p_user: memberId }));
+    },
+
+    async approveContent(channelId, kind, id) {
+      requireId(channelId, 'El canal');
+      requireId(id, kind === 'video' ? 'El vídeo' : 'El cromo');
+      if (kind !== 'video' && kind !== 'card') throw new RepositoryError('invalid', 'Tipo de contenido inválido');
+      must(await client.rpc('approve_content', { p_kind: kind, p_id: id }));
     },
 
     async redeemInvitation(code, displayName) {
@@ -711,7 +767,7 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
       const mine = must(
         await client.from('channel_members').select('role').eq('channel_id', channelId).eq('user_id', me).maybeSingle(),
       ) as { role: string } | null;
-      if (mine?.role !== 'admin') throw new RepositoryError('forbidden', 'Solo un administrador puede eliminar el canal');
+      if (mine?.role !== 'owner') throw new RepositoryError('forbidden', 'Solo el creador del canal puede eliminarlo');
       // Photos first (Storage), then the channel and everything in it.
       await removeChannelFiles(channelId);
       must(await client.rpc('delete_channel', { p_channel: channelId }));
@@ -730,7 +786,7 @@ export function createSupabaseRepository(client: SupabaseClient): MemoriesReposi
     async deleteAccount() {
       const rows = must(await client.rpc('account_deletion_plan')) as { channel_id: string; outcome: string }[];
       if (rows.some((r) => r.outcome === 'blocked')) {
-        throw new RepositoryError('conflict', 'Antes de eliminar tu cuenta, nombra a otro administrador en tus canales');
+        throw new RepositoryError('conflict', 'Antes de eliminar tu cuenta, cede tus canales a otro miembro');
       }
       // The photos of the channels that go with the account.
       for (const row of rows.filter((r) => r.outcome === 'delete')) await removeChannelFiles(row.channel_id);

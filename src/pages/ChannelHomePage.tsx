@@ -1,18 +1,20 @@
 import { Link } from 'react-router-dom';
 import { EventItem } from '../components/EventItem';
 import { Hero } from '../components/Hero';
+import { PendingSection } from '../components/PendingSection';
 import { PersonAvatar } from '../components/PersonAvatar';
 import { EmptyState, LinkButton } from '../components/ui';
 import { VideoRow } from '../components/VideoRow';
 import { useChannel } from '../hooks/channel-context';
 import { buildCatalogRows, featuredVideo } from '../utils/catalog';
 import { ALERT_WINDOW_DAYS, upcomingEvents } from '../utils/events';
+import { canUpload } from '../utils/permissions';
 import { isPet, sortPeople } from '../utils/people';
 import styles from './ChannelHomePage.module.scss';
 
 /** One channel's videos: hero, upcoming-event alerts, rows by category, people. */
 export function ChannelHomePage() {
-  const { snapshot, today, isAdmin } = useChannel();
+  const { snapshot, today, readOnly } = useChannel();
   const { channel, videos, people, events, favoriteVideoIds } = snapshot;
   const hero = featuredVideo(videos);
   const rows = buildCatalogRows(videos, favoriteVideoIds);
@@ -30,13 +32,15 @@ export function ChannelHomePage() {
         <EmptyState>
           <h1>{channel.name}</h1>
           <p>Este canal todavía no tiene recuerdos.</p>
-          {isAdmin && (
+          {canUpload(snapshot.me) && !readOnly && (
             <LinkButton to={`/c/${channel.id}/subir`} variant="primary">
               Añadir el primer vídeo
             </LinkButton>
           )}
         </EmptyState>
       )}
+
+      <PendingSection />
 
       {alerts.length > 0 && (
         <section className={styles.alerts} aria-label="Próximos eventos">

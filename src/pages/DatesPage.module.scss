@@ -160,6 +160,7 @@
 }
 
 .calendar {
+  grid-template-columns: minmax(0, 1fr);
   display: grid;
   gap: $space-5;
   margin: 0;
@@ -168,6 +169,7 @@
 }
 
 .monthGroup {
+  grid-template-columns: minmax(0, 1fr);
   display: grid;
   gap: $space-2;
   scroll-margin-top: calc(#{$header-offset} + #{$space-3});
@@ -187,6 +189,7 @@
 }
 
 .entries {
+  grid-template-columns: minmax(0, 1fr);
   display: grid;
   gap: $space-2;
 }
@@ -194,4 +197,46 @@
 .edit {
   font-size: 0.8rem;
   color: $color-accent;
+}
+
+.filterPanel {
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-bg-raised;
+}
+
+.filterToggle {
+  display: flex;
+  align-items: center;
+  min-height: $touch;
+  padding: 0 $space-3;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border-right: 2px solid $color-text-muted;
+    border-bottom: 2px solid $color-text-muted;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 0.15s;
+  }
+
+  [open] > &::after {
+    transform: rotate(-135deg) translateY(-2px);
+  }
+}
+
+.filterBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $space-3;
+  padding: 0 $space-3 $space-3;
 }

@@ -8,6 +8,7 @@ import { EmptyState, LinkButton } from '../components/ui';
 import { useLibrary } from '../hooks/library-context';
 import { useScrollArrows } from '../hooks/useScrollArrows';
 import { albumProgress, albumSections, ownedCardIds } from '../utils/album';
+import { canUpload } from '../utils/permissions';
 import styles from './AlbumPage.module.scss';
 
 /**
@@ -43,7 +44,8 @@ export function AlbumPage() {
     );
   }
 
-  const isAdmin = channel.role === 'admin';
+  // Members add cromos of themselves (their section), the owner and admins of anyone.
+  const canAdd = canUpload(channel);
   const progress = albumProgress(cards, unlocked);
 
   return (
@@ -53,7 +55,7 @@ export function AlbumPage() {
           <Link to="/albumes" className={styles.back}>
             ‹ Álbumes
           </Link>
-          {isAdmin && (
+          {canAdd && (
             <LinkButton
               to={`/c/${channel.id}/album/nuevo${selected?.person ? `?persona=${selected.person.id}` : ''}`}
               variant="primary"
@@ -75,7 +77,7 @@ export function AlbumPage() {
       {sections.length === 0 ? (
         <EmptyState>
           <p>Este álbum todavía no tiene cromos.</p>
-          {isAdmin && (
+          {canAdd && (
             <LinkButton to={`/c/${channel.id}/album/nuevo`} variant="primary">
               Crear el primer cromo
             </LinkButton>

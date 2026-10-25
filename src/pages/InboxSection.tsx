@@ -31,7 +31,7 @@ const when = (iso: string) =>
   new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /**
- * Admins' inbox: who joined, left or was removed, and which member corrected
+ * The owner's inbox: who joined, left or was removed, and who corrected
  * their own card. Opening it marks everything as read.
  */
 export function InboxSection() {
@@ -75,8 +75,7 @@ export function InboxSection() {
   };
 
   return (
-    <section className={ui.section}>
-      <h2>Buzón</h2>
+    <>
       <ErrorBanner message={error} />
       {!items && !error && <Spinner />}
       {items && items.length === 0 && <p className={ui.muted}>No hay avisos.</p>}
@@ -102,6 +101,6 @@ export function InboxSection() {
           ))}
         </ul>
       )}
-    </section>
+    </>
   );
 }

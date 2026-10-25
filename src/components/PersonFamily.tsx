@@ -9,7 +9,7 @@ import styles from './PersonFamily.module.scss';
 
 /** «Familia» section of a person (read only: links are edited in «Editar»). */
 export function PersonFamily({ person }: { person: Person }) {
-  const { snapshot, isAdmin } = useChannel();
+  const { snapshot, isOwner } = useChannel();
   const { channel, people, partnerships } = snapshot;
   const family = relativesOf(person, people, partnerships);
   const empty = !family.parents.length && !family.partners.length && !family.children.length && !family.siblings.length;
@@ -40,7 +40,7 @@ export function PersonFamily({ person }: { person: Person }) {
           Ver en el árbol ›
         </Link>
       </div>
-      {empty && !isAdmin && <p className={ui.muted}>Todavía no tiene vínculos en el árbol.</p>}
+      {empty && !isOwner && <p className={ui.muted}>Todavía no tiene vínculos en el árbol.</p>}
       {group(family.parents.length === 1 ? 'Progenitor' : 'Padres', family.parents)}
 
       {family.partners.length > 0 && (

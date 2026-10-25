@@ -14,7 +14,7 @@ import styles from './WhoAreYou.module.scss';
  * who they are, once. Admins can also create their own card.
  */
 export function WhoAreYou() {
-  const { snapshot, isAdmin, reload } = useChannel();
+  const { snapshot, isOwner, reload } = useChannel();
   const { channel, people, members, me } = snapshot;
   const { run, pending, error } = useAction();
   const [selected, setSelected] = useState('');
@@ -24,7 +24,7 @@ export function WhoAreYou() {
   return (
     <div className={[ui.page, styles.page].join(' ')}>
       <h1>¿Quién eres en {channel.name}?</h1>
-      <p className={ui.muted}>Elige tu ficha. Después solo podrá cambiarla un administrador.</p>
+      <p className={ui.muted}>Elige tu ficha. Después solo podrá cambiarla el creador del canal.</p>
 
       {free.length > 0 && (
         <ul className={styles.list}>
@@ -61,12 +61,12 @@ export function WhoAreYou() {
             Soy yo
           </Button>
         )}
-        {isAdmin ? (
+        {isOwner ? (
           <LinkButton to={`/c/${channel.id}/personas/nueva?soyyo=1`} variant={free.length ? 'ghost' : 'primary'}>
             No estoy en la lista: crear mi ficha
           </LinkButton>
         ) : (
-          free.length === 0 && <p className={ui.muted}>Pide a un administrador del canal que añada tu ficha.</p>
+          free.length === 0 && <p className={ui.muted}>Pide al creador del canal que añada tu ficha.</p>
         )}
       </div>
     </div>

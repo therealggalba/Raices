@@ -4,7 +4,12 @@ import type { ChannelSnapshot, IsoDate, Person } from '../types/domain';
 export interface ChannelContextValue {
   snapshot: ChannelSnapshot;
   today: IsoDate;
-  isAdmin: boolean;
+  /** The owner manages the channel (see utils/permissions for the rest). */
+  isOwner: boolean;
+  /** The portfolio demo: look, don't touch (no upload or edit buttons). */
+  readOnly: boolean;
+  /** Content waiting for approval that this user sees (the owner: everybody's). */
+  pendingCount: number;
   /** Re-reads the channel from the repository after a mutation. */
   reload(): Promise<void>;
   personById(id: string): Person | undefined;

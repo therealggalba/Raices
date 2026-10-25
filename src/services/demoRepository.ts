@@ -19,8 +19,10 @@ const ALLOWED = new Set<keyof MemoriesRepository>([
 
 /**
  * The portfolio demo: the fictional family can be browsed but not changed.
- * The visitor is a plain member everywhere (so no screen offers editing) and
- * every write that isn't part of "watching" is refused.
+ * The visitor is a plain member everywhere, the library doesn't say who they
+ * are (so the global screens offer no uploads or dates; the channel screens
+ * hide them in demo mode) and every write that isn't part of "watching" is
+ * refused.
  */
 export function readOnlyDemo(inner: MemoriesRepository): MemoriesRepository {
   const refuse = async () => {
@@ -36,7 +38,10 @@ export function readOnlyDemo(inner: MemoriesRepository): MemoriesRepository {
   repo.listChannels = async () => (await inner.listChannels()).map((s) => ({ ...s, role: 'member' }));
   repo.loadLibrary = async () => {
     const library = await inner.loadLibrary();
-    return { ...library, channels: library.channels.map((c) => ({ ...c, role: 'member' })) };
+    return {
+      ...library,
+      channels: library.channels.map(({ personId: _personId, ...c }) => ({ ...c, role: 'member' as const })),
+    };
   };
   repo.loadChannel = async (channelId) => {
     const snapshot = await inner.loadChannel(channelId);
@@ -47,6 +52,7 @@ export function readOnlyDemo(inner: MemoriesRepository): MemoriesRepository {
       members: snapshot.members.map((m) => (m.userId === me.userId ? me : m)),
       invitations: [],
       unreadNotifications: 0,
+      pending: { videos: [], cards: [] },
     };
   };
   return repo;

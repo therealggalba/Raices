@@ -79,8 +79,8 @@ export function DeleteAccountPage() {
         <section className={[styles.block, styles.blocked].join(' ')}>
           <h2>Antes tienes que hacer algo</h2>
           <p>
-            Eres el único administrador de estos canales, que tienen más miembros. Nombra a otro administrador en Canal ›
-            Miembros y vuelve aquí:
+            Eres el creador de estos canales, que tienen más miembros. Cédelos a otra persona en Canal › Ceder el canal y
+            vuelve aquí:
           </p>
           <ul>
             {plan.blocked.map((n) => (

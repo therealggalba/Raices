@@ -53,7 +53,7 @@ export function sortPeople(people: readonly Person[]): Person[] {
 
 const SELF_FIELDS = ['firstName', 'lastName', 'birthDate', 'gender', 'photoUrl', 'biography'] as const;
 
-/** What a member changed on their own card (for the admins' inbox). */
+/** What a member changed on their own card (for the owner's inbox). */
 export function selfChanges(before: Person, after: SelfPersonInput): FieldChange[] {
   return SELF_FIELDS.flatMap((field) => {
     // The photo counts as one field, linked or uploaded.

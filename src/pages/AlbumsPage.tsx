@@ -6,6 +6,7 @@ import { EmptyState, LinkButton } from '../components/ui';
 import { useLibrary } from '../hooks/library-context';
 import { albumProgress, ownedCardIds, sortCards } from '../utils/album';
 import { CHANNEL_KIND_LABELS } from '../utils/labels';
+import { canUpload } from '../utils/permissions';
 import styles from './AlbumsPage.module.scss';
 
 const COVER_CARDS = 3;
@@ -21,8 +22,8 @@ export function AlbumsPage() {
       const cover = sortCards(cards.filter((c) => unlocked.has(c.id))).slice(-COVER_CARDS).reverse();
       return { channel, cards, cover, progress: albumProgress(cards, unlocked) };
     })
-    // Admins also see their empty albums: that's where the first cromo is added.
-    .filter((a) => a.cards.length > 0 || a.channel.role === 'admin');
+    // Empty albums show up for whoever can add the first cromo.
+    .filter((a) => a.cards.length > 0 || canUpload(a.channel));
 
   return (
     <div className={styles.page}>

@@ -8,9 +8,10 @@ const SEED = 42;
 
 function library(overrides: Partial<Library> = {}): Library {
   return {
+    userId: 'u1',
     channels: [
-      { id: 'fam', name: 'Familia', kind: 'familia', packTheme: 'clasico', role: 'admin' },
-      { id: 'uni', name: 'Uni', kind: 'amigos', packTheme: 'clasico', role: 'member' },
+      { id: 'fam', name: 'Familia', kind: 'familia', packTheme: 'clasico', role: 'owner', notifyAt: '09:00' },
+      { id: 'uni', name: 'Uni', kind: 'amigos', packTheme: 'clasico', role: 'member', notifyAt: '09:00' },
     ],
     videos: [
       makeVideo({ id: 'f1', channelId: 'fam', category: 'navidad', eventDate: '1999-12', uploadedAt: '2026-01-03T00:00:00Z' }),

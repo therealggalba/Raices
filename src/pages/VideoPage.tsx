@@ -15,6 +15,7 @@ import { byEventDateAsc } from '../utils/catalog';
 import { formatDuration, formatPartialDate } from '../utils/dates';
 import { CATEGORY_LABELS } from '../utils/labels';
 import { formatTimestamp, progressRatio } from '../utils/progress';
+import { canEditContent } from '../utils/permissions';
 import styles from './VideoPage.module.scss';
 
 const RELATED_LIMIT = 15;
@@ -47,7 +48,7 @@ export function VideoPage() {
     );
   }
 
-  const isAdmin = channel.role === 'admin';
+  const canEdit = canEditContent({ role: channel.role, userId: library.userId }, video);
   const progress = restartKey === 0 ? library.progress[video.id] : undefined;
   const resumeAt = progress?.positionSeconds;
   const autoPlay = (location.state as { autoplay?: boolean } | null)?.autoplay === true;
@@ -111,7 +112,7 @@ export function VideoPage() {
           >
             <Icon name={favorite ? 'heartFilled' : 'heart'} size={20} />
           </Button>
-          {isAdmin && (
+          {canEdit && (
             <>
               <LinkButton to={`/c/${channel.id}/v/${video.id}/editar`} small>
                 Editar

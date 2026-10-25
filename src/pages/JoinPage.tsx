@@ -21,7 +21,7 @@ export function JoinPage() {
         </LinkButton>
       </div>
       <p className={ui.muted}>
-        Escribe el código que te ha dado un administrador del canal.
+        Escribe el código que te ha dado el creador del canal.
       </p>
       <form
         className={[ui.form, ui.card].join(' ')}

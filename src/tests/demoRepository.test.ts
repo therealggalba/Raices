@@ -13,11 +13,15 @@ describe('read-only demo', () => {
 
   it('shows the visitor as a plain member everywhere (no editing screens)', async () => {
     expect((await demo.listChannels()).every((c) => c.role === 'member')).toBe(true);
-    expect((await demo.loadLibrary()).channels.every((c) => c.role === 'member')).toBe(true);
+    const library = await demo.loadLibrary();
+    expect(library.channels.every((c) => c.role === 'member')).toBe(true);
+    // Uploads and dates depend on who you are: the library doesn't tell.
+    expect(library.channels.every((c) => !('personId' in c))).toBe(true);
     const snap = await demo.loadChannel(DEMO_FAMILY_ID);
     expect(snap.me.role).toBe('member');
     expect(snap.members.find((m) => m.userId === snap.me.userId)?.role).toBe('member');
     expect(snap.invitations).toEqual([]);
+    expect(snap.pending).toEqual({ videos: [], cards: [] });
   });
 
   it('refuses every change to the content', async () => {

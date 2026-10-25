@@ -6,5 +6,5 @@
   "status": "development",
   "route": "/raices/",
   "visibility": "privada con cuentas (usuario, correo y contraseña); demo pública solo de lectura",
-  "version": "0.21.0"
+  "version": "0.22.0"
 }

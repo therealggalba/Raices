@@ -237,6 +237,7 @@ textarea.input {
 
 .section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: $space-3;
 
   h2 {

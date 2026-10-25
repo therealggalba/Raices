@@ -10,7 +10,7 @@ import styles from './PeoplePage.module.scss';
 import { PeopleViewSwitch } from './PeopleViewSwitch';
 
 export function PeoplePage() {
-  const { snapshot, today, isAdmin } = useChannel();
+  const { snapshot, today, isOwner } = useChannel();
   const { channel, people, videos, partnerships, me } = snapshot;
 
   // «Personas» or «Mascotas» (?ver=mascotas), chosen in the header.
@@ -61,7 +61,7 @@ export function PeoplePage() {
             <option value="personas">Personas</option>
             <option value="mascotas">Mascotas</option>
           </select>
-          {isAdmin && (
+          {isOwner && (
             <LinkButton to={`/c/${channel.id}/personas/nueva${pets ? '?tipo=mascota' : ''}`} variant="primary" small>
               Añadir
             </LinkButton>

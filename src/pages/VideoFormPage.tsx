@@ -13,6 +13,7 @@ import { CATEGORY_LABELS } from '../utils/labels';
 import { resolveMedia } from '../utils/media';
 import { PhotoField } from '../components/PhotoField';
 import { parseDurationInput, parseTagsInput } from '../utils/validation';
+import { canEditContent, canUpload, canUploadAbout, needsApproval } from '../utils/permissions';
 
 const PROVIDER_LABELS = {
   youtube: 'YouTube',
@@ -22,14 +23,19 @@ const PROVIDER_LABELS = {
   link: 'Enlace externo (se abrirá en otra pestaña)',
 } as const;
 
-/** Add (/subir) or edit (/v/:videoId/editar) a video. Admins only. */
+/**
+ * Add (/subir) or edit (/v/:videoId/editar) a video. The owner and admins
+ * upload videos of anyone, members videos in which they appear; their
+ * uploads wait for the owner's approval.
+ */
 export function VideoFormPage() {
   const { videoId } = useParams();
   const navigate = useNavigate();
-  const { snapshot, isAdmin, reload } = useChannel();
+  const { snapshot, reload } = useChannel();
   const { run, pending, error, setError } = useAction();
   const { channel, people } = snapshot;
-  const existing = videoId ? snapshot.videos.find((v) => v.id === videoId) : undefined;
+  const { me } = snapshot;
+  const existing = videoId ? [...snapshot.videos, ...snapshot.pending.videos].find((v) => v.id === videoId) : undefined;
 
   const [mediaUrl, setMediaUrl] = useState(existing?.mediaUrl ?? '');
   const [title, setTitle] = useState(existing?.title ?? '');
@@ -45,12 +51,15 @@ export function VideoFormPage() {
     existing?.durationSeconds ? secondsToInput(existing.durationSeconds) : '',
   );
   const [tags, setTags] = useState(existing?.tags.join(', ') ?? '');
-  const [personIds, setPersonIds] = useState<string[]>(existing?.personIds ?? []);
+  // Members can only upload videos in which they appear: they start ticked.
+  const [personIds, setPersonIds] = useState<string[]>(
+    existing?.personIds ?? (me.role === 'member' && me.personId ? [me.personId] : []),
+  );
 
-  if (!isAdmin) {
+  if (existing ? !canEditContent(me, existing) : !canUpload(me)) {
     return (
       <EmptyState>
-        <p>Solo los administradores del canal pueden añadir o editar vídeos.</p>
+        <p>{existing ? 'Solo su autor o el creador del canal pueden editar este vídeo.' : 'Primero elige quién eres en este canal.'}</p>
       </EmptyState>
     );
   }
@@ -64,11 +73,15 @@ export function VideoFormPage() {
 
   const media = mediaUrl.trim() ? resolveMedia(mediaUrl) : null;
   const durationSeconds = parseDurationInput(duration);
-  const back = existing ? `/v/${existing.id}` : `/c/${channel.id}`;
+  const back = existing && !existing.pending ? `/v/${existing.id}` : `/c/${channel.id}`;
 
   async function submit() {
     if (Number.isNaN(durationSeconds)) {
       setError('Duración: usa segundos (90), m:ss (5:12) o h:mm:ss');
+      return;
+    }
+    if (me.role !== 'owner' && !canUploadAbout(me, personIds)) {
+      setError('Solo puedes subir vídeos en los que apareces: márcate en «Personas que aparecen»');
       return;
     }
     const input: VideoInput = {
@@ -95,7 +108,8 @@ export function VideoFormPage() {
     });
     if (id) {
       await reload();
-      navigate(`/v/${id}`, { replace: true });
+      // What waits for approval is listed on the channel's home.
+      navigate(needsApproval(me) ? `/c/${channel.id}` : `/v/${id}`, { replace: true });
     }
   }
 
@@ -210,9 +224,10 @@ export function VideoFormPage() {
           />
         </Field>
         <ErrorBanner message={error} />
+        {needsApproval(me) && <p className={ui.muted}>El creador del canal lo revisará antes de que lo vean los demás.</p>}
         <div className={ui.formActions}>
           <Button type="submit" variant="primary" disabled={pending}>
-            {existing ? 'Guardar cambios' : 'Añadir vídeo'}
+            {existing ? 'Guardar cambios' : needsApproval(me) ? 'Enviar para revisar' : 'Añadir vídeo'}
           </Button>
         </div>
       </form>

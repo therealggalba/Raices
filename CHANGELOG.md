@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.22.0 — 2026-10-25
+
+- **Roles nuevos**: cada canal tiene un **creador** (quien lo crea), que lo gestiona todo: invitaciones, personas,
+  árbol, diseño, miembros y los datos de todos. Los **administradores** suben vídeos y cromos de cualquiera; los
+  **miembros**, los vídeos y cromos en los que aparecen. Cada uno corrige su ficha y las fechas en las que sale.
+- **Aprobación**: lo que suben administradores y miembros queda «Esperando aprobación» en el inicio del canal; el
+  creador lo ve en «Por revisar» (con aviso en «Vídeos») y lo aprueba o lo rechaza. Si el autor lo edita, vuelve a
+  revisión. Los cromos reciben su número al aprobarse y solo los aprobados salen en los sobres.
+- **Ceder el canal**: el creador puede pasárselo a otro miembro (y queda como administrador). Hace falta para salir
+  del canal o eliminar la cuenta.
+- **Hora de los avisos** por canal (Canal › Avisos de fechas, por defecto las 9:00); una fecha de varios canales
+  avisa a la más temprana.
+- **Ajustes del canal plegados**: cada apartado se abre por separado y solo uno a la vez.
+- **Ayuda** (Opciones): cómo crear un canal, unirse, subir vídeos y cromos, invitar, revisar, gestionar…
+- Contenido **siempre al día**: biblioteca y canal se actualizan solos al volver a la app y cada minuto.
+- Fechas: búsqueda y filtros dentro de un desplegable «Filtros»; arreglado el desbordamiento horizontal.
+- Android: el botón «atrás» dentro de un canal vuelve al inicio; en «Crear cuenta» vuelve a «Entrar»; el ojo de la
+  contraseña ya no cierra el teclado.
+- Base de datos: migración `0009_roles_approval.sql`.
+
 ## 0.21.0 — 2026-10-20
 
 - **Eliminar mi cuenta** (Opciones): explica qué pasa con cada canal (los tuyos en solitario se borran con todo,

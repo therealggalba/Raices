@@ -26,6 +26,18 @@ describe('planDateNotifications', () => {
     expect(plan[0].body).toBe('Cumple 31 · Familia');
   });
 
+  it("fires at each channel's time; shared dates at the earliest of them", () => {
+    const times: Record<string, string> = { fam: '20:30', uni: '08:15' };
+    const shared = { ...occ('Ana', '2027-03-30'), channelIds: ['fam', 'uni'] };
+    const plan = planDateNotifications([occ('Gonzalo', '2027-03-29'), shared], now, () => undefined, (id) => times[id]);
+    expect(plan[0].at).toEqual(new Date(2027, 2, 29, 20, 30, 0));
+    expect(plan[1].at).toEqual(new Date(2027, 2, 30, 8, 15, 0));
+    // Today's reminder is still ahead when the channel's time hasn't come yet.
+    expect(planDateNotifications([occ('hoy', '2026-10-17')], now, () => undefined, () => '20:30')).toHaveLength(1);
+    // A malformed time falls back to 9:00.
+    expect(planDateNotifications([occ('x', '2027-01-01')], now, () => undefined, () => '99:99')[0].at.getHours()).toBe(9);
+  });
+
   it('caps the queue and uses stable, positive ids', () => {
     const many = Array.from({ length: 80 }, (_, i) => occ(`p${i}`, '2027-01-01'));
     expect(planDateNotifications(many, now)).toHaveLength(MAX_SCHEDULED);

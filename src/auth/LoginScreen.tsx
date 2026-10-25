@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrandMark } from '../components/BrandMark';
 import { Icon } from '../components/Icon';
 import type { ComponentProps, FormEvent, ReactNode } from 'react';
@@ -18,6 +18,7 @@ import {
 } from './account';
 import { useAuth } from './auth-context';
 import { authErrorMessage } from './authErrors';
+import { exitApp, listenBackButton } from '../native/nativeBridge';
 import { rememberedLogin, setRememberedLogin } from './devicePrefs';
 import styles from './LoginScreen.module.scss';
 
@@ -50,6 +51,24 @@ export function LoginScreen() {
   const [available, setAvailable] = useState<'checking' | 'free' | 'taken' | 'unknown'>('checking');
   // Recovery: the code was accepted, only the new password is left to save.
   const [codeAccepted, setCodeAccepted] = useState(false);
+
+  // Android back button: from any step back to «Entrar»; from there, close the app.
+  const stepRef = useRef(step);
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+  useEffect(
+    () =>
+      listenBackButton(() => {
+        if (stepRef.current === 'login') exitApp();
+        else {
+          setStep('login');
+          setError(null);
+          setNotice(null);
+        }
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -481,6 +500,9 @@ function PasswordInput({
         <button
           type="button"
           className={styles.eye}
+          // Keep the focus (and the phone's keyboard) on the password field.
+          onPointerDown={(e) => e.preventDefault()}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           aria-pressed={visible}

@@ -20,12 +20,12 @@ import styles from './PersonFormPage.module.scss';
 /** Add (/personas/nueva) or edit (/personas/:personId/editar) a person. Admins only. */
 export function PersonFormPage() {
   const { personId } = useParams();
-  // «No estoy en la lista»: the admin creating their own card.
+  // «No estoy en la lista»: the owner creating their own card.
   const [params] = useSearchParams();
   const isSelf = !personId && params.get('soyyo') === '1';
   // A pet (?tipo=mascota, or an existing one): no surname, gender or parents.
   const navigate = useNavigate();
-  const { snapshot, isAdmin, reload, personById } = useChannel();
+  const { snapshot, isOwner, reload, personById } = useChannel();
   const { run, pending, error } = useAction();
   const existing = personId ? personById(personId) : undefined;
   const pet = existing ? existing.kind === 'mascota' : params.get('tipo') === 'mascota';
@@ -71,12 +71,12 @@ export function PersonFormPage() {
     for (const input of add) await repository.addPartnership(channelId, input);
   };
 
-  // Members may correct their own card (the tree links stay with the admins).
-  const selfMode = !isAdmin && !!existing && existing.id === snapshot.me.personId;
-  if (!isAdmin && !selfMode) {
+  // Members may correct their own card (the tree links stay with the owner).
+  const selfMode = !isOwner && !!existing && existing.id === snapshot.me.personId;
+  if (!isOwner && !selfMode) {
     return (
       <EmptyState>
-        <p>Solo los administradores pueden gestionar personas.</p>
+        <p>Solo el creador del canal puede gestionar personas.</p>
       </EmptyState>
     );
   }

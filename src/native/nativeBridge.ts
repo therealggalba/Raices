@@ -36,13 +36,15 @@ export async function setupStatusBar(): Promise<void> {
  * Hardware back button: go back through the app's screens; on the home
  * screen (nothing to go back to) leave the app.
  */
-export function listenBackButton(goBack: () => void): () => void {
+export function listenBackButton(onBack: (canGoBack: boolean) => void): () => void {
   if (!isNativeApp()) return () => {};
-  const handle = App.addListener('backButton', ({ canGoBack }) => {
-    if (canGoBack) goBack();
-    else void App.exitApp();
-  });
+  const handle = App.addListener('backButton', ({ canGoBack }) => onBack(canGoBack));
   return () => void handle.then((h) => h.remove());
+}
+
+/** Closes the app (Android back button on the first screen). */
+export function exitApp(): void {
+  if (isNativeApp()) void App.exitApp();
 }
 
 /** Videos in full screen may rotate to landscape; the rest of the app stays portrait. */

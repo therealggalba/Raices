@@ -10,6 +10,7 @@ import { EmptyState, LinkButton, Spinner } from './components/ui';
 import { AppLayout } from './layouts/AppLayout';
 import { ChannelLayout } from './layouts/ChannelLayout';
 import { AboutPage } from './pages/AboutPage';
+import { HelpPage } from './pages/HelpPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { DeleteAccountPage } from './pages/DeleteAccountPage';
 import { AlbumPage } from './pages/AlbumPage';
@@ -118,6 +119,7 @@ function AppRoutes() {
           <Route path="unirse" element={<JoinPage />} />
           <Route path="nuevo" element={<NewChannelPage />} />
           <Route path="saber-mas" element={<AboutPage />} />
+          <Route path="ayuda" element={<HelpPage />} />
           <Route path="sugerencias" element={<FeedbackPage />} />
           <Route path="cuenta/eliminar" element={<DeleteAccountPage />} />
           <Route path="*" element={<NotFound />} />

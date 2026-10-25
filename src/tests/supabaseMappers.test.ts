@@ -22,6 +22,7 @@ describe('row mappers', () => {
       kind: 'familia',
       pack_theme: 'oceano',
       cover_url: null,
+      notify_at: '20:30',
       created_at: '2026-10-17T10:00:00Z',
       created_by: B,
     });
@@ -31,6 +32,7 @@ describe('row mappers', () => {
       description: '',
       kind: 'familia',
       packTheme: 'oceano',
+      notifyAt: '20:30',
       createdAt: '2026-10-17T10:00:00Z',
       createdBy: B,
     });
@@ -77,10 +79,12 @@ describe('row mappers', () => {
       tags: ['feria'],
       person_ids: [A],
       author_id: B,
+      status: 'approved',
     });
     expect(video.tags).toEqual(['feria']);
     expect(video.thumbnailPath).toBe('0b6d2b5e-0000-4000-8000-000000000002/portada.webp');
     expect(video.personIds).toEqual([A]);
+    expect('pending' in video).toBe(false);
     expect('durationSeconds' in video).toBe(false);
   });
 
@@ -110,6 +114,29 @@ describe('row mappers', () => {
     });
   });
 
+  it('marks pending content and gives pending cromos number 0', () => {
+    const card = toCard(
+      {
+        id: A,
+        channel_id: B,
+        number: null,
+        person_id: A,
+        title: 'Nuevo',
+        image_url: 'https://example.test/c.jpg',
+        image_path: null,
+        blurred_path: null,
+        taken_at: '2020',
+        created_at: '2026-10-17T10:00:00Z',
+        author_id: B,
+        status: 'pending',
+      },
+      'https://example.test/c.jpg',
+      'Su historia',
+    );
+    expect(card.pending).toBe(true);
+    expect(card.number).toBe(0);
+  });
+
   it('builds cromos with the resolved image and description', () => {
     const card = toCard(
       {
@@ -124,6 +151,7 @@ describe('row mappers', () => {
         taken_at: '1990',
         created_at: '2026-10-17T10:00:00Z',
         author_id: B,
+        status: 'approved',
       },
       'https://example.test/signed',
       '',
@@ -131,6 +159,7 @@ describe('row mappers', () => {
     expect(card.imageUrl).toBe('https://example.test/signed');
     expect(card.number).toBe(7);
     expect('personId' in card).toBe(false);
+    expect('pending' in card).toBe(false);
   });
 
   it('sorts partnership pairs like the database', () => {
